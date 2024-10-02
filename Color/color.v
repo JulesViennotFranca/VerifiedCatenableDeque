@@ -48,7 +48,7 @@ Module GYOR.
   Notation red := (Mix NoGreen NoYellow NoOrange SomeRed).
   Notation uncolored := (Mix NoGreen NoYellow NoOrange NoRed).
 
-  (* An instance of [UIP] for colors is needed in Cdeque/core.v. *)
+  (* An instance of [UIP] for colors is needed in Deque/core.v. *)
   Instance UIP_color : UIP color.
   Proof.
     intros C1 C2 p q.
