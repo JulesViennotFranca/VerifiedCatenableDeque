@@ -1,0 +1,7 @@
+(library
+ (name binCounting)
+ (libraries color))
+
+(coq.theory
+ (name BinCounting)
+ (theories Equations Color))

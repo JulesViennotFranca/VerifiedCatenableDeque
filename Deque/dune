@@ -1,0 +1,7 @@
+(library
+ (name deque)
+ (libraries color))
+
+(coq.theory
+ (name Deque)
+ (theories Equations Hammer AAC_tactics Color))
