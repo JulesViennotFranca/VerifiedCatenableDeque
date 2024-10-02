@@ -7,8 +7,7 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Color Require Import color.
-Import GYR.
+From Color Require Import GYR.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)

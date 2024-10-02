@@ -6,8 +6,7 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Color Require Import color.
-Import GYR.
+From Color Require Import GYR.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
@@ -48,13 +47,13 @@ Arguments B5 {A lvl}.
 (* A type for packets. *)
 Inductive packet (A : Type) (lvl : nat) : nat -> nat -> nat -> color -> Type :=
   | Hole {size : nat} : packet A lvl lvl size size uncolored
-  | Packet {hlvl psize pktsize csize ssize C y} :
+  | Packet {hlvl psize pktsize ssize hsize C y} :
       buffer A lvl psize C ->
-      packet A (S lvl) hlvl pktsize csize (Mix NoGreen y NoRed) ->
+      packet A (S lvl) hlvl pktsize hsize (Mix NoGreen y NoRed) ->
       buffer A lvl ssize C ->
-      packet A lvl hlvl (psize + pktsize + pktsize + ssize) csize C.
+      packet A lvl hlvl (psize + pktsize + pktsize + ssize) hsize C.
 Arguments Hole {A lvl size}.
-Arguments Packet {A lvl hlvl psize pktsize csize ssize C y}.
+Arguments Packet {A lvl hlvl psize pktsize ssize hsize C y}.
 
 (* A type for the regularity relation. *)
 Inductive regularity : color -> color -> Type :=
@@ -67,13 +66,13 @@ Inductive chain (A : Type) (lvl : nat) : nat -> color -> Type :=
   | Ending {size : nat} {C : color} :
       buffer A lvl size C ->
       chain A lvl size green
-  | Chain {hlvl size csize : nat} {C1 C2 : color} :
+  | Chain {hlvl size hsize : nat} {C1 C2 : color} :
       regularity C1 C2 ->
-      packet A lvl hlvl size csize C1 ->
-      chain A hlvl csize C2 ->
+      packet A lvl hlvl size hsize C1 ->
+      chain A hlvl hsize C2 ->
       chain A lvl size C1.
 Arguments Ending {A lvl size C}.
-Arguments Chain {A lvl hlvl size csize C1 C2}.
+Arguments Chain {A lvl hlvl size hsize C1 C2}.
 
 (* A type decomposing buffers according to their number of elements.
    Buffers with 0 or 1 element are decomposed into [Underflow];
@@ -155,7 +154,7 @@ Definition concat_map_prodN_seq
 
 (* Returns the sequence associated to a product. *)
 Notation prodN_seq :=
-  (concat_map_prodN_seq (T := fun A _ => A) (fun _ _ a => [a]) (lvlt := 0)).
+  (concat_map_prodN_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of products model functions. *)
 Lemma correct_concat_map_prodN_seq
@@ -192,7 +191,7 @@ Definition concat_map_buffer_seq
 
 (* Returns the sequence associated to a buffer. *)
 Notation buffer_seq :=
-  (concat_map_buffer_seq (T := fun A _ => A) (fun _ _ a => [a]) (lvlt := 0)).
+  (concat_map_buffer_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of buffers model functions. *)
 Lemma correct_concat_map_buffer_seq
@@ -231,10 +230,10 @@ Qed.
 Definition concat_map_packet_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl hlvl pktsize csize C} :
-  packet (T A lvlt) lvl hlvl pktsize csize C -> list A -> list A :=
-  let fix local {lvl hlvl pktsize csize C}
-    (pkt : packet (T A lvlt) lvl hlvl pktsize csize C) (l : list A) : list A :=
+  {A lvlt lvl hlvl pktsize hsize C} :
+  packet (T A lvlt) lvl hlvl pktsize hsize C -> list A -> list A :=
+  let fix local {lvl hlvl pktsize hsize C}
+    (pkt : packet (T A lvlt) lvl hlvl pktsize hsize C) (l : list A) : list A :=
     match pkt with
     | Hole => l
     | Packet p pkt s => concat_map_buffer_seq f p ++
@@ -245,14 +244,14 @@ Definition concat_map_packet_seq
 
 (* Returns the sequence associated to a packet. *)
 Notation packet_seq :=
-  (concat_map_packet_seq (T := fun A _ => A) (fun _ _ a => [a]) (lvlt := 0)).
+  (concat_map_packet_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of packets model functions. *)
 Lemma correct_concat_map_packet_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl hlvl pktsize csize C}
-  (pkt : packet (T A lvlt) lvl hlvl pktsize csize C) (l : list (T A lvlt)) :
+  {A lvlt lvl hlvl pktsize hsize C}
+  (pkt : packet (T A lvlt) lvl hlvl pktsize hsize C) (l : list (T A lvlt)) :
   concat_map_packet_seq f pkt (concat (map (f A lvlt) l)) =
     concat (map (f A lvlt) (packet_seq pkt l)).
 Proof.
@@ -279,7 +278,7 @@ Definition concat_map_chain_seq
 
 (* Returns the sequence associated to a chain. *)
 Notation chain_seq :=
-  (concat_map_chain_seq (T := fun A _ => A) (fun _ _ a => [a]) (lvlt := 0)).
+  (concat_map_chain_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of chains model functions. *)
 Lemma correct_concat_map_chain_seq
@@ -324,7 +323,7 @@ Definition concat_map_deque_seq
 
 (* Returns the sequence associated to a deque. *)
 Notation deque_seq :=
-  (concat_map_deque_seq (T := fun A _ => A) (fun _ _ a => [a]) (lvlt := 0)).
+  (concat_map_deque_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of deques model functions. *)
 Lemma correct_concat_map_deque_seq
@@ -734,8 +733,8 @@ Equations translate {A lvl size1 size2 C} (c : chain A lvl size1 C) :
   size1 = size2 -> { c' : chain A lvl size2 C | chain_seq c' = chain_seq c } :=
 translate c eq_refl := ? c.
 
-(* Proves that all natural numbers [n] can be writen as 2 times [n / 2] plus
-   [n mod 2]. *)
+(* Proves that all natural numbers [n] can be writen as [n mod 2] plus 2 times
+   [n / 2]. *)
 Lemma dec_by_2 : forall (n : nat), n mod 2 + n / 2 + n / 2 = n.
 Proof.
   intro n.
@@ -803,7 +802,7 @@ make_small b1 b2 b3 with prefix_decompose b1, suffix_decompose b3 => {
         let c := Chain G (Packet p1 (Packet p Hole (B1 ab)) s1) (Ending rest) in
         let '? c' := translate c _ in ? c' } } }.
 Next Obligation.
-  cbn; intros * Hb1 * Hp * Hb2 Hb3 * Hc.
+  cbn. intros * Hb1 * Hp * Hb2 Hb3 * Hc.
   rewrite Hc, to_red_seq, Hp.
   (* Etrange comportement de aac_rewrite, il faut écrire tous
      les remembers pour qu'il marche. *)
@@ -872,7 +871,7 @@ Next Obligation.
   hauto.
 Qed.
 Next Obligation.
-  cbn. intros * Hp * Hs * Hc'.
+  simpl. intros * Hp * Hs * Hc'.
   rewrite Hc'.
   remember (buffer_seq p1) as p1_seq.
   remember (buffer_seq p2) as p2_seq.
@@ -889,7 +888,7 @@ Next Obligation.
   hauto.
 Qed.
 Next Obligation.
-  cbn. intros * Hp * Hs * Hc'.
+  simpl. intros * Hp * Hs * Hc'.
   rewrite Hc'.
   remember (buffer_seq p1) as p1_seq.
   remember (buffer_seq (to_yellow p2)) as p2_seq.

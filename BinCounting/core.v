@@ -2,8 +2,7 @@ From Coq Require Import Lia.
 From Equations Require Import Equations.
 Require Import Coq.Program.Equality.
 
-From Color Require Import color.
-Import GYR.
+From Color Require Import GYR.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)

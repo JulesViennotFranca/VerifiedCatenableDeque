@@ -3,9 +3,6 @@ Import ListNotations.
 From Equations Require Import Equations.
 Require Import Coq.Program.Equality.
 
-From Color Require Import color.
-Import GYOR.
-
 From Cadeque Require Import buffer types.
 
 (* Sequence + map + concat for non-leveled nodes. *)

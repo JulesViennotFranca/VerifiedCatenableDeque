@@ -7,8 +7,7 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Color Require Import color.
-Import GYR.
+From Color Require Import GYR.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
@@ -540,13 +539,13 @@ make_small b1 b2 b3 with prefix_decompose b1, suffix_decompose b3 => {
       | ? p =>
         ? Chain G (Packet p1 (Packet p Hole (B1 ab)) s1) (Ending rest) } } }.
 Next Obligation.
-  cbn beta iota. intros * Hb1 * Hp * Hb2 Hb3. cbn.
+  cbn. intros * Hb1 * Hp * Hb2 Hb3.
   rewrite to_red_seq, Hp.
   aac_rewrite <-Hb2.
   hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn beta iota. intros * Hb1 * Hb2 * Hs Hb3. cbn.
+  cbn. intros * Hb1 * Hb2 * Hs Hb3.
   rewrite to_red_seq, Hs.
   aac_rewrite <-Hb2.
   hauto db:rlist.

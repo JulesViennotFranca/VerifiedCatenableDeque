@@ -6,8 +6,7 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Color Require Import color.
-Import GYR.
+From Color Require Import GYR.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
@@ -52,13 +51,13 @@ Arguments B5 {A lvl}.
 (* A type for sized packets. *)
 Inductive packet (A : Type) (lvl : nat) : nat -> nat -> nat -> color -> Type :=
   | Hole {size : nat} : packet A lvl lvl size size uncolored
-  | Packet {hlvl psize pktsize csize ssize C y} :
+  | Packet {hlvl psize pktsize ssize hsize C y} :
       buffer A lvl psize C ->
-      packet A (S lvl) hlvl pktsize csize (Mix NoGreen y NoRed) ->
+      packet A (S lvl) hlvl pktsize hsize (Mix NoGreen y NoRed) ->
       buffer A lvl ssize C ->
-      packet A lvl hlvl (psize + pktsize + pktsize + ssize) csize C.
+      packet A lvl hlvl (psize + pktsize + pktsize + ssize) hsize C.
 Arguments Hole {A lvl size}.
-Arguments Packet {A lvl hlvl psize pktsize csize ssize C y}.
+Arguments Packet {A lvl hlvl psize pktsize ssize hsize C y}.
 
 (* A type for the regularity relation. *)
 Inductive regularity : color -> color -> Type :=
@@ -71,13 +70,13 @@ Inductive chain (A : Type) (lvl : nat) : nat -> color -> Type :=
   | Ending {size : nat} {C : color} :
       buffer A lvl size C ->
       chain A lvl size green
-  | Chain {hlvl size csize : nat} {C1 C2 : color} :
+  | Chain {hlvl size hsize : nat} {C1 C2 : color} :
       regularity C1 C2 ->
-      packet A lvl hlvl size csize C1 ->
-      chain A hlvl csize C2 ->
+      packet A lvl hlvl size hsize C1 ->
+      chain A hlvl hsize C2 ->
       chain A lvl size C1.
 Arguments Ending {A lvl size C}.
-Arguments Chain {A lvl hlvl size csize C1 C2}.
+Arguments Chain {A lvl hlvl size hsize C1 C2}.
 
 (* A type decomposing buffers according to their number of elements.
    Buffers with 0 or 1 element are decomposed into [Underflow];
@@ -142,8 +141,8 @@ buffer_seq (B5 a b c d e) := prodN_seq a ++ prodN_seq b ++ prodN_seq c ++
 
 (* Returns the sequence associated to a packet, provided the sequence
    associated to its hole. *)
-Equations packet_seq {A lvl hlvl pktsize csize C} :
-  packet A lvl hlvl pktsize csize C -> list A -> list A :=
+Equations packet_seq {A lvl hlvl pktsize hsize C} :
+  packet A lvl hlvl pktsize hsize C -> list A -> list A :=
 packet_seq Hole l := l;
 packet_seq (Packet p pkt s) l :=
   buffer_seq p ++ packet_seq pkt l ++ buffer_seq s.
@@ -579,8 +578,8 @@ Equations translate {A lvl size1 size2 C} (c : chain A lvl size1 C) :
   size1 = size2 -> { c' : chain A lvl size2 C | chain_seq c' = chain_seq c } :=
 translate c eq_refl := ? c.
 
-(* Proves that all natural numbers [n] can be writen as 2 times [n / 2] plus
-   [n mod 2]. *)
+(* Proves that all natural numbers [n] can be writen as [n mod 2] plus 2 times
+   [n / 2]. *)
 Lemma dec_by_2 : forall (n : nat), n mod 2 + n / 2 + n / 2 = n.
 Proof.
   intro n.
@@ -648,24 +647,14 @@ make_small b1 b2 b3 with prefix_decompose b1, suffix_decompose b3 => {
         let c := Chain G (Packet p1 (Packet p Hole (B1 ab)) s1) (Ending rest) in
         let '? c' := translate c _ in ? c' } } }.
 Next Obligation.
-  cbn; intros * Hb1 * Hp * Hb2 Hb3 * Hc.
+  cbn. intros * Hb1 * Hp * Hb2 Hb3 * Hc.
   rewrite Hc, to_red_seq, Hp.
-  (* Etrange comportement de aac_rewrite, il faut écrire tous
-     les remembers pour qu'il marche. *)
-  remember (prodN_seq ab) as ab_seq.
-  remember (prodN_seq cd) as cd_seq.
-  remember (buffer_seq b2) as b2_seq.
-  remember (buffer_seq center) as center_seq.
   aac_rewrite <-Hb2.
   hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros * Hb1 * Hb2 * Hs Hb3 * Hc.
+  cbn. intros * Hb1 * Hb2 * Hs Hb3 * Hc.
   rewrite Hc, to_red_seq, Hs.
-  remember (prodN_seq ab) as ab_seq.
-  remember (prodN_seq cd) as cd_seq.
-  remember (buffer_seq b2) as b2_seq.
-  remember (buffer_seq center) as center_seq.
   aac_rewrite <-Hb2.
   hauto db:rlist.
 Qed.
@@ -711,7 +700,8 @@ green_of_red (Chain R (Packet p1 (Packet p2 child s2) s1) c)
   let '? c' := translate c _ in ? c' }.
 Next Obligation.
   intros * Hp * Hs * c.
-  yellow_size p2 as Hpsize0. yellow_size s2 as Hssize0.
+  yellow_size p2 as Hpsize0.
+  yellow_size s2 as Hssize0.
   pose (dec_by_2 psize) as Hpsize. rewrite <-Hpsize at 4.
   pose (dec_by_2 ssize) as Hssize. rewrite <-Hssize at 4.
   hauto.
@@ -719,16 +709,13 @@ Qed.
 Next Obligation.
   cbn. intros * Hp * Hs * Hc'.
   rewrite Hc'.
-  remember (buffer_seq p1) as p1_seq.
-  remember (buffer_seq p2) as p2_seq.
-  remember (buffer_seq p1') as p1'_seq.
-  remember (buffer_seq p2') as p2'_seq.
   aac_rewrite <-Hp.
   hauto db:rlist.
 Qed.
 Next Obligation.
   intros * Hp * Hs * c.
-  yellow_size p2 as Hpsize0. yellow_size s2 as Hssize0.
+  yellow_size p2 as Hpsize0.
+  yellow_size s2 as Hssize0.
   pose (dec_by_2 psize) as Hpsize. rewrite <-Hpsize at 4.
   pose (dec_by_2 ssize) as Hssize. rewrite <-Hssize at 4.
   hauto.
@@ -736,10 +723,6 @@ Qed.
 Next Obligation.
   cbn. intros * Hp * Hs * Hc'.
   rewrite Hc'.
-  remember (buffer_seq p1) as p1_seq.
-  remember (buffer_seq (to_yellow p2)) as p2_seq.
-  remember (buffer_seq p1') as p1'_seq.
-  remember (buffer_seq p2') as p2'_seq.
   aac_rewrite <-Hp.
   hauto db:rlist.
 Qed.
