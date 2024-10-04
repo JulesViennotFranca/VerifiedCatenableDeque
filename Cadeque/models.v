@@ -33,7 +33,8 @@ stored_triple_seq A lvl (Big p child s) :=
 with body_seq {A hlvl tlvl hk tk}
   (b : body A hlvl tlvl hk tk) : list A -> list A by struct b :=
 body_seq Hole l := l;
-body_seq (Single_child hd b) l := concat_map_node'_seq stored_triple_seq hd (body_seq b l);
+body_seq (Single_child hd b) l :=
+  concat_map_node'_seq stored_triple_seq hd (body_seq b l);
 body_seq (Pair_yellow hd b cr) l :=
   concat_map_node'_seq stored_triple_seq hd (body_seq b l ++ chain_seq cr);
 body_seq (Pair_orange hd cl b) l :=
@@ -54,7 +55,8 @@ chain_seq (Pair cl cr) := chain_seq cl ++ chain_seq cr.
 
 Arguments stored_triple_seq {A lvl}.
 
-(* Returns the sequence associated to a buffer containing stored triples. *)Notation buffer_seq b := (buffer.concat_map_seq (@stored_triple_seq) b).
+(* Returns the sequence associated to a buffer containing stored triples. *)
+Notation buffer_seq b := (buffer.concat_map_seq (@stored_triple_seq) b).
 
 (* Returns the sequence associated to a prefix containing stored triples. *)
 Notation prefix_seq p := (buffer_seq p).
