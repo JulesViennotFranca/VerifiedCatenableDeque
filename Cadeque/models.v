@@ -17,37 +17,6 @@ Definition concat_map_node'_seq
   | Right _ p s => buffer.concat_map_seq f p ++ l ++ buffer.concat_map_seq f s
   end.
 
-(* Returns the sequence associated to a non-leveled node. *)
-Definition node'_seq {A nc nk C} (n : node' A nc nk C) :=
-  concat_map_node'_seq (T := fun A _ => A) (fun _ _ a => [a]) (lvlt := 0) n.
-
-(* Ensures the correct behavior of non-leveled nodes model functions. *)
-Lemma correct_concat_map_node'_seq
-  {T : Type -> nat -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt nc nk C} (n : node' (T A lvlt) nc nk C) (l : list (T A lvlt)) :
-  concat_map_node'_seq f n (concat (map (f A lvlt) l)) =
-    concat (map (f A lvlt) (node'_seq n l)).
-Proof.
-  destruct n; simpl.
-  - apply buffer.correct_concat_map_seq.
-  - do 2 rewrite map_app.
-    do 2 rewrite concat_app.
-    rewrite buffer.correct_concat_map_seq.
-    do 2 f_equal.
-    apply buffer.correct_concat_map_seq.
-  - do 2 rewrite map_app.
-    do 2 rewrite concat_app.
-    rewrite buffer.correct_concat_map_seq.
-    do 2 f_equal.
-    apply buffer.correct_concat_map_seq.
-  - do 2 rewrite map_app.
-    do 2 rewrite concat_app.
-    rewrite buffer.correct_concat_map_seq.
-    do 2 f_equal.
-    apply buffer.correct_concat_map_seq.
-Qed.
-
 Set Equations Transparent.
 
 (* Returns the sequence associated to a stored triple. *)
@@ -85,15 +54,7 @@ chain_seq (Pair cl cr) := chain_seq cl ++ chain_seq cr.
 
 Arguments stored_triple_seq {A lvl}.
 
-(* Returns the sequence associated to a buffer containing stored triples. *)
-Notation buffer_seq b := (concat (map stored_triple_seq (buffer.seq b))).
-
-(* Ensures the correct behavior of buffers model functions. *)
-Lemma correct_buffer_seq [A lvl q] (b : t (stored_triple A lvl) q) :
-  concat_map_seq (@stored_triple_seq) b = buffer_seq b.
-Proof.
-  apply buffer.correct_concat_map_seq.
-Qed.
+(* Returns the sequence associated to a buffer containing stored triples. *)Notation buffer_seq b := (buffer.concat_map_seq (@stored_triple_seq) b).
 
 (* Returns the sequence associated to a prefix containing stored triples. *)
 Notation prefix_seq p := (buffer_seq p).
@@ -102,21 +63,7 @@ Notation prefix_seq p := (buffer_seq p).
 Notation suffix_seq s := (buffer_seq s).
 
 (* Returns the sequence associated to a node containing stored triples. *)
-Equations node_seq {A lvl nc nk C} : node A lvl nc nk C -> list A -> list A :=
-node_seq (Only_end  p) _ := buffer_seq p;
-node_seq (Only  _ p s) l := prefix_seq p ++ l ++ suffix_seq s;
-node_seq (Left  _ p s) l := prefix_seq p ++ l ++ suffix_seq s;
-node_seq (Right _ p s) l := prefix_seq p ++ l ++ suffix_seq s.
-
-(* Ensures the correct behavior of nodes model function. *)
-Lemma correct_node_seq [A lvl nc nk C]
-  (n : node A lvl nc nk C) (l : list A) :
-  concat_map_node'_seq (@stored_triple_seq) n l = node_seq n l.
-Proof.
-  destruct n; cbn;
-  repeat rewrite buffer.correct_concat_map_seq;
-  reflexivity.
-Qed.
+Notation node_seq n l := (concat_map_node'_seq (@stored_triple_seq) n l).
 
 (* Returns the sequence associated to a green buffer. *)
 Equations green_buffer_seq {A lvl} : green_buffer A lvl -> list A :=

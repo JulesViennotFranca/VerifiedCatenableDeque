@@ -148,9 +148,9 @@ Definition seq {A q} (b : t A q) :=
 
 (* Ensures the correct behavior of buffers model functions. *)
 Lemma correct_concat_map_seq
-  {T : Type -> nat -> Type}
+  [T : Type -> nat -> Type]
   (f : forall A lvl, T A lvl -> list A)
-  {A lvlt q} (b : t (T A lvlt) q) :
+  [A lvlt q] (b : t (T A lvlt) q) :
   concat_map_seq f b = concat (map (f A lvlt) (seq b)).
 Proof.
   destruct b. simpl.
