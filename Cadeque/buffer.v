@@ -3,7 +3,7 @@ Import ListNotations.
 From Equations Require Import Equations.
 From Hammer Require Import Tactics.
 
-From Deque Require Import core.
+From Cadeque Require Import deque.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                Vectors                                 | *)
@@ -154,7 +154,7 @@ Lemma correct_concat_map_seq
   concat_map_seq f b = concat (map (f A lvlt) (seq b)).
 Proof.
   destruct b. simpl.
-  apply core.correct_concat_map_deque_seq.
+  apply correct_concat_map_deque_seq.
 Qed.
 
 (* +------------------------------------------------------------------------+ *)
@@ -163,27 +163,27 @@ Qed.
 
 (* The empty deque. *)
 Equations empty {A : Type} : { b : t A 0 | seq b = [] } :=
-empty with core.empty => { | ? d := ? Buffer d }.
+empty with deque.empty => { | ? d := ? Buffer d }.
 
 (* Pushes on a buffer. *)
 Equations push {A q} (a1 : A) (b : t A q) :
   { b' : t A (S q) | seq b' = [a1] ++ seq b } :=
-push a1 (Buffer d) with core.push a1 d => { | ? d' := ? Buffer d' }.
+push a1 (Buffer d) with deque.push a1 d => { | ? d' := ? Buffer d' }.
 
 (* Injects on a buffer. *)
 Equations inject {A q} (b : t A q) (a1 : A) :
   { b' : t A (S q) | seq b' = seq b ++ [a1] } :=
-inject (Buffer d) a1 with core.inject d a1 => { | ? d' := ? Buffer d' }.
+inject (Buffer d) a1 with deque.inject d a1 => { | ? d' := ? Buffer d' }.
 
 (* Pops off a buffer containing at least one element. *)
 Equations pop {A q} (b : t A (S q)) :
   { '(a1, b') : A * t A q | seq b = [a1] ++ seq b' } :=
-pop (Buffer d) with core.pop d => { | ? (a1, d') := ? (a1, Buffer d') }.
+pop (Buffer d) with deque.pop d => { | ? (a1, d') := ? (a1, Buffer d') }.
 
 (* Ejects off a buffer containing at least one element. *)
 Equations eject {A q} (b : t A (S q)) :
   { '(b', a1) : t A q * A | seq b = seq b' ++ [a1] } :=
-eject (Buffer d) with core.eject d => { | ? (d', a1) := ? (Buffer d', a1) }.
+eject (Buffer d) with deque.eject d => { | ? (d', a1) := ? (Buffer d', a1) }.
 
 (* Pushes two elements on a buffer. *)
 Equations push2 {A q} (a1 a2 : A) (b : t A q) :
@@ -240,8 +240,8 @@ two b with pop b => {
 
 (* Returns a buffer containing one element. *)
 Equations single {A} (a1 : A) : { b : t A 1 | seq b = [a1] } :=
-single a1 with core.empty => {
-  | ? d with core.push a1 d => {
+single a1 with deque.empty => {
+  | ? d with deque.push a1 d => {
     | ? d' := ? Buffer d' } }.
 
 (* Returns a buffer containing two elements. *)
