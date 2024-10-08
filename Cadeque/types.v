@@ -54,6 +54,11 @@ Inductive regularity :
  | OP {Cr}      : regularity orange Cr    pair   green Cr
  | R {ck}       : regularity red    red   (S ck) green green.
 
+(* The computation of elimination schemes is disabled. Elimination schemes are
+   not necessary in the code and their definition takes a long time to compute
+   for the following mutually recursive types. *)
+Unset Elimination Schemes.
+
 (* A type for stored triples. *)
 Inductive stored_triple (A : Type) : nat -> Type :=
   | Ground : A -> stored_triple A 0
