@@ -4,7 +4,7 @@ module Base = struct
 
   type 'a t = { core : 'a deque ; length : int ; rev : bool }
 
-  let empty = { core = empty ; length = 0 ; rev = false }
+  let empty = { core = Core.empty ; length = 0 ; rev = false }
 
   let is_empty t = t.length = 0
 
@@ -137,8 +137,8 @@ module Base = struct
 
 end
 
-include ListLike.Make.OfDeque(Base)
 include Base
+include ListLike.Make.OfDeque(Base)
 
 let nth_deque
 : type a. a deque -> int -> int -> a
