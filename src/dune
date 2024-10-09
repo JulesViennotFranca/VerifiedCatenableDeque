@@ -1,5 +1,5 @@
 (library
-  (name Cadeque)
+  (name cadeque)
   (public_name Cadeque)
   (libraries lib))
 

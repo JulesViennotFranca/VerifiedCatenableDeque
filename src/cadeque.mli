@@ -8,6 +8,23 @@ type 'a t
     of the standard {!List} module.
 *)
 
+val push : 'a -> 'a t -> 'a t
+(** [push x xs] pushes [x] on the left of [xs]. *)
+
+val inject : 'a t -> 'a -> 'a t
+(** [inject xs x] injects [x] on the right of [xs]. *)
+
+val pop : 'a t -> ('a * 'a t) option
+(** [pop xs] pops the left-most element of [xs].
+    @return None if the cadeque is empty. *)
+
+val eject : 'a t -> ('a t * 'a) option
+(** [eject xs] ejects the right-most element of [xs].
+    @return None if the cadeque is empty. *)
+
+val length : 'a t -> int
+(** Returns the length (number of elements) of the given cadeque. *)
+
 val hd : 'a t -> 'a
 (** [hd xs] returns the left-most element of [xs].
     @raise Failure if the cadeque is empty.
@@ -42,6 +59,12 @@ val nth_opt : 'a t -> int -> 'a option
     @raise Invalid_argument if [n] is negative.
 *)
 
+val is_empty : 'a t -> bool
+(** [is_empty xs] is true if and only if [xs] has no elements. *)
+
+val empty : 'a t
+(** [empty] is the empty cadeque. *)
+
 val singleton : 'a -> 'a t
 (** [singleton x] returns a cadeque whose only element is [x]. *)
 
@@ -55,6 +78,9 @@ val init : int -> (int -> 'a) -> 'a t
     element is [f i], evaluated left to right.
     @raise Invalid_argument if [len] is negative.
 *)
+
+val rev : 'a t -> 'a t
+(** Cadeque reversal. *)
 
 (** {1 Comparisons} *)
 
@@ -71,6 +97,9 @@ val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
     according to the comparison function [cmp]. *)
 
 (** {1 Catenation} *)
+
+val append : 'a t -> 'a t -> 'a t
+(** [append xs ys] appends [ys] to [xs]. *)
 
 val ( @ ) : 'a t -> 'a t -> 'a t
 (** An alias for [append]: [xs @ ys] concatenates the two cadeques together. *)
@@ -338,6 +367,23 @@ module Deque : sig
       standard {!List} module.
   *)
 
+  val push : 'a -> 'a t -> 'a t
+  (** [push x xs] pushes [x] on the left of [xs]. *)
+
+  val inject : 'a t -> 'a -> 'a t
+  (** [inject xs x] injects [x] on the right of [xs]. *)
+
+  val pop : 'a t -> ('a * 'a t) option
+  (** [pop xs] pops the left-most element of [xs].
+      @return None if the deque is empty. *)
+
+  val eject : 'a t -> ('a t * 'a) option
+  (** [eject xs] ejects the right-most element of [xs].
+      @return None if the deque is empty. *)
+
+  val length : 'a t -> int
+  (** Returns the length (number of elements) of the given cadeque. *)
+
   val hd : 'a t -> 'a
   (** [hd xs] returns the left-most element of [xs].
       @raise Failure if the deque is empty.
@@ -372,6 +418,12 @@ module Deque : sig
       @raise Invalid_argument if [n] is negative.
   *)
 
+  val is_empty : 'a t -> bool
+  (** [is_empty xs] is true if and only if [xs] has no elements. *)
+
+  val empty : 'a t
+  (** [empty] is the empty deque. *)
+
   val singleton : 'a -> 'a t
   (** [singleton x] returns a deque whose only element is [x]. *)
 
@@ -385,6 +437,9 @@ module Deque : sig
       element is [f i], evaluated left to right.
       @raise Invalid_argument if [len] is negative.
   *)
+
+  val rev : 'a t -> 'a t
+  (** Deque reversal. *)
 
   (** {1 Comparisons} *)
 
@@ -401,6 +456,9 @@ module Deque : sig
       according to the comparison function [cmp]. *)
 
   (** {1 Catenation} *)
+
+  val append : 'a t -> 'a t -> 'a t
+  (** [append xs ys] appends [ys] to [xs]. *)
 
   val ( @ ) : 'a t -> 'a t -> 'a t
   (** An alias for [append]: [xs @ ys] concatenates the two deques together. *)
