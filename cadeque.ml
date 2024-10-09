@@ -1,1 +1,3 @@
-module Deque = Deque.Package
+include CadequeLib.Package
+
+module Deque = DequeLib.Package
