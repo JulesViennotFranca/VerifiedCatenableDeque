@@ -1,6 +1,7 @@
 (library
  (name deque)
- (libraries color))
+ (package Cadeque)
+ (libraries color listLike))
 
 (coq.theory
  (name Deque)

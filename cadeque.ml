@@ -1,0 +1,1 @@
+module Deque = Deque.Package

@@ -1,0 +1,7 @@
+(library
+  (name Cadeque)
+  (public_name Cadeque)
+  (libraries deque))
+
+(documentation
+  (package Cadeque))
