@@ -300,7 +300,7 @@ end = struct
     | At_least_1 _ -> At_least_5 buffer
 
   let push_vector v t = vector_fold_right Deque.push v t
-  let inject_vector t v = vector_fold_left  Deque.inject t v
+  let inject_vector t v = vector_fold_left Deque.inject t v
 
   type 'a has3p8 =
     | Less_than_11 : 'a eight * ('a, eq2) vector -> 'a has3p8
@@ -505,13 +505,6 @@ type 'a semi_cadeque = S : ('a, _, only, _, _) chain -> 'a semi_cadeque
 
 (** A type for regular cadeques. *)
 type 'a cadeque = T : ('a, _, only, green, green) chain -> 'a cadeque
-
-(* +------------------------------------------------------------------------+ *)
-(* |                                 Empty                                  | *)
-(* +------------------------------------------------------------------------+ *)
-
-(** The empty cadeque. *)
-let empty = T Empty
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                  Core                                  | *)
@@ -1235,6 +1228,9 @@ let rec ensure_green
 (* +------------------------------------------------------------------------+ *)
 (* |                               Operations                               | *)
 (* +------------------------------------------------------------------------+ *)
+
+(** The empty cadeque. *)
+let empty = T Empty
 
 (** Pushes on a cadeque. *)
 let push x (T c) = match is_empty c, c with

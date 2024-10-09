@@ -195,10 +195,6 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
    hint database. *)
 #[local] Obligation Tactic := try (cbn; hauto db:rlist).
 
-(* The empty deque. *)
-Equations empty {A} : { d : deque A 0 | deque_seq d = [] } :=
-empty := ? T (Ending B0).
-
 (* Pushes on a green buffer. *)
 Equations green_push {A lvl size}
   (x : prodN A lvl) (b : buffer A lvl size green) :
@@ -765,6 +761,10 @@ make_red p1 child s1 c eq_refl
 (* +------------------------------------------------------------------------+ *)
 (* |                               Operations                               | *)
 (* +------------------------------------------------------------------------+ *)
+
+(* The empty deque. *)
+Equations empty {A} : { d : deque A 0 | deque_seq d = [] } :=
+empty := ? T (Ending B0).
 
 (* Pushes on a deque. *)
 Equations push {A : Type} {size : nat} (x : A) (d : deque A size) :

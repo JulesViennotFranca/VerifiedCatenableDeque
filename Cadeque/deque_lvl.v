@@ -612,6 +612,10 @@ make_red p1 child s1 c
 (* |                               Operations                               | *)
 (* +------------------------------------------------------------------------+ *)
 
+(* The empty deque. *)
+Equations empty {A : Type} : { d : deque A | deque_seq d = [] } :=
+empty := ? T (Ending B0).
+
 (* Pushes on a deque. *)
 Equations push {A : Type} (x : A) (d : deque A) :
   { d' : deque A | deque_seq d' = [x] ++ deque_seq d } :=
