@@ -74,7 +74,7 @@ let vector_fold_left
 
 module Buffer : sig
   (** The type for buffer is parametrized by the type of elements it contains
-     and the number of elements it contains. *)
+      and the number of elements it contains. *)
   type ('a, 'n) t
 
   (* Different operations needed on buffers, and how they change the size of
@@ -501,10 +501,10 @@ type ('exter, 'inter) sandwich =
   | Sandwich : 'exter * 'inter * 'exter -> ('exter, 'inter) sandwich
 
 (** A type for semi-regular cadeques. *)
-type 'a semi_cacadeque = S : ('a, _, only, _, _) chain -> 'a semi_cacadeque
+type 'a semi_cadeque = S : ('a, _, only, _, _) chain -> 'a semi_cadeque
 
 (** A type for regular cadeques. *)
-type 'a cacadeque = T : ('a, _, only, green, green) chain -> 'a cacadeque
+type 'a cadeque = T : ('a, _, only, green, green) chain -> 'a cadeque
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Empty                                  | *)
@@ -512,11 +512,6 @@ type 'a cacadeque = T : ('a, _, only, green, green) chain -> 'a cacadeque
 
 (** The empty cadeque. *)
 let empty = T Empty
-
-(** A test to know if a cadeque is empty or not. *)
-(* let is_empty = function
-  | T Empty -> true
-  | _ -> false *)
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                  Core                                  | *)
@@ -1058,7 +1053,7 @@ let sandwich_pair_green (Pair (cl, cr)) =
 let pop_green
 : type a n.
      (a, n ge1, only, green, green) chain
-  -> a * a semi_cacadeque
+  -> a * a semi_cadeque
 = function
   | Pair _ as c -> pop_pair_green c
   | Single _ as c ->
@@ -1072,7 +1067,7 @@ let pop_green
 let eject_green
 : type a n.
      (a, n ge1, only, green, green) chain
-  -> a semi_cacadeque * a
+  -> a semi_cadeque * a
 = function
   | Pair _ as c -> eject_pair_green c
   | Single _ as c ->
@@ -1086,7 +1081,7 @@ let eject_green
 let sandwich_green
 : type a n.
      (a, n ge1, only, green, green) chain
-  -> (a, a semi_cacadeque) sandwich
+  -> (a, a semi_cadeque) sandwich
 = function
   | Pair _ as c -> sandwich_pair_green c
   | Single _ as c ->
@@ -1125,7 +1120,7 @@ let make_green_suffix child s2 s1 =
     (child, s1)
 
 (** Takes a stored triple and a semi-regular cadeque of stored triples. Extracts
-    the prefix of the stored triple, the remaining elements and the semi
+    the prefix of the stored triple, the remaining elements and the semi-
     regular cadeque form a new semi-regular cadeque. *)
 let extract_prefix stored child = match stored with
   | Small p -> (Stored_buffer p, child)
