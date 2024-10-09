@@ -138,7 +138,7 @@ module Base = struct
 end
 
 include Base
-include ListLike.Make.OfDeque(Base)
+include ListLike.OfDeque(Base)
 
 let nth_deque
 : type a. a deque -> int -> int -> a

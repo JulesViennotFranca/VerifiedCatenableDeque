@@ -3,7 +3,7 @@ Import ListNotations.
 From Equations Require Import Equations.
 From Hammer Require Import Tactics.
 
-From Cadeque Require Import deque.
+From Theory.cadeque Require Import deque.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                Vectors                                 | *)

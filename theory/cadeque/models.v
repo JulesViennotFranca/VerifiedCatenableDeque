@@ -3,7 +3,7 @@ Import ListNotations.
 From Equations Require Import Equations.
 Require Import Coq.Program.Equality.
 
-From Cadeque Require Import buffer types.
+From Theory.cadeque Require Import buffer types.
 
 (* Sequence + map + concat for non-leveled nodes. *)
 Definition concat_map_node'_seq

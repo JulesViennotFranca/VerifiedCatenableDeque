@@ -1,7 +1,0 @@
-(library
- (package Cadeque)
- (name color))
-
-(coq.theory
- (name Color)
- (theories Equations))

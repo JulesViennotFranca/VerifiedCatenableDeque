@@ -1,6 +1,6 @@
 open Color.GYOR
 
-module Deque = DequeLib.Core
+module Deque = Deque.Core
 
 (* Support for natural number types. *)
 

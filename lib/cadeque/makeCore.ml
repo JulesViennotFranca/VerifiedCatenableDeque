@@ -1,6 +1,6 @@
 open Color.GYOR
 
-module Make (Deque : ListLike.Make.DEQUE) = struct
+module Make (Deque : ListLike.DEQUE) = struct
 
   (* Support for natural number types. *)
 

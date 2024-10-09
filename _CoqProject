@@ -1,4 +1,1 @@
--Q _build/default/Color Color
--Q _build/default/BinCounting BinCounting
--Q _build/default/Deque Deque
--Q _build/default/Cadeque Cadeque
+-Q _build/default/theory Theory

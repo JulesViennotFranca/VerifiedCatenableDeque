@@ -1,3 +1,0 @@
-(library
- (package Cadeque)
- (name listLike))

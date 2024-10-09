@@ -1,8 +1,0 @@
-(library
- (name dequeLib)
- (package Cadeque)
- (libraries color listLike))
-
-(coq.theory
- (name Deque)
- (theories Equations Hammer AAC_tactics Color))
