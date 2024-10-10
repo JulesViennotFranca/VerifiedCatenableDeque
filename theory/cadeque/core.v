@@ -269,6 +269,58 @@ semi_inject (Semi Empty) a1 with single_chain a1 => {
 semi_inject (Semi c) a1 with inject_ne_chain c a1 => {
   | ? c' := ? Semi c' }.
 
+(* Pushes a vector on a semi-regular cadeque. *)
+Equations push_vector {A lvl n}
+  (v : vector (stored_triple A lvl) n)
+  (sd : semi_cadeque A lvl) :
+  { sd' : semi_cadeque A lvl |
+    semi_cadeque_seq sd' =
+      concat (map stored_triple_seq (vector_seq v)) ++ semi_cadeque_seq sd } :=
+push_vector V0 sd0 := ? sd0;
+push_vector (V1 a1) sd0 with semi_push a1 sd0 => { | ? sd1 := ? sd1 };
+push_vector (V2 a2 a1) sd0 with semi_push a1 sd0 => {
+  | ? sd1 with semi_push a2 sd1 => { | ? sd2 := ? sd2 } };
+push_vector (V3 a3 a2 a1) sd0 with semi_push a1 sd0 => {
+  | ? sd1 with semi_push a2 sd1 => { | ? sd2 with semi_push a3 sd2 => {
+  | ? sd3 := ? sd3 } } };
+push_vector (V4 a4 a3 a2 a1) sd0 with semi_push a1 sd0 => {
+  | ? sd1 with semi_push a2 sd1 => { | ? sd2 with semi_push a3 sd2 => {
+  | ? sd3 with semi_push a4 sd3 => { | ? sd4 := ? sd4 } } } };
+push_vector (V5 a5 a4 a3 a2 a1) sd0 with semi_push a1 sd0 => {
+  | ? sd1 with semi_push a2 sd1 => { | ? sd2 with semi_push a3 sd2 => {
+  | ? sd3 with semi_push a4 sd3 => { | ? sd4 with semi_push a5 sd4 => {
+  | ? sd5 := ? sd5 } } } } };
+push_vector (V6 a6 a5 a4 a3 a2 a1) sd0 with semi_push a1 sd0 => {
+  | ? sd1 with semi_push a2 sd1 => { | ? sd2 with semi_push a3 sd2 => {
+  | ? sd3 with semi_push a4 sd3 => { | ? sd4 with semi_push a5 sd4 => {
+  | ? sd5 with semi_push a6 sd5 => { | ? sd6 := ? sd6 } } } } } }.
+
+(* Injects a vector on a semi-regular cadeque. *)
+Equations inject_vector {A lvl n}
+  (sd : semi_cadeque A lvl)
+  (v : vector (stored_triple A lvl) n) :
+  { sd' : semi_cadeque A lvl |
+    semi_cadeque_seq sd' =
+      semi_cadeque_seq sd ++ concat (map stored_triple_seq (vector_seq v)) } :=
+inject_vector sd0 V0 := ? sd0;
+inject_vector sd0 (V1 a1) with semi_inject sd0 a1 => { | ? sd1 := ? sd1 };
+inject_vector sd0 (V2 a1 a2) with semi_inject sd0 a1 => {
+  | ? sd1 with semi_inject sd1 a2 => { | ? sd2 := ? sd2 } };
+inject_vector sd0 (V3 a1 a2 a3) with semi_inject sd0 a1 => {
+  | ? sd1 with semi_inject sd1 a2 => { | ? sd2 with semi_inject sd2 a3 => {
+  | ? sd3 := ? sd3 } } };
+inject_vector sd0 (V4 a1 a2 a3 a4) with semi_inject sd0 a1 => {
+  | ? sd1 with semi_inject sd1 a2 => { | ? sd2 with semi_inject sd2 a3 => {
+  | ? sd3 with semi_inject sd3 a4 => { | ? sd4 := ? sd4 } } } };
+inject_vector sd0 (V5 a1 a2 a3 a4 a5) with semi_inject sd0 a1 => {
+  | ? sd1 with semi_inject sd1 a2 => { | ? sd2 with semi_inject sd2 a3 => {
+  | ? sd3 with semi_inject sd3 a4 => { | ? sd4 with semi_inject sd4 a5 => {
+  | ? sd5 := ? sd5 } } } } };
+inject_vector sd0 (V6 a1 a2 a3 a4 a5 a6) with semi_inject sd0 a1 => {
+  | ? sd1 with semi_inject sd1 a2 => { | ? sd2 with semi_inject sd2 a3 => {
+  | ? sd3 with semi_inject sd3 a4 => { | ? sd4 with semi_inject sd4 a5 => {
+  | ? sd5 with semi_inject sd5 a6 => { | ? sd6 := ? sd6 } } } } } }.
+
 (* Returns the regularity rule associated to a yellow or orange node with one
     child. *)
 Equations to_reg {A lvl nk y o C} :
@@ -444,16 +496,14 @@ make_right (Pair cl cr) with triple_of_chain cl, triple_of_chain cr => {
   | ? tl, ? tr with right_of_pair tl tr => { | ? t := ? Ok_lrt t } }.
 
 (* Concatenates two semi-regular cadeques. *)
-Equations concat_semi {A lvl} (s1 s2 : semi_cadeque A lvl) :
+Equations semi_concat {A lvl} (s1 s2 : semi_cadeque A lvl) :
   { s3 : semi_cadeque A lvl |
     semi_cadeque_seq s3 = semi_cadeque_seq s1 ++ semi_cadeque_seq s2 } :=
-concat_semi (Semi c1) (Semi c2) with make_left c1 => {
-  | ? Not_enough v with vector_push semi_cadeque_seq stored_triple_seq
-                                    semi_push v (Semi c2) => {
+semi_concat (Semi c1) (Semi c2) with make_left c1 => {
+  | ? Not_enough v with push_vector v (Semi c2) => {
     | ? c3 := ? c3 };
   | ? Ok_lrt tl with make_right c2 => {
-    | ? Not_enough v with vector_inject semi_cadeque_seq stored_triple_seq
-                                        semi_inject (Semi c1) v => {
+    | ? Not_enough v with inject_vector (Semi c1) v => {
       | ? c3 := ? c3 };
     | ? Ok_lrt tr with chain_of_triple tl, chain_of_triple tr => {
       | ? cl, ? cr := ? Semi (Pair cl cr) } } }.
@@ -763,7 +813,7 @@ Equations extract_prefix {A lvl}
     stored_triple_seq stored ++ semi_cadeque_seq child } :=
 extract_prefix (Small p) child := ? (Sbuf p, child);
 extract_prefix (Big p schild s) child with semi_push (Small s) child => {
-    | ? child1 with concat_semi (Semi schild) child1 => {
+    | ? child1 with semi_concat (Semi schild) child1 => {
       | ? child2 := ? (Sbuf p, child2) } }.
 
 (* Takes a semi-regular cadeque of stored triples and a stored triple. Extracs
@@ -777,7 +827,7 @@ Equations extract_suffix {A lvl}
     semi_cadeque_seq child ++ stored_triple_seq stored } :=
 extract_suffix child (Small s) := ? (child, Sbuf s);
 extract_suffix child (Big p schild s) with semi_inject child (Small p) => {
-  | ? child1 with concat_semi child1 (Semi schild) => {
+  | ? child1 with semi_concat child1 (Semi schild) => {
     | ? child2 := ? (child2, Sbuf s) } }.
 
 (* Takes a prefix of at least 5 elements and a semi-regular cadeque of stored
@@ -964,3 +1014,8 @@ ensure_green (Single R (Packet bd (Right Rc p s)) c)
   with green_of_red_right bd (Right Rc p s) c => { | ? c' := ? c' };
 ensure_green (Pair cl cr) with ensure_green cl, ensure_green cr => {
   | ? cl', ? cr' := ? Pair cl' cr' }.
+
+(* Regularizes a semi-regular cadeque. *)
+Equations regularize {A} (sd : semi_cadeque A 0) :
+  { d : cadeque A | cadeque_seq d = semi_cadeque_seq sd } :=
+regularize (Semi c) with ensure_green c => { | ? c' := ? T c' }.

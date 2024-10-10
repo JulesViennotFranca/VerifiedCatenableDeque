@@ -652,12 +652,12 @@ let is_empty : type a ck nk cl cr. (a, ck, nk, cl, cr) chain -> ck is_empty
   | Single _ -> Not_empty | Pair _ -> Not_empty
 
 (** Pushes on a semi-regular cadeque. *)
-let push_semi x (S c) = match is_empty c, c with
+let semi_push x (S c) = match is_empty c, c with
   | Is_empty, Empty -> S (single_chain x)
   | Not_empty, c -> S (push_ne_chain x c)
 
 (** Injects on a semi-regular cadeque. *)
-let inject_semi (S c) x = match is_empty c, c with
+let semi_inject (S c) x = match is_empty c, c with
   | Is_empty, Empty -> S (single_chain x)
   | Not_empty, c -> S (inject_ne_chain c x)
 
@@ -839,12 +839,12 @@ let make_right
   | Pair (cl, cr) -> Ok (right_of_pair (triple_of_chain cl) (triple_of_chain cr))
 
 (** Concatenates two semi-regular cadeques. *)
-let concat_semi (S c1) (S c2) =
+let semi_concat (S c1) (S c2) =
   match make_left c1 with
-  | Not_enough v -> vector_fold_right push_semi v (S c2)
+  | Not_enough v -> vector_fold_right semi_push v (S c2)
   | Ok tl ->
     match make_right c2 with
-    | Not_enough v -> vector_fold_left inject_semi (S c1) v
+    | Not_enough v -> vector_fold_left semi_inject (S c1) v
     | Ok tr -> S (Pair (chain_of_triple tl, chain_of_triple tr))
 
 (** Returns the orange regularity rule required according to the following
@@ -1095,7 +1095,7 @@ let make_green_prefix p1 p2 child =
     (p1, child)
   | three, At_least_3 p2 ->
     let p1 = Buffer.inject3 p1 three in
-    let child = push_semi (Small p2) child in
+    let child = semi_push (Small p2) child in
     (p1, child)
 
 (** Takes a semi-regular cadeque of stored triples, a suffix of at least 3
@@ -1109,7 +1109,7 @@ let make_green_suffix child s2 s1 =
     (child, s1)
   | At_least_3 s2, three ->
     let s1 = Buffer.push3 three s1 in
-    let child = inject_semi child (Small s2) in
+    let child = semi_inject child (Small s2) in
     (child, s1)
 
 (** Takes a stored triple and a semi-regular cadeque of stored triples. Extracts
@@ -1118,8 +1118,8 @@ let make_green_suffix child s2 s1 =
 let extract_prefix stored child = match stored with
   | Small p -> (Stored_buffer p, child)
   | Big (p, stored_child, s) ->
-    let child = push_semi (Small s) child in
-    let child = concat_semi (S stored_child) child in
+    let child = semi_push (Small s) child in
+    let child = semi_concat (S stored_child) child in
     (Stored_buffer p, child)
 
 (** Takes a semi-regular cadeque of stored triples and a stored triple. Extracs
@@ -1128,8 +1128,8 @@ let extract_prefix stored child = match stored with
 let extract_suffix child stored = match stored with
   | Small s -> (child, Stored_buffer s)
   | Big (p, stored_child, s) ->
-    let child = inject_semi child (Small p) in
-    let child = concat_semi child (S stored_child) in
+    let child = semi_inject child (Small p) in
+    let child = semi_concat child (S stored_child) in
     (child, Stored_buffer s)
 
 (** Takes a prefix of at least 5 elements and a semi-regular cadeque of stored
@@ -1225,6 +1225,11 @@ let rec ensure_green
   | Pair (cl, cr) ->
     Pair (ensure_green cl, ensure_green cr)
 
+  (** Regularizes a semi-regular cadeque. *)
+  let regularize
+  : type a. a semi_cadeque -> a cadeque
+  = fun (S c) -> T (ensure_green c)
+
 (* +------------------------------------------------------------------------+ *)
 (* |                               Operations                               | *)
 (* +------------------------------------------------------------------------+ *)
@@ -1233,14 +1238,10 @@ let rec ensure_green
 let empty = T Empty
 
 (** Pushes on a cadeque. *)
-let push x (T c) = match is_empty c, c with
-  | Is_empty, Empty -> T (single_chain x)
-  | Not_empty, c -> T (push_ne_chain x c)
+let push x (T c) = regularize (semi_push x (S c))
 
 (** Injects on a cadeque. *)
-let inject (T c) x = match is_empty c, c with
-  | Is_empty, Empty -> T (single_chain x)
-  | Not_empty, c -> T (inject_ne_chain c x)
+let inject (T c) x = regularize (semi_inject (S c) x)
 
 (** Pops from a cadeque. *)
 let pop (T c) = match is_empty c, c with
@@ -1257,10 +1258,4 @@ let eject (T c) = match is_empty c, c with
     Some (T (ensure_green c), z)
 
 (** Concatenates two cadeques. *)
-let concat (T c1) (T c2) =
-  match make_left c1 with
-  | Not_enough v -> vector_fold_right push v (T c2)
-  | Ok tl ->
-    match make_right c2 with
-    | Not_enough v -> vector_fold_left inject (T c1) v
-    | Ok tr -> T (Pair (chain_of_triple tl, chain_of_triple tr))
+let concat (T c1) (T c2) = regularize (semi_concat (S c1) (S c2))

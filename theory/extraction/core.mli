@@ -121,7 +121,7 @@ val make_left :
 val make_right :
   nat -> nat -> color -> color -> 'a1 chain -> 'a1 left_right_triple
 
-val concat_semi :
+val semi_concat :
   nat -> 'a1 semi_cadeque -> 'a1 semi_cadeque -> 'a1 semi_cadeque
 
 val orange : nat -> nat -> color -> 'a1 chain -> regularity

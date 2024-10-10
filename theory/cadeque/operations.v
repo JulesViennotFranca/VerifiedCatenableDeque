@@ -18,27 +18,17 @@ Module D.
 Equations empty {A : Type} : { d : cadeque A | cadeque_seq d = [] } :=
 empty := ? T Empty.
 
-(* Pushes a stored triple of level 0 on a cadeque. *)
-Equations ground_push {A} (x : stored_triple A 0) (d : cadeque A) :
-  { d' : cadeque A | cadeque_seq d' = stored_triple_seq x ++ cadeque_seq d } :=
-ground_push x (T Empty) with single_chain x => { | ? c := ? T c };
-ground_push x (T c) with push_ne_chain x c => { | ? c' := ? T c' }.
-
-(* Injects a stored triple of level 0 on a cadeque. *)
-Equations ground_inject {A} (d : cadeque A) (x : stored_triple A 0) :
-  { d' : cadeque A | cadeque_seq d' = cadeque_seq d ++ stored_triple_seq x } :=
-ground_inject (T Empty) x with single_chain x => { | ? c := ? T c };
-ground_inject (T c) x with inject_ne_chain c x => { | ? c' := ? T c' }.
-
 (* Pushes on a cadeque. *)
 Equations push {A : Type} (x : A) (d : cadeque A) :
   { d' : cadeque A | cadeque_seq d' = [x] ++ cadeque_seq d } :=
-push x d := ground_push (Ground x) d.
+push x (T c) with semi_push (Ground x) (Semi c) => {
+  | ? sd with regularize sd => { | ? d := ? d } }.
 
 (* Injects on a cadeque. *)
 Equations inject {A : Type} (d : cadeque A) (x : A) :
   { d' : cadeque A | cadeque_seq d' = cadeque_seq d ++ [x] } :=
-inject d x := ground_inject d (Ground x).
+inject (T c) x with semi_inject (Semi c) (Ground x) => {
+  | ? sd with regularize sd => { | ? d := ? d } }.
 
 (* Pops from a cadeque. *)
 Equations pop {A : Type} (d : cadeque A) :
@@ -67,16 +57,8 @@ eject (T chain) with eject_green chain => {
 (* Concatenates two cadeques. *)
 Equations concat {A : Type} (d1 d2 : cadeque A) :
   { d3 : cadeque A | cadeque_seq d3 = cadeque_seq d1 ++ cadeque_seq d2 } :=
-concat (T c1) (T c2) with make_left c1 => {
-  | ? Not_enough v with vector_push cadeque_seq stored_triple_seq
-                                    ground_push v (T c2) => {
-    | ? c3 := ? c3 };
-  | ? Ok_lrt tl with make_right c2 => {
-    | ? Not_enough v with vector_inject cadeque_seq stored_triple_seq
-                                        ground_inject (T c1) v => {
-      | ? c3 := ? c3 };
-    | ? Ok_lrt tr with chain_of_triple tl, chain_of_triple tr => {
-      | ? cl, ? cr := ? T (Pair cl cr) } } }.
+concat (T c1) (T c2) with semi_concat (Semi c1) (Semi c2) => {
+  | ? sd with regularize sd => { | ? d := ? d } }.
 
 End D.
 

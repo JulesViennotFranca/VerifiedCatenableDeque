@@ -1299,10 +1299,10 @@ let make_right _ _ _ _ = function
     (right_of_pair lvl cl cr (triple_of_chain lvl Coq_left cl c0)
       (triple_of_chain lvl Coq_right cr c1)))
 
-(** val concat_semi :
+(** val semi_concat :
     nat -> 'a1 semi_cadeque -> 'a1 semi_cadeque -> 'a1 semi_cadeque **)
 
-let concat_semi _ s1 s2 =
+let semi_concat _ s1 s2 =
   let Semi (_, ck, cl, cr, c) = s1 in
   let Semi (lvl, ck0, cl0, cr0, c0) = s2 in
   (match make_left lvl ck cl cr c with
@@ -2591,7 +2591,7 @@ let extract_prefix lvl stored child =
   | Small (_, q, s) -> Coq_pair ((Sbuf (q, s)), child)
   | Big (_, qp, qs, ck, cl, cr, p, c, s) ->
     Coq_pair ((Sbuf (qp, p)),
-      (concat_semi (S lvl) (Semi ((S lvl), ck, cl, cr, c))
+      (semi_concat (S lvl) (Semi ((S lvl), ck, cl, cr, c))
         (semi_push (S lvl) (Small (lvl, qs, s)) child)))
 
 (** val extract_suffix :
@@ -2603,7 +2603,7 @@ let extract_suffix lvl child = function
 | Small (_, q, s) -> Coq_pair (child, (Sbuf (q, s)))
 | Big (_, qp, qs, ck, cl, cr, p, c, s) ->
   Coq_pair
-    ((concat_semi (S lvl) (semi_inject (S lvl) child (Small (lvl, qp, p)))
+    ((semi_concat (S lvl) (semi_inject (S lvl) child (Small (lvl, qp, p)))
        (Semi ((S lvl), ck, cl, cr, c))), (Sbuf (qs, s)))
 
 (** val ensure_green_prefix :
