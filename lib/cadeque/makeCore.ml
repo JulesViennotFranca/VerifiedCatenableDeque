@@ -401,8 +401,8 @@ module Make (Deque : DEQUE) = struct
           -> ('a, 'nc, right, 'c) node
 
   (** Regularity represents constraints between a node color and its child chain
-      parameters. The last parameter keeps track of the color of the packet
-      starting at this node. *)
+      parameters. The second parameter keeps track of the color of the single
+    chain represented by the node and its child chain. *)
   type ('col_top, 'col_chain, 'ckind, 'col_left, 'col_right) regularity =
     | G  : (green , green,      _,     _,     _) regularity
     | Y  : (yellow,   'cl,  _ ge1,   'cl,     _) regularity
