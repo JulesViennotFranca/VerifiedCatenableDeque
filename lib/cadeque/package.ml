@@ -29,7 +29,7 @@ module Base = struct
   : type a z. (z -> a -> z) -> z -> a cadeque -> z
   = fun f z (T c) ->
 
-    let fold_left_buffer = Deque.Package.fold_left in
+    let fold_left_buffer = Buffer.fold_left in
 
     let fold_left_node
     : type a nc k c fol. (z -> fol -> z) -> fol ->
@@ -107,7 +107,7 @@ module Base = struct
   : type a z. (a -> z -> z) -> a cadeque -> z -> z
   = fun f (T c) z ->
 
-    let fold_right_buffer = Deque.Package.fold_right in
+    let fold_right_buffer = Buffer.fold_right in
 
     let fold_right_node
     : type a nc k c fol. (fol -> z -> z) -> fol ->
@@ -198,11 +198,10 @@ end
 include Base
 include ListLike.OfDeque(Base)
 
-let make n a =
-  let b = Deque.Package.make n a in
-  let core = T (Single (G, Packet (Hole, Only_end b), Empty)) in
-  { core ; length = n }
+let make n a = match Buffer.make n a with
+  | Exact_0 -> { core = T Empty ; length = 0 }
+  | At_least_1 b ->
+    let core = T (Single (G, Packet (Hole, Only_end b), Empty)) in
+    { core ; length = n }
 
-let singleton x =
-  let b = Deque.Package.singleton x in
-  { core = T (Single (G, Packet (Hole, Only_end b), Empty)) ; length = 1 }
+let singleton x = push x empty

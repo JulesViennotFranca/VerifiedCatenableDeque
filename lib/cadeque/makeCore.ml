@@ -1,6 +1,12 @@
 open Color.GYOR
 
-module Make (Deque : ListLike.DEQUE) = struct
+module type DEQUE = sig
+  include ListLike.DEQUE
+
+  val make : int -> 'a -> 'a t
+end
+
+module Make (Deque : DEQUE) = struct
 
   (* Support for natural number types. *)
 
@@ -75,7 +81,7 @@ module Make (Deque : ListLike.DEQUE) = struct
   module Buffer : sig
     (** The type for buffer is parametrized by the type of elements it contains
         and the number of elements it contains. *)
-    type ('a, 'n) t = 'a Deque.t
+    type ('a, 'n) t
 
     (* Different operations needed on buffers, and how they change the size of
        the buffer. *)
@@ -170,6 +176,13 @@ module Make (Deque : ListLike.DEQUE) = struct
         or if it has at least 11 elements. If it the case, it returns a buffer
           of 3 elements and a buffer of at least 8 elements. *)
     val has3p8 : ('a, _ ge8) t -> 'a has3p8
+
+    (* Different operations needed for the cadeque package. *)
+
+    val fold_left : ('a -> 'b -> 'a) -> 'a -> ('b, 'n) t -> 'a
+    val fold_right : ('a -> 'b -> 'b) -> ('a, 'n) t -> 'b -> 'b
+
+    val make : int -> 'a -> 'a has1
 
   end = struct
     type ('a, 'quantity) t = 'a Deque.t
@@ -328,6 +341,13 @@ module Make (Deque : ListLike.DEQUE) = struct
 
     let inject8 t (a, b, c, d, e, f, g, h) =
       inject2 (inject2 (inject2 (inject2 t (a, b)) (c, d)) (e, f)) (g, h)
+
+    let fold_left = Deque.fold_left
+    let fold_right = Deque.fold_right
+
+    let make n a = match n with
+      | 0 -> Exact_0
+      | _ -> At_least_1 (Deque.make n a)
   end
 
   (* +----------------------------------------------------------------------+ *)
