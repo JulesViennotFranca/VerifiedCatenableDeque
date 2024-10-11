@@ -158,41 +158,55 @@ let nth_deque
   in
 
   let nth_buffer
-  : type a c. (a, c) buffer -> int -> int -> a * int
-  = fun b lvl i ->
-    (List.nth (list_of_buffer b) (i / lvl), (2 * i / lvl) - 2 * (i / lvl))
+  : type a c. (a, c) buffer -> int -> a
+  = fun b i -> List.nth (list_of_buffer b) i
+  in
+
+  let nth_pair
+  : type a b. (b -> int -> int -> a) -> b * b -> int -> int -> a
+  = fun nth_elm (b1, b2) lvl i ->
+    let pred_lvl = lvl / 2 in
+    if i < pred_lvl
+      then nth_elm b1 pred_lvl i
+      else nth_elm b2 pred_lvl (i - pred_lvl)
   in
 
   let rec nth_packet
-  : type a b c1 c2.
-    (a, b, c1) packet -> (b, c2) chain -> int -> int -> int -> a * int
-  = fun pkt c lvl i j ->
+  : type a b d c1 c2.
+    (b -> int -> int -> a) ->
+    (b, d, c1) packet -> (d, c2) chain -> int -> int -> int -> a
+  = fun nth_elm pkt c lvl i j ->
     match pkt with
-    | Hole -> nth_chain c lvl i j
+    | Hole -> nth_chain nth_elm c lvl i j
     | Packet (p, pkt, s) ->
-      if i <= lvl * buffer_length p then
-        nth_buffer p lvl i
-      else if j <= lvl * buffer_length s then
-        nth_buffer s lvl (lvl * (buffer_length s - 1) - j)
+      if i < lvl * buffer_length p then begin
+        let k = i - lvl * (i / lvl) in
+        nth_elm (nth_buffer p (i / lvl)) lvl k end
+      else if j < lvl * buffer_length s then begin
+        let k = lvl + lvl * (j / lvl) - j - 1 in
+        nth_elm (nth_buffer s (buffer_length s - 1 - j / lvl)) lvl k end
       else
-        let i, j, lvl = i - buffer_length p, j - buffer_length s, 2 * lvl in
-        let ((a, b), idx) = nth_packet pkt c lvl i j in
-        ((if idx <= 0 then a else b), idx)
+        let i = i - lvl * buffer_length p in
+        let j = j - lvl * buffer_length s in
+        let lvl = 2 * lvl in
+        nth_packet (nth_pair nth_elm) pkt c lvl i j
 
   and nth_chain
-  : type a c. (a, c) chain -> int -> int -> int -> a * int
-  = fun c lvl i j ->
+  : type a b c. (b -> int -> int -> a) -> (b, c) chain -> int -> int -> int -> a
+  = fun nth_elm c lvl i j ->
     match c with
-    | Ending b -> nth_buffer b lvl i
-    | Chain (_, pkt, c) -> nth_packet pkt c lvl i j
+    | Ending b ->
+      let k = i - lvl * (i / lvl) in
+      nth_elm (nth_buffer b (i / lvl)) lvl k
+    | Chain (_, pkt, c) -> nth_packet nth_elm pkt c lvl i j
   in
 
-  fst (nth_chain c 1 i j)
+  nth_chain (fun a _ _ -> a) c 1 i j
 
 let nth t i =
-  if i < 0 then invalid_arg "Dequeue.nth" ;
+  if i < 0 then invalid_arg "Deque.nth" ;
   let j = length t - i - 1 in
-  if j < 0 then failwith "Dequeue.nth" ;
+  if j < 0 then failwith "Deque.nth" ;
   if t.rev
     then nth_deque t.core j i
     else nth_deque t.core i j
