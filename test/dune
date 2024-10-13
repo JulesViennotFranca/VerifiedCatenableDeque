@@ -1,0 +1,3 @@
+(tests
+  (names listLike_test deque_test cadeque_test)
+  (libraries lib cadeque))
