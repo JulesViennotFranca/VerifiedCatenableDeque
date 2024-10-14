@@ -468,8 +468,8 @@ type _ stored_buffer =
   | Stored_buffer : ('a, _ ge3) Buffer.t -> 'a stored_buffer
 
 (** A type for the triple representation of a non-empty cadeque. First comes the
-    regularity constraints, then the node as a node, then the child cadeque as
-    a chain. *)
+    regularity constraints, then the prefix and suffix as a node, then the
+    child cadeque as a chain. *)
 type ('a, 'nkind, 'color_chain) triple =
   | Triple :
        ('c, 'cc, 'nc, 'cl, 'cr) regularity
