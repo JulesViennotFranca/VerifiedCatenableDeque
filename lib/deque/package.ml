@@ -13,6 +13,11 @@ module Base = struct
       then { core = Core.inject core x ; length = length + 1 ; rev }
       else { core = Core.push   x core ; length = length + 1 ; rev }
 
+  let inject { core ; length ; rev } x =
+    if rev
+      then { core = Core.push   x core ; length = length + 1 ; rev }
+      else { core = Core.inject core x ; length = length + 1 ; rev }
+
   let pop { core ; length ; rev } =
     if rev
       then match Core.eject core with
@@ -21,11 +26,6 @@ module Base = struct
       else match Core.pop core with
         | None -> None
         | Some (x, core) -> Some (x, { core ; length = length - 1 ; rev })
-
-  let inject { core ; length ; rev } x =
-    if rev
-      then { core = Core.push   x core ; length = length + 1 ; rev }
-      else { core = Core.inject core x ; length = length + 1 ; rev }
 
   let eject { core ; length ; rev } =
     if rev
