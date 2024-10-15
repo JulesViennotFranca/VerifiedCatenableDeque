@@ -810,7 +810,7 @@ Next Obligation.
   hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros * Hb1 * Hb2 * Hs Hb3 * Hc.
+  cbn. intros * Hb1 * Hb2 * Hs Hb3 * Hc.
   rewrite Hc, to_red_seq, Hs.
   remember (prodN_seq ab) as ab_seq.
   remember (prodN_seq cd) as cd_seq.

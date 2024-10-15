@@ -17,5 +17,6 @@ Derive NoConfusion for color.
 (* Defining colors. *)
 Notation green := (Mix SomeGreen NoYellow NoRed).
 Notation yellow := (Mix NoGreen SomeYellow NoRed).
+Notation orange := (Mix NoGreen SomeYellow SomeRed).
 Notation red := (Mix NoGreen NoYellow SomeRed).
 Notation uncolored := (Mix NoGreen NoYellow NoRed).

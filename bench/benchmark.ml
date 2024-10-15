@@ -8,6 +8,10 @@ let () = Printf.printf "Deque:\n%!"
 module B = ListLike.Test (Cadeque.Deque)
 let () = Printf.printf "\n%!"
 
+let () = Printf.printf "Steque:\n%!"
+module C = ListLike.Test (Cadeque.Steque)
+let () = Printf.printf "\n%!"
+
 let () = Printf.printf "Cadeque:\n%!"
 module D = ListLike.Test (Cadeque)
 let () = Printf.printf "\n%!"
@@ -67,27 +71,32 @@ let make_plot title make_points steps size datafile scriptfile outputfile =
 let () =
   let steps = 1000 in
 
-  make_plot "Pushing one element 1000 times" Push.make_points steps 100
+  let push_title = sprintf "Pushing one element %i times" steps in
+  make_plot push_title Push.make_points steps 100
             "bench/tmp/data_push.txt"
             "bench/tmp/plot_push.gnu"
             "bench/result/push.png";
 
-  make_plot "Injecting one time" Inject.make_points steps 100
+  let inject_title = sprintf "Injecting one element %i times" steps in
+  make_plot inject_title Inject.make_points steps 100
             "bench/tmp/data_inject.txt"
             "bench/tmp/plot_inject.gnu"
             "bench/result/inject.png";
 
-  make_plot "Poping one time" Pop.make_points steps 100
+  let pop_title = sprintf "Poping %i times" steps in
+  make_plot pop_title Pop.make_points steps 100
             "bench/tmp/data_pop.txt"
             "bench/tmp/plot_pop.gnu"
             "bench/result/pop.png";
 
-  make_plot "Poping one time" Eject.make_points steps 100
+  let eject_title = sprintf "Ejecting %i times" steps in
+  make_plot eject_title Eject.make_points steps 100
             "bench/tmp/data_eject.txt"
             "bench/tmp/plot_eject.gnu"
             "bench/result/eject.png";
 
-  make_plot "Appending with itself" Append.make_points steps 300
+  let concat_title = sprintf "Concatenating %i times with itself" steps in
+  make_plot concat_title Concat.make_points steps 300
             "bench/tmp/data_append.txt"
             "bench/tmp/plot_append.gnu"
             "bench/result/append.png"

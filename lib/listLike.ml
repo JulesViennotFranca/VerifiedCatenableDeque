@@ -80,6 +80,14 @@ module OfSteque (S : STEQUE) = struct
       (z, S.empty)
       t
 
+  let fold_right_map f t z =
+    S.fold_right
+      (fun x (z, ys) ->
+        let z, y = f x z in
+        z, S.push y ys)
+      t
+      (z, S.empty)
+
   exception Abort
 
   let exists p t =
