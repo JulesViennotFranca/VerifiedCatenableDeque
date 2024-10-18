@@ -21,3 +21,18 @@ amortized /!\ ):
 | Cadeque | O(1) |  O(1)  | O(1) |       O(1)      |      O(1)       | :no_entry_sign: |   :no_entry_sign:   |
 
 All this implementations are verified correct using Rocq proof assistant.
+
+---
+
+The [lib](/lib/) folder contains all the OCaml implemantation and the [src](/src/)
+folder contains the final implementation of the library.
+
+The [theory](/theory/) folder contains all the Rocq proofs of correctness of the
+different structures.
+
+The [test](/test/) folder contains all the tests and can be executed via the dune
+command `dune test`.
+
+The [bench](/bench/) folder contains the different benchmarks where the structures are compared with lists. For example, here is the time it takes
+to repeatedly append a structure of a certain size to itself 1000 times:
+![appending 1000 times with itself](/bench/result/append.png)
