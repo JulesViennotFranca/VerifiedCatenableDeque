@@ -1,6 +1,6 @@
 set terminal pngcairo
 set output 'bench/result/inject.png'
-set title 'Injecting one element 1000 times'
+set title 'Injecting one element'
 set xlabel 'length (number of elements)'
 set ylabel 'time (ms)'
 set key left top

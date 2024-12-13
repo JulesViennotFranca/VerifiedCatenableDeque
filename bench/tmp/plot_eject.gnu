@@ -1,6 +1,6 @@
 set terminal pngcairo
 set output 'bench/result/eject.png'
-set title 'Ejecting 1000 times'
+set title 'Ejecting one element'
 set xlabel 'length (number of elements)'
 set ylabel 'time (ms)'
 set key left top

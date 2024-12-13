@@ -1,6 +1,6 @@
 set terminal pngcairo
 set output 'bench/result/pop.png'
-set title 'Poping 1000 times'
+set title 'Poping one element'
 set xlabel 'length (number of elements)'
 set ylabel 'time (ms)'
 set key left top

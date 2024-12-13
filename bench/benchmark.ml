@@ -71,32 +71,32 @@ let make_plot title make_points steps size datafile scriptfile outputfile =
 let () =
   let steps = 1000 in
 
-  let push_title = sprintf "Pushing one element %i times" steps in
+  let push_title = sprintf "Pushing one element" in
   make_plot push_title Push.make_points steps 100
             "bench/tmp/data_push.txt"
             "bench/tmp/plot_push.gnu"
             "bench/result/push.png";
 
-  let inject_title = sprintf "Injecting one element %i times" steps in
+  let inject_title = sprintf "Injecting one element" in
   make_plot inject_title Inject.make_points steps 100
             "bench/tmp/data_inject.txt"
             "bench/tmp/plot_inject.gnu"
             "bench/result/inject.png";
 
-  let pop_title = sprintf "Poping %i times" steps in
+  let pop_title = sprintf "Poping one element" in
   make_plot pop_title Pop.make_points steps 100
             "bench/tmp/data_pop.txt"
             "bench/tmp/plot_pop.gnu"
             "bench/result/pop.png";
 
-  let eject_title = sprintf "Ejecting %i times" steps in
+  let eject_title = sprintf "Ejecting one element" in
   make_plot eject_title Eject.make_points steps 100
             "bench/tmp/data_eject.txt"
             "bench/tmp/plot_eject.gnu"
             "bench/result/eject.png";
 
-  let concat_title = sprintf "Concatenating %i times with itself" steps in
+  let concat_title = sprintf "Concatenating with itself" in
   make_plot concat_title Concat.make_points steps 300
-            "bench/tmp/data_append.txt"
-            "bench/tmp/plot_append.gnu"
-            "bench/result/append.png"
+            "bench/tmp/data_concat.txt"
+            "bench/tmp/plot_concat.gnu"
+            "bench/result/concat.png"

@@ -1,6 +1,6 @@
 set terminal pngcairo
 set output 'bench/result/push.png'
-set title 'Pushing one element 1000 times'
+set title 'Pushing one element'
 set xlabel 'length (number of elements)'
 set ylabel 'time (ms)'
 set key left top

@@ -13,28 +13,28 @@ let make_points steps size =
       let _ = k :: lst in ()
     done ;
     let t1 = Unix.gettimeofday () in
-    let times = (t1 -. t0) *. 1000. :: times in
+    let times = 1000. *. (t1 -. t0) /. float_of_int steps :: times in
 
     let t0 = Unix.gettimeofday () in
     for k = 0 to steps do
       let _ = Cadeque.Deque.push k d in ()
     done ;
     let t1 = Unix.gettimeofday () in
-    let times = (t1 -. t0) *. 1000. :: times in
+    let times = 1000. *. (t1 -. t0) /. float_of_int steps :: times in
 
     let t0 = Unix.gettimeofday () in
     for k = 0 to steps do
       let _ = Cadeque.Steque.push k st in ()
     done ;
     let t1 = Unix.gettimeofday () in
-    let times = (t1 -. t0) *. 1000. :: times in
+    let times = 1000. *. (t1 -. t0) /. float_of_int steps :: times in
 
     let t0 = Unix.gettimeofday () in
     for k = 0 to steps do
       let _ = Cadeque.push k cd in ()
     done ;
     let t1 = Unix.gettimeofday () in
-    let times = (t1 -. t0) *. 1000. :: times in
+    let times = 1000. *. (t1 -. t0) /. float_of_int steps :: times in
 
     res := List.rev times :: !res
   done;
