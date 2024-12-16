@@ -51,7 +51,7 @@ Inductive packet (A : Type) (lvl : nat) : nat -> nat -> nat -> color -> Type :=
       buffer A lvl psize C ->
       packet A (S lvl) hlvl pktsize hsize (Mix NoGreen y NoRed) ->
       buffer A lvl ssize C ->
-      packet A lvl hlvl (psize + pktsize + pktsize + ssize) hsize C.
+      packet A lvl hlvl (psize + 2 * pktsize + ssize) hsize C.
 Arguments Hole {A lvl size}.
 Arguments Packet {A lvl hlvl psize pktsize ssize hsize C y}.
 
@@ -712,7 +712,7 @@ Equations chain_of_opt3 {A lvl s1 s2 s3}
   (o1 : optionN A lvl s1)
   (o2 : optionN A (S lvl) s2)
   (o3 : optionN A lvl s3) :
-  { c : chain A lvl (s1 + s2 + s2 + s3) green |
+  { c : chain A lvl (s1 + 2 * s2 + s3) green |
     chain_seq c = optionN_seq o1 ++ optionN_seq o2 ++ optionN_seq o3 } :=
 chain_of_opt3 NoneN NoneN NoneN := ? Ending B0;
 chain_of_opt3 (SomeN a) NoneN NoneN := ? Ending (B1 a);
@@ -731,11 +731,10 @@ translate c eq_refl := ? c.
 
 (* Proves that all natural numbers [n] can be writen as [n mod 2] plus 2 times
    [n / 2]. *)
-Lemma dec_by_2 : forall (n : nat), n mod 2 + n / 2 + n / 2 = n.
+Lemma dec_by_2 : forall (n : nat), n mod 2 + 2 * (n / 2) = n.
 Proof.
   intro n.
-  assert (n / 2 + n / 2 = 2 * (n / 2)) as H. { lia. }
-  rewrite <-Nat.add_assoc, H, Nat.add_comm.
+  rewrite Nat.add_comm.
   symmetry.
   apply Nat.div_mod.
   lia.
@@ -756,7 +755,7 @@ Equations make_small {A lvl size1 size2 size3 C1 C2 C3}
   (b1 : buffer A lvl size1 C1)
   (b2 : buffer A (S lvl) size2 C2)
   (b3 : buffer A lvl size3 C3) :
-  { c : chain A lvl (size1 + size2 + size2 + size3) green |
+  { c : chain A lvl (size1 + 2 * size2 + size3) green |
     chain_seq c = buffer_seq b1 ++ buffer_seq b2 ++ buffer_seq b3 } :=
 make_small b1 b2 b3 with prefix_decompose b1, suffix_decompose b3 => {
   | ? Underflow p1, ? Underflow s1 with buffer_unsandwich b2 => {
@@ -800,8 +799,9 @@ make_small b1 b2 b3 with prefix_decompose b1, suffix_decompose b3 => {
 Next Obligation.
   cbn. intros * Hb1 * Hp * Hb2 Hb3 * Hc.
   rewrite Hc, to_red_seq, Hp.
-  (* Etrange comportement de aac_rewrite, il faut écrire tous
-     les remembers pour qu'il marche. *)
+  (* Strange behavior of [aac_rewrite]:
+     one need to rename all sequence involving a function
+     in order for the rewrite to work. *)
   remember (prodN_seq ab) as ab_seq.
   remember (prodN_seq cd) as cd_seq.
   remember (buffer_seq b2) as b2_seq.
@@ -822,7 +822,7 @@ Qed.
 Next Obligation.
   intros.
   autorewrite with rnat.
-  reflexivity.
+  lia.
 Qed.
 
 (* Proves that if a natural number represents the size of a non-red buffer,
@@ -862,8 +862,8 @@ green_of_red (Chain R (Packet p1 (Packet p2 child s2) s1) c)
 Next Obligation.
   intros * Hp * Hs * c.
   yellow_size p2 as Hpsize0. yellow_size s2 as Hssize0.
-  pose (dec_by_2 psize) as Hpsize. rewrite <-Hpsize at 4.
-  pose (dec_by_2 ssize) as Hssize. rewrite <-Hssize at 4.
+  pose (dec_by_2 psize) as Hpsize. rewrite <-Hpsize at 3.
+  pose (dec_by_2 ssize) as Hssize. rewrite <-Hssize at 3.
   hauto.
 Qed.
 Next Obligation.
@@ -879,8 +879,8 @@ Qed.
 Next Obligation.
   intros * Hp * Hs * c.
   yellow_size p2 as Hpsize0. yellow_size s2 as Hssize0.
-  pose (dec_by_2 psize) as Hpsize. rewrite <-Hpsize at 4.
-  pose (dec_by_2 ssize) as Hssize. rewrite <-Hssize at 4.
+  pose (dec_by_2 psize) as Hpsize. rewrite <-Hpsize at 3.
+  pose (dec_by_2 ssize) as Hssize. rewrite <-Hssize at 3.
   hauto.
 Qed.
 Next Obligation.
@@ -909,7 +909,7 @@ Equations make_yellow {A lvl ps pkts ss cs size} {gp yp ypkt gs ys gc rc}
   (pkt : packet A 1 lvl pkts cs (Mix NoGreen ypkt NoRed))
   (s : buffer A 0 ss (Mix gs ys NoRed))
   (c : chain A lvl cs (Mix gc NoYellow rc)) :
-  size = ps + pkts + pkts + ss ->
+  size = ps + 2 * pkts + ss ->
   { d : deque A size | deque_seq d =
     buffer_seq p ++ packet_seq pkt (chain_seq c) ++ buffer_seq s } :=
 make_yellow p1 child s1 c eq_refl with ensure_green c => {
@@ -922,7 +922,7 @@ Equations make_red {A lvl ps pkts ss cs size} {Cp ypkt Cs}
   (pkt : packet A 1 lvl pkts cs (Mix NoGreen ypkt NoRed))
   (s : buffer A 0 ss Cs)
   (c : chain A lvl cs green) :
-  size = ps + pkts + pkts + ss ->
+  size = ps + 2 * pkts + ss ->
   { d : deque A size | deque_seq d =
     buffer_seq p ++ packet_seq pkt (chain_seq c) ++ buffer_seq s } :=
 make_red p1 child s1 c eq_refl
