@@ -27,7 +27,7 @@ type ('color_pkt, 'color_chain) regularity =
   | Y : (yellow, green) regularity
   | R : (red   , green) regularity
 
-(** A typed for chains. *)
+(** A type for chains. *)
 type ('a, 'color) chain =
   | Ending : ('a, _) buffer -> ('a, green) chain
   | Chain :  ('c1, 'c2) regularity * ('a, 'b, 'c1) packet * ('b, 'c2) chain
@@ -200,8 +200,8 @@ let suffix12 x opt = match opt with
   | Some y -> B2 (x, y)
 
 (** Returns the decomposed version of a buffer. Here, it is a prefix
-    decomposition: when the buffer has 4 or 5 elements, those at the end are
-    set appart. *)
+    decomposition: when the buffer has 4 or 5 elements, those at the
+    end are set apart. *)
 let prefix_decompose : type a c. (a, c) buffer -> a decompose
 = function
   (* No element, the buffer is underflowed. *)
@@ -217,8 +217,8 @@ let prefix_decompose : type a c. (a, c) buffer -> a decompose
   | B5 (a, b, c, d, e) -> Overflow (B3 (a, b, c), (d, e))
 
 (** Returns the decomposed version of a buffer. Here, it is a suffix
-    decomposition: when the buffer has 4 or 5 elements, those at the start are
-    set appart. *)
+    decomposition: when the buffer has 4 or 5 elements, those at the
+    start are set apart. *)
 let suffix_decompose : type a c. (a, c) buffer -> a decompose
 = function
   (* No element, the buffer is underflowed. *)
