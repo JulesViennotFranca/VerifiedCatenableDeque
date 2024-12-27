@@ -57,8 +57,14 @@ The main directories are as follows:
   while
   [src](/src/) defines the public API of our OCaml package.
 
+  This OCaml code is compiled by the command `dune build src`,
+  which requires about 1 second.
+
 + [theory](/theory/) contains Rocq code and proofs of correctness
   for each data structure.
+
+  This Coq code is compiled by the command `dune build theory`,
+  which requires about 20 minutes.
 
 + [test](/test/) contains some tests of the OCaml code.
   They are executed by the command `dune test`.
