@@ -1,4 +1,5 @@
 * `make` currently fails with Coq 8.20.
+  It works with Coq 8.19.
 
 * Clean up `README.md`.
 
@@ -7,8 +8,6 @@
     and which implementations are not presented (list and steque?).
   + Do we want to mention `rev` and `nth` in the main table?
     Why are these operations supported by deques only?
-  + Clarify how much time `make` is expected to require.
-    It seems to take forever.
   + Clarify how much time `make test` is expected to require.
     It seems to take a long time.
 
