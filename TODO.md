@@ -6,3 +6,5 @@
   Declare the dependencies of the Coq package
   on `coq-aac-tactics`, `coq-hammer`, `coq-equations`.
   Document which versions of OCaml/Coq are supported.
+
+* Cleanup `theory/cadeque/abstraction.v`.
