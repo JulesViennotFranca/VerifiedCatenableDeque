@@ -166,7 +166,7 @@ module Buffer : sig
     | At_least_11 : ('a, z ge3) t * ('a, _ ge8) t -> 'a has3p8
 
   (** Tells if a given buffer of at least 8 elements has 8, 9 or 10 elements,
-      or if it has at least 11 elements. If it the case, it returns a buffer of
+      or if it has at least 11 elements. In the latter case, returns a buffer of
       3 elements and a buffer of at least 8 elements. *)
   val has3p8 : ('a, _ ge8) t -> 'a has3p8
 
