@@ -21,7 +21,7 @@ type eq1 = z s
 type eq2 = z ge2
 type eq6 = z ge6
 
-(* Some tupple renaming. *)
+(* Some tuple renaming. *)
 
 type 'a four  = 'a * 'a * 'a * 'a
 type 'a five  = 'a * 'a * 'a * 'a * 'a
