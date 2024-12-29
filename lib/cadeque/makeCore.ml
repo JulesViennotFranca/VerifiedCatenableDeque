@@ -371,7 +371,7 @@ module Make (Deque : DEQUE) = struct
 
   (** The coloring links a color to the size of a prefix and the size of a
       suffix. *)
-  type ('prefix_size, 'suffix_size, 'nbr_child, 'color) coloring =
+  type ('prefix_size, 'suffix_size, 'arity, 'color) coloring =
     | Gc : (_ ge3, _ ge3, _ ge1, green ) coloring
     | Yc : (_ ge2, _ ge2, _ ge1, yellow) coloring
     | Oc : (_ ge1, _ ge1, _ ge1, orange) coloring
@@ -388,7 +388,7 @@ module Make (Deque : DEQUE) = struct
       of the prefix (suffix), the suffix (prefix) containing two elements. The
       prefix (suffix) of an ending left (right) node must contain at least
       five elements. *)
-  type ('a, 'nbr_child, 'kind, 'color) node =
+  type ('a, 'arity, 'kind, 'color) node =
     | Only_end  : ('a, _ ge1) prefix -> ('a, eq0, only, green) node
     | Only  : ('psize, 'ssize, 'n ge1, 'c) coloring
             * ('a, 'psize ge5) prefix * ('a, 'ssize ge5) suffix
@@ -445,11 +445,11 @@ module Make (Deque : DEQUE) = struct
       take the place of the body's hole. Its parameter are its input and output
       types, its input kind, wether or not its last node is an ending one, and
       the color of its last node. *)
-  and ('a, 'b, 'nbr_child, 'nkind, 'color) packet =
+  and ('a, 'b, 'arity, 'nkind, 'color) packet =
     | Packet :
         ('a, 'b, 'nkind, 'tail_nkind) body
-      * ('b, 'nc, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
-      -> ('a, 'b stored_triple, 'nc, 'nkind, 'c) packet
+      * ('b, 'arity, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
+      -> ('a, 'b stored_triple, 'arity, 'nkind, 'c) packet
 
   (** A chain represents a semi-regular cadeque with a lot of additional
       information. The first parameter is simply the input type of the cadeque.
