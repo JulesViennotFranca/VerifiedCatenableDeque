@@ -373,12 +373,12 @@ type ('a, 'arity, 'kind, 'color) node =
   | Only  : ('psize, 'ssize, 'n ge1, 'c) coloring
           * ('a, 'psize ge5) prefix * ('a, 'ssize ge5) suffix
          -> ('a, 'n ge1, only, 'c) node
-  | Left  : ('psize, _, 'nc, 'c) coloring
+  | Left  : ('psize, _, 'arity, 'c) coloring
           * ('a, 'psize ge5) prefix * ('a, eq2) suffix
-         -> ('a, 'nc, left, 'c) node
-  | Right : (_, 'ssize, 'nc, 'c) coloring
+         -> ('a, 'arity, left, 'c) node
+  | Right : (_, 'ssize, 'arity, 'c) coloring
           * ('a, eq2) prefix * ('a, 'ssize ge5) suffix
-         -> ('a, 'nc, right, 'c) node
+         -> ('a, 'arity, right, 'c) node
 
 (** Regularity represents constraints between a node color and its child chain
     parameters. The second parameter keeps track of the color of the single
@@ -457,9 +457,9 @@ and ('a, 'b, 'arity, 'nkind, 'color) packet =
     are the same, the color of its only path. *)
 and ('a, 'ckind, 'nkind, 'color_left, 'color_right) chain =
   | Empty : ('a, empty, only, green, green) chain
-  | Single : ('c, 'c, 'nc, 'cl, 'cr) regularity
-           * ('a, 'b, 'nc, 'nk, 'c) packet
-           * ('b, 'nc, only, 'cl, 'cr) chain
+  | Single : ('c, 'c, 'arity, 'cl, 'cr) regularity
+           * ('a, 'b, 'arity, 'nk, 'c) packet
+           * ('b, 'arity, only, 'cl, 'cr) chain
           -> ('a, single, 'nk, 'c, 'c) chain
   | Pair : ('a, single, left , 'cl, 'cl) chain
          * ('a, single, right, 'cr, 'cr) chain
@@ -474,9 +474,9 @@ type _ stored_buffer =
     child cadeque as a chain. *)
 type ('a, 'nkind, 'color_chain) triple =
   | Triple :
-       ('c, 'cc, 'nc, 'cl, 'cr) regularity
-     * ('a, 'nc, 'nk, 'c) node
-     * ('a stored_triple, 'nc, only, 'cl, 'cr) chain
+       ('c, 'cc, 'arity, 'cl, 'cr) regularity
+     * ('a, 'arity, 'nk, 'c) node
+     * ('a stored_triple, 'arity, only, 'cl, 'cr) chain
     -> ('a, 'nk, 'cc) triple
 
 (** A type used to represent left or right triples. If there is not enough
