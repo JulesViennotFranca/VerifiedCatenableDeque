@@ -27,3 +27,6 @@
 * Should `lib` move inside `src`?
 
 * Cleanup `theory/cadeque/abstraction.v`.
+
+* Why do we have both `core.ml` and `makeCore.ml`?
+  Can we avoid this duplication?
