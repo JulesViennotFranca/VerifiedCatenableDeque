@@ -73,8 +73,10 @@ let vector_fold_left
 (* +------------------------------------------------------------------------+ *)
 
 module Buffer : sig
-  (** The type for buffer is parametrized by the type of elements it contains
-      and the number of elements it contains. *)
+
+  (** The type of a buffer is parameterized by the type ['a] of
+      the elements of the buffer and by a lower bound ['n] on
+      the number of elements of the buffer. *)
   type ('a, 'n) t
 
   (* Different operations needed on buffers, and how they change the size of
