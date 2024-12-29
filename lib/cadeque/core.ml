@@ -351,7 +351,7 @@ type single = eq1
 type pair   = eq2
 
 (** The coloring links a color to the size of a prefix and the size of a suffix. *)
-type ('prefix_size, 'suffix_size, 'arity, 'color) coloring =
+type ('prefix_delta, 'suffix_delta, 'arity, 'color) coloring =
   | Gc : (_ ge3, _ ge3, _ ge1, green ) coloring
   | Yc : (_ ge2, _ ge2, _ ge1, yellow) coloring
   | Oc : (_ ge1, _ ge1, _ ge1, orange) coloring
@@ -370,14 +370,14 @@ type ('prefix_size, 'suffix_size, 'arity, 'color) coloring =
     five elements. *)
 type ('a, 'arity, 'kind, 'color) node =
   | Only_end  : ('a, _ ge1) prefix -> ('a, eq0, only, green) node
-  | Only  : ('psize, 'ssize, 'n ge1, 'c) coloring
-          * ('a, 'psize ge5) prefix * ('a, 'ssize ge5) suffix
+  | Only  : ('pdelta, 'sdelta, 'n ge1, 'c) coloring
+          * ('a, 'pdelta ge5) prefix * ('a, 'sdelta ge5) suffix
          -> ('a, 'n ge1, only, 'c) node
-  | Left  : ('psize, _, 'arity, 'c) coloring
-          * ('a, 'psize ge5) prefix * ('a, eq2) suffix
+  | Left  : ('pdelta, _, 'arity, 'c) coloring
+          * ('a, 'pdelta ge5) prefix * ('a, eq2) suffix
          -> ('a, 'arity, left, 'c) node
-  | Right : (_, 'ssize, 'arity, 'c) coloring
-          * ('a, eq2) prefix * ('a, 'ssize ge5) suffix
+  | Right : (_, 'sdelta, 'arity, 'c) coloring
+          * ('a, eq2) prefix * ('a, 'sdelta ge5) suffix
          -> ('a, 'arity, right, 'c) node
 
 (** Regularity represents constraints between a node color and its child chain
