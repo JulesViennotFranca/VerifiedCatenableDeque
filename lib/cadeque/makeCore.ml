@@ -14,13 +14,13 @@ module Make (Deque : DEQUE) = struct
   type 'a s
 
   type 'a ge1 = 'a s
-  type 'a ge2 = 'a s s
-  type 'a ge3 = 'a s s s
-  type 'a ge4 = 'a s s s s
-  type 'a ge5 = 'a s s s s s
-  type 'a ge6 = 'a s s s s s s
-  type 'a ge7 = 'a s s s s s s s
-  type 'a ge8 = 'a s s s s s s s s
+  type 'a ge2 = 'a s ge1
+  type 'a ge3 = 'a s ge2
+  type 'a ge4 = 'a s ge3
+  type 'a ge5 = 'a s ge4
+  type 'a ge6 = 'a s ge5
+  type 'a ge7 = 'a s ge6
+  type 'a ge8 = 'a s ge7
 
   type eq0 = z
   type eq1 = z s
