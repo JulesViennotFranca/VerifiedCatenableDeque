@@ -455,15 +455,18 @@ and ('a, 'b, 'arity, 'nkind, 'color) packet =
     chain, two colors are needed to know the color of the left path and the
     color of the right path. If the chain is only, the left and right colors
     are the same, the color of its only path. *)
-and ('a, 'ckind, 'nkind, 'color_left, 'color_right) chain =
-  | Empty : ('a, empty, only, green, green) chain
-  | Single : ('c, 'c, 'arity, 'cl, 'cr) regularity
-           * ('a, 'b, 'arity, 'nk, 'c) packet
-           * ('b, 'arity, only, 'cl, 'cr) chain
-          -> ('a, single, 'nk, 'c, 'c) chain
-  | Pair : ('a, single, left , 'cl, 'cl) chain
-         * ('a, single, right, 'cr, 'cr) chain
-        -> ('a, pair, only, 'cl, 'cr) chain
+and ('a, 'arity, 'kind, 'cl, 'cr) chain =
+  | Empty :
+       ('a, empty, _, green, green) chain
+  | Single :
+       ('c, 'c, 'arity1, 'cl1, 'cr1) regularity  (* regularity constraint *)
+     * ('a, 'b, 'arity1, 'kind, 'c) packet       (* root packet *)
+     * ('b , 'arity1, only, 'cl1, 'cr1) chain    (* child chain *)
+    -> ('a, single, 'kind, 'c, 'c) chain
+  | Pair :
+       ('a, single, left , 'cl, 'cl) chain       (* left single chain *)
+     * ('a, single, right, 'cr, 'cr) chain       (* right single chain *)
+    -> ('a, pair, _, 'cl, 'cr) chain
 
 (** A type representing prefix and suffix of at least 3 elements. *)
 type _ stored_buffer =
