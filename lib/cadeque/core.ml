@@ -457,7 +457,7 @@ and ('a, 'b, 'arity, 'nkind, 'color) packet =
     are the same, the color of its only path. *)
 and ('a, 'arity, 'kind, 'cl, 'cr) chain =
   | Empty :
-       ('a, empty, _, green, green) chain
+       ('a, empty, _, _, _) chain
   | Single :
        ('c, 'c, 'arity1, 'cl1, 'cr1) regularity  (* regularity constraint *)
      * ('a, 'b, 'arity1, 'kind, 'c) packet       (* root packet *)
@@ -485,7 +485,7 @@ type ('a, 'nkind, 'color_chain) triple =
 (** A type used to represent left or right triples. If there is not enough
     elements to make one, they are stored in a vector. *)
 type (_, _, _) left_right_triple =
-  | Not_enough : ('a, eq6) vector -> ('a, _, green) left_right_triple
+  | Not_enough : ('a, eq6) vector -> ('a, _, _) left_right_triple
   | Ok : ('a, 'k, 'c) triple -> ('a, 'k, 'c) left_right_triple
 
 (** A type used to represent triples after a pop or eject operation. If the
