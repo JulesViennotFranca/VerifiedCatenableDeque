@@ -1,41 +1,34 @@
-let make_points steps size =
-  let res = ref [] in
-  for s = 0 to size do
-    let lst = List.init s (Fun.const 0) in
-    let d = Cadeque.Deque.make s 0 in
-    let st = Cadeque.Steque.make s 0 in
-    let cd = Cadeque.make s 0 in
+let title = "Injecting one element"
 
-    let times = [] in
+module type OP = sig
+  include Modules.OP
+  val inject : 'a t -> 'a -> 'a t
+end
 
-    let t0 = Unix.gettimeofday () in
-    for k = 0 to steps do
-      let _ = lst @ [k] in ()
-    done ;
-    let t1 = Unix.gettimeofday () in
-    let times = 1000. *. (t1 -. t0) /. float_of_int steps :: times in
+let modules : (module OP) list = [
+  (module Modules.List);
+  (module Modules.ListRev);
+  (module Modules.Deque);
+  (module Modules.Steque);
+  (module Modules.Cadeque);
+  (module Modules.PairBuffers)
+]
 
-    let t0 = Unix.gettimeofday () in
-    for k = 0 to steps do
-      let _ = Cadeque.Deque.inject d k in ()
-    done ;
-    let t1 = Unix.gettimeofday () in
-    let times = 1000. *. (t1 -. t0) /. float_of_int steps :: times in
+let make_point steps size (module M : OP) =
+  let t = M.make size 0 in
 
-    let t0 = Unix.gettimeofday () in
-    for k = 0 to steps do
-      let _ = Cadeque.Steque.inject st k in ()
-    done ;
-    let t1 = Unix.gettimeofday () in
-    let times = 1000. *. (t1 -. t0) /. float_of_int steps :: times in
-
-    let t0 = Unix.gettimeofday () in
-    for k = 0 to steps do
-      let _ = Cadeque.inject cd k in ()
-    done ;
-    let t1 = Unix.gettimeofday () in
-    let times = 1000. *. (t1 -. t0) /. float_of_int steps :: times in
-
-    res := List.rev times :: !res
+  let t0 = Unix.gettimeofday () in
+  for _ = 0 to steps do
+    let _ = M.inject t 0 in ()
   done;
-  ["List"; "Deque"; "Steque"; "Cadeque"], List.rev !res
+  let t1 = Unix.gettimeofday () in
+  1000. *. (t1 -. t0) /. float_of_int steps
+
+let make_points steps size =
+  List.map (make_point steps size) modules
+
+let make_plot steps size =
+  let sizes = List.init size Fun.id in
+  let plot_infos =
+    List.map (fun (module M : OP) -> (M.name, M.color)) modules in
+  plot_infos, List.map (make_points steps) sizes

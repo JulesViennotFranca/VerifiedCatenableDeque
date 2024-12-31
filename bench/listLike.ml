@@ -23,7 +23,7 @@ module Lst = struct
   let fold_left = List.fold_left
 end
 
-module Test (L : LIST) = struct
+module Bench (L : LIST) = struct
 
   let make n =
     let rec go acc i =
