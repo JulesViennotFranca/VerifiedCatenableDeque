@@ -68,3 +68,4 @@ _opam/
 .DS_Store
 .vscode
 *.opam
+bench/tmp/
