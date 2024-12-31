@@ -479,7 +479,7 @@ module Make (Deque : DEQUE) = struct
     | Empty :
          ('a, empty, _, _, _) chain
     | Single :
-         ('c, 'c, 'arity1, 'cl1, 'cr1) regularity  (* regularity constraint *)
+         ('c, _, 'arity1, 'cl1, 'cr1) regularity   (* regularity constraint *)
        * ('a, 'b, 'arity1, 'kind, 'c) packet       (* root packet *)
        * ('b , 'arity1, only, 'cl1, 'cr1) chain    (* child chain *)
       -> ('a, single, 'kind, 'c, 'c) chain
