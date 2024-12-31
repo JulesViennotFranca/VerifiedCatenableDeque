@@ -1,40 +1,77 @@
-# Verified Catenable Deque
+# Verified Purely Functional Catenable Real-Time Deques
 
-> **[Purely Functional, Real-Time Deques with Catenation]**
-> by Haim Kaplan and Robert E. Tarjan
-> journal of the ACM 31:11-16 (1999) 1709-1723
-> https://doi.org/10.1145/324133.324139
+This repository serves as a companion to the paper
+*Verified Purely Functional Catenable Real-Time Deques*
+by
+Jules Viennot,
+Arthur Wendling,
+Armaël Guéneau,
+and
+François Pottier.
 
-In this paper, a double-ended queue, a deque, is defined as a queue supporting
-*push*, *inject*, *pop*, *eject*. *push* and *pop* repsectivelly add and remove
-elements at the left of the queue. *inject* and *eject* are their counterpart at
-the right of the queue.
+This paper presents OCaml and Rocq implementations of the data structures
+presented by
+Haim Kaplan
+and
+Robert E. Tarjan
+in the paper
+[Purely Functional, Real-Time Deques with Catenation](https://doi.org/10.1145/324133.324139).
 
-Following the paper, we design a library containing several implementations of
-deques supporting several operations in worst-case constant time ( /!\ strict not
-amortized /!\ ):
+## Data Structures
 
+A double-ended queue, also known as a *deque*, is a queue that supports the
+four operations *push*, *inject*, *pop*, *eject*.
 
-| Module  | push | inject |  pop | eject | append |  rev |         nth         |
++ *push* and *pop*
+  insert and extract an element at the front end of the queue.
++ *inject* and *eject*
+  insert and extract an element at the rear end of the queue.
+
+In addition to these four operations,
+*catenable deques* support a concatenation operation,
+which expects two deques and produces a deque.
+
+Following Kaplan and Tarjan's paper,
+we implement four data structures,
+each of which supports a subset of the above five operations.
+The following table shows which operations are supported
+and indicates their worst-case time complexity:
+
+|         | push | inject |  pop | eject | concat |  rev |         nth         |
 | :-----: | :--: | :----: | :--: | :---: | :----: | :--: | :-----------------: |
-|  List   | O(1) |    /   | O(1) |   /   |    /   |   /  |          /          |
-|  Deque  | O(1) |   O(1) | O(1) |  O(1) |    /   | O(1) | O(log(min(i, N-i))) |
-| Steque  | O(1) |   O(1) | O(1) |   /   |  O(1)  |   /  |          /          |
-| Cadeque | O(1) |   O(1) | O(1) |  O(1) |  O(1)  |   /  |          /          |
+|  List   | O(1) |   n/a  | O(1) |  n/a  |   n/a  |  n/a |         n/a         |
+|  Deque  | O(1) |   O(1) | O(1) |  O(1) |   n/a  | O(1) | O(log(min(i, n-i))) |
+| Steque  | O(1) |   O(1) | O(1) |  n/a  |  O(1)  |  n/a |         n/a         |
+| Cadeque | O(1) |   O(1) | O(1) |  O(1) |  O(1)  |  n/a |         n/a         |
 
-All this implementations are verified correct using Rocq proof assistant.
+Each data structure is implemented both in OCaml and in Rocq.
+The Rocq implementations are verified.
 
----
+## Organization
 
-The [lib](/lib/) folder contains all the OCaml implemantation and the [src](/src/)
-folder contains the final implementation of the library.
+The main directories are as follows:
 
-The [theory](/theory/) folder contains all the Rocq proofs of correctness of the
-different structures.
++ [lib](/lib/) and [src](/src/) contain OCaml code for each data structure.
+  More specifically,
+  [lib](/lib/) contains an implementation of each data structure,
+  while
+  [src](/src/) defines the public API of our OCaml package.
 
-The [test](/test/) folder contains all the tests and can be executed via the dune
-command `dune test`.
+  This OCaml code is compiled by the command `dune build src`,
+  which requires about 1 second.
 
-The [bench](/bench/) folder contains the different benchmarks where the structures are compared with lists. For example, here is the time it takes
-to repeatedly append a structure of a certain size to itself 1000 times:
-![appending 1000 times with itself](/bench/result/append.png)
++ [theory](/theory/) contains Rocq code and proofs of correctness
+  for each data structure.
+
+  This Coq code is compiled by the command `dune build theory`,
+  which requires about 20 minutes.
+
++ [test](/test/) contains some tests of the OCaml code.
+  They are executed by the command `dune test`.
+
++ [bench](/bench/) contains benchmarks
+  where each data structure is compared against a list.
+  For example, here is the result of a benchmark
+  where the operation of appending a sequence with itself
+  is repeated 1000 times:
+  ![appending 1000 times with itself](bench/result/concat.png)

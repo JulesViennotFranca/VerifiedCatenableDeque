@@ -52,7 +52,7 @@ module Base = struct
     in
 
     let rec fold_left_stored_triple
-    : type a. (z -> a -> z) -> z -> a stored_triple -> z
+    : type a. (z -> a -> z) -> z -> a stored -> z
     = fun f z st ->
       match st with
       | Small b -> fold_left_buffer f z b
@@ -130,7 +130,7 @@ module Base = struct
     in
 
     let rec fold_right_stored_triple
-    : type a. (a -> z -> z) -> a stored_triple -> z -> z
+    : type a. (a -> z -> z) -> a stored -> z -> z
     = fun f st z ->
       match st with
       | Small b -> fold_right_buffer f b z

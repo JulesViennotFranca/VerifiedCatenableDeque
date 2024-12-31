@@ -14,20 +14,20 @@ module Make (Deque : DEQUE) = struct
   type 'a s
 
   type 'a ge1 = 'a s
-  type 'a ge2 = 'a s s
-  type 'a ge3 = 'a s s s
-  type 'a ge4 = 'a s s s s
-  type 'a ge5 = 'a s s s s s
-  type 'a ge6 = 'a s s s s s s
-  type 'a ge7 = 'a s s s s s s s
-  type 'a ge8 = 'a s s s s s s s s
+  type 'a ge2 = 'a s ge1
+  type 'a ge3 = 'a s ge2
+  type 'a ge4 = 'a s ge3
+  type 'a ge5 = 'a s ge4
+  type 'a ge6 = 'a s ge5
+  type 'a ge7 = 'a s ge6
+  type 'a ge8 = 'a s ge7
 
   type eq0 = z
   type eq1 = z s
   type eq2 = z ge2
   type eq6 = z ge6
 
-  (* Some tupple renaming. *)
+  (* Some tuple renaming. *)
 
   type 'a four  = 'a * 'a * 'a * 'a
   type 'a five  = 'a * 'a * 'a * 'a * 'a
@@ -371,7 +371,7 @@ module Make (Deque : DEQUE) = struct
 
   (** The coloring links a color to the size of a prefix and the size of a
       suffix. *)
-  type ('prefix_size, 'suffix_size, 'nbr_child, 'color) coloring =
+  type ('prefix_delta, 'suffix_delta, 'arity, 'color) coloring =
     | Gc : (_ ge3, _ ge3, _ ge1, green ) coloring
     | Yc : (_ ge2, _ ge2, _ ge1, yellow) coloring
     | Oc : (_ ge1, _ ge1, _ ge1, orange) coloring
@@ -388,17 +388,17 @@ module Make (Deque : DEQUE) = struct
       of the prefix (suffix), the suffix (prefix) containing two elements. The
       prefix (suffix) of an ending left (right) node must contain at least
       five elements. *)
-  type ('a, 'nbr_child, 'kind, 'color) node =
+  type ('a, 'arity, 'kind, 'color) node =
     | Only_end  : ('a, _ ge1) prefix -> ('a, eq0, only, green) node
-    | Only  : ('psize, 'ssize, 'n ge1, 'c) coloring
-            * ('a, 'psize ge5) prefix * ('a, 'ssize ge5) suffix
+    | Only  : ('pdelta, 'sdelta, 'n ge1, 'c) coloring
+            * ('a, 'pdelta ge5) prefix * ('a, 'sdelta ge5) suffix
           -> ('a, 'n ge1, only, 'c) node
-    | Left  : ('psize, _, 'nc, 'c) coloring
-            * ('a, 'psize ge5) prefix * ('a, eq2) suffix
-          -> ('a, 'nc, left, 'c) node
-    | Right : (_, 'ssize, 'nc, 'c) coloring
-            * ('a, eq2) prefix * ('a, 'ssize ge5) suffix
-          -> ('a, 'nc, right, 'c) node
+    | Left  : ('pdelta, _, 'arity, 'c) coloring
+            * ('a, 'pdelta ge5) prefix * ('a, eq2) suffix
+          -> ('a, 'arity, left, 'c) node
+    | Right : (_, 'sdelta, 'arity, 'c) coloring
+            * ('a, eq2) prefix * ('a, 'sdelta ge5) suffix
+          -> ('a, 'arity, right, 'c) node
 
   (** Regularity represents constraints between a node color and its child chain
       parameters. The second parameter keeps track of the color of the single
@@ -412,12 +412,12 @@ module Make (Deque : DEQUE) = struct
 
   (** A stored triple is either small, and made of one buffer, or big, and made
       of prefix - child - suffix triple. *)
-  type 'a stored_triple =
-    | Small : ('a, _ ge3) prefix -> 'a stored_triple
+  type 'a stored =
+    | Small : ('a, _ ge3) prefix -> 'a stored
     | Big : ('a, _ ge3) prefix
-          * ('a stored_triple, _, only, _, _) chain
+          * ('a stored, _, only, _, _) chain
           * ('a, _ ge3) suffix
-        -> 'a stored_triple
+        -> 'a stored
 
   (** A body represents a descending preferred path : it follows yellow and
       orange nodes according to the preferred child relation. A body always end
@@ -427,17 +427,17 @@ module Make (Deque : DEQUE) = struct
     | Hole : ('a, 'a, 'nkind, 'nkind) body
     | Single_child :
         ('a, eq1, 'head_nkind, nogreen * _ * _ * nored) node
-      * ('a stored_triple, 'b, only, 'tail_nkind) body
+      * ('a stored, 'b, only, 'tail_nkind) body
       -> ('a, 'b, 'head_nkind, 'tail_nkind) body
     | Pair_yellow :
         ('a, eq2, 'head_nkind, yellow) node
-      * ('a stored_triple, 'b, left, 'tail_nkind) body
-      * ('a stored_triple, single, right, 'c, 'c) chain
+      * ('a stored, 'b, left, 'tail_nkind) body
+      * ('a stored, single, right, 'c, 'c) chain
       -> ('a, 'b, 'head_nkind, 'tail_nkind) body
     | Pair_orange :
         ('a, eq2, 'head_nkind, orange) node
-      * ('a stored_triple, single, left, green, green) chain
-      * ('a stored_triple, 'b, right, 'tail_nkind) body
+      * ('a stored, single, left, green, green) chain
+      * ('a stored, 'b, right, 'tail_nkind) body
       -> ('a, 'b, 'head_nkind, 'tail_nkind) body
 
   (** A packet represents a preferred path and its last node. As the last node
@@ -445,11 +445,11 @@ module Make (Deque : DEQUE) = struct
       take the place of the body's hole. Its parameter are its input and output
       types, its input kind, wether or not its last node is an ending one, and
       the color of its last node. *)
-  and ('a, 'b, 'nbr_child, 'nkind, 'color) packet =
+  and ('a, 'b, 'arity, 'nkind, 'color) packet =
     | Packet :
         ('a, 'b, 'nkind, 'tail_nkind) body
-      * ('b, 'nc, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
-      -> ('a, 'b stored_triple, 'nc, 'nkind, 'c) packet
+      * ('b, 'arity, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
+      -> ('a, 'b stored, 'arity, 'nkind, 'c) packet
 
   (** A chain represents a semi-regular cadeque with a lot of additional
       information. The first parameter is simply the input type of the cadeque.
@@ -475,15 +475,18 @@ module Make (Deque : DEQUE) = struct
       chain, two colors are needed to know the color of the left path and the
       color of the right path. If the chain is only, the left and right colors
       are the same, the color of its only path. *)
-  and ('a, 'ckind, 'nkind, 'color_left, 'color_right) chain =
-    | Empty : ('a, empty, only, green, green) chain
-    | Single : ('c, 'c, 'nc, 'cl, 'cr) regularity
-            * ('a, 'b, 'nc, 'nk, 'c) packet
-            * ('b, 'nc, only, 'cl, 'cr) chain
-            -> ('a, single, 'nk, 'c, 'c) chain
-    | Pair : ('a, single, left , 'cl, 'cl) chain
-          * ('a, single, right, 'cr, 'cr) chain
-          -> ('a, pair, only, 'cl, 'cr) chain
+  and ('a, 'arity, 'kind, 'cl, 'cr) chain =
+    | Empty :
+         ('a, empty, _, _, _) chain
+    | Single :
+         ('c, _, 'arity1, 'cl1, 'cr1) regularity   (* regularity constraint *)
+       * ('a, 'b, 'arity1, 'kind, 'c) packet       (* root packet *)
+       * ('b , 'arity1, only, 'cl1, 'cr1) chain    (* child chain *)
+      -> ('a, single, 'kind, 'c, 'c) chain
+    | Pair :
+         ('a, single, left , 'cl, 'cl) chain       (* left single chain *)
+       * ('a, single, right, 'cr, 'cr) chain       (* right single chain *)
+      -> ('a, pair, _, 'cl, 'cr) chain
 
   (** A type representing prefix and suffix of at least 3 elements. *)
   type _ stored_buffer =
@@ -494,15 +497,15 @@ module Make (Deque : DEQUE) = struct
       cadeque as a chain. *)
   type ('a, 'nkind, 'color_chain) triple =
     | Triple :
-        ('c, 'cc, 'nc, 'cl, 'cr) regularity
-      * ('a, 'nc, 'nk, 'c) node
-      * ('a stored_triple, 'nc, only, 'cl, 'cr) chain
+        ('c, 'cc, 'arity, 'cl, 'cr) regularity
+      * ('a, 'arity, 'nk, 'c) node
+      * ('a stored, 'arity, only, 'cl, 'cr) chain
       -> ('a, 'nk, 'cc) triple
 
   (** A type used to represent left or right triples. If there is not enough
       elements to make one, they are stored in a vector. *)
   type (_, _, _) left_right_triple =
-    | Not_enough : ('a, eq6) vector -> ('a, _, green) left_right_triple
+    | Not_enough : ('a, eq6) vector -> ('a, _, _) left_right_triple
     | Ok : ('a, 'k, 'c) triple -> ('a, 'k, 'c) left_right_triple
 
   (** A type used to represent triples after a pop or eject operation. If the
@@ -768,7 +771,7 @@ module Make (Deque : DEQUE) = struct
     (Big (p, child, s), sleft)
 
   (** Takes a left prefix, a child chain, a left suffix and a prefix of at least
-      one elements, and returns a right prefix and a stored_triple. *)
+      one elements, and returns a right prefix and a stored triple. *)
   let make_prefix_stored p child s pright =
     let selt = Buffer.two s in
     let s = Buffer.push2 selt pright in
@@ -781,7 +784,7 @@ module Make (Deque : DEQUE) = struct
   let stored_of_right
   : type a cr.
       (a, _ ge1) suffix -> (a, right, cr) triple
-    -> a stored_triple * (a, eq2) suffix
+    -> a stored * (a, eq2) suffix
   = fun sl tr ->
     match tr with
     | Triple (_, Right (_, pr, sr), child) ->
@@ -792,7 +795,7 @@ module Make (Deque : DEQUE) = struct
   let stored_of_left
   : type a cl.
       (a, left, cl) triple -> (a, _ ge1) prefix
-    -> (a, eq2) prefix * a stored_triple
+    -> (a, eq2) prefix * a stored
   = fun tl pr ->
     match tl with
     | Triple (_, Left (_, pl, sl), child) ->
