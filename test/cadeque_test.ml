@@ -87,7 +87,7 @@ type ('a, 'nkind) nocolor_chain =
   | Nocolor : ('a, 'ck ge1, 'nk, 'cl, 'cr) chain -> ('a, 'nk) nocolor_chain
 
 let rec stored_triple
-: type a. a m -> a stored_triple m
+: type a. a m -> a stored m
 = fun e ->
   if Random.bool ()
   then
