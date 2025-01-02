@@ -657,7 +657,3 @@ let () = Printf.printf "\n%!"
 let () = header "Cadeque"
 module Test_Cadeque = TestD (Cadeque)
 let () = Printf.printf "\n%!"
-
-let () = header "Cadeque with pair buffers"
-module Test_CadequePB = TestD (Cadeque.PairBuffers)
-let () = Printf.printf "\n%!"

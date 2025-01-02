@@ -1071,7 +1071,7 @@ module Steque : sig
 
 end
 
-module PairBuffers : sig
+module ArtWend : sig
   type 'a t
   (** The type for a catenable deque. *)
 

@@ -8,20 +8,20 @@ type    z
 type 'a s
 
 type 'a ge1 = 'a s
-type 'a ge2 = 'a s ge1
-type 'a ge3 = 'a s ge2
-type 'a ge4 = 'a s ge3
-type 'a ge5 = 'a s ge4
-type 'a ge6 = 'a s ge5
-type 'a ge7 = 'a s ge6
-type 'a ge8 = 'a s ge7
+type 'a ge2 = 'a s s
+type 'a ge3 = 'a s s s
+type 'a ge4 = 'a s s s s
+type 'a ge5 = 'a s s s s s
+type 'a ge6 = 'a s s s s s s
+type 'a ge7 = 'a s s s s s s s
+type 'a ge8 = 'a s s s s s s s s
 
 type eq0 = z
 type eq1 = z s
 type eq2 = z ge2
 type eq6 = z ge6
 
-(* Some tuple renaming. *)
+(* Some tupple renaming. *)
 
 type 'a four  = 'a * 'a * 'a * 'a
 type 'a five  = 'a * 'a * 'a * 'a * 'a
@@ -73,10 +73,8 @@ let vector_fold_left
 (* +------------------------------------------------------------------------+ *)
 
 module Buffer : sig
-
-  (** The type of a buffer is parameterized by the type ['a] of
-      the elements of the buffer and by a lower bound ['n] on
-      the number of elements of the buffer. *)
+  (** The type for buffer is parametrized by the type of elements it contains
+      and the number of elements it contains. *)
   type ('a, 'n) t
 
   (* Different operations needed on buffers, and how they change the size of
@@ -168,7 +166,7 @@ module Buffer : sig
     | At_least_11 : ('a, z ge3) t * ('a, _ ge8) t -> 'a has3p8
 
   (** Tells if a given buffer of at least 8 elements has 8, 9 or 10 elements,
-      or if it has at least 11 elements. In the latter case, returns a buffer of
+      or if it has at least 11 elements. If it the case, it returns a buffer of
       3 elements and a buffer of at least 8 elements. *)
   val has3p8 : ('a, _ ge8) t -> 'a has3p8
 
@@ -351,7 +349,7 @@ type single = eq1
 type pair   = eq2
 
 (** The coloring links a color to the size of a prefix and the size of a suffix. *)
-type ('prefix_delta, 'suffix_delta, 'arity, 'color) coloring =
+type ('prefix_size, 'suffix_size, 'nbr_child, 'color) coloring =
   | Gc : (_ ge3, _ ge3, _ ge1, green ) coloring
   | Yc : (_ ge2, _ ge2, _ ge1, yellow) coloring
   | Oc : (_ ge1, _ ge1, _ ge1, orange) coloring
@@ -368,17 +366,17 @@ type ('prefix_delta, 'suffix_delta, 'arity, 'color) coloring =
     of the prefix (suffix), the suffix (prefix) containing two elements. The
     prefix (suffix) of an ending left (right) node must contain at least
     five elements. *)
-type ('a, 'arity, 'kind, 'color) node =
+type ('a, 'nbr_child, 'kind, 'color) node =
   | Only_end  : ('a, _ ge1) prefix -> ('a, eq0, only, green) node
-  | Only  : ('pdelta, 'sdelta, 'n ge1, 'c) coloring
-          * ('a, 'pdelta ge5) prefix * ('a, 'sdelta ge5) suffix
+  | Only  : ('psize, 'ssize, 'n ge1, 'c) coloring
+          * ('a, 'psize ge5) prefix * ('a, 'ssize ge5) suffix
          -> ('a, 'n ge1, only, 'c) node
-  | Left  : ('pdelta, _, 'arity, 'c) coloring
-          * ('a, 'pdelta ge5) prefix * ('a, eq2) suffix
-         -> ('a, 'arity, left, 'c) node
-  | Right : (_, 'sdelta, 'arity, 'c) coloring
-          * ('a, eq2) prefix * ('a, 'sdelta ge5) suffix
-         -> ('a, 'arity, right, 'c) node
+  | Left  : ('psize, _, 'nc, 'c) coloring
+          * ('a, 'psize ge5) prefix * 'a * 'a
+         -> ('a, 'nc, left, 'c) node
+  | Right : (_, 'ssize, 'nc, 'c) coloring
+          * 'a * 'a * ('a, 'ssize ge5) suffix
+         -> ('a, 'nc, right, 'c) node
 
 (** Regularity represents constraints between a node color and its child chain
     parameters. The second parameter keeps track of the color of the single
@@ -392,12 +390,12 @@ type ('color_top, 'color_chain, 'ckind, 'color_left, 'color_right) regularity =
 
 (** A stored triple is either small, and made of one buffer, or big, and made
     of prefix - child - suffix triple. *)
-type 'a stored =
-  | Small : ('a, _ ge3) prefix -> 'a stored
+type 'a stored_triple =
+  | Small : ('a, _ ge3) prefix -> 'a stored_triple
   | Big : ('a, _ ge3) prefix
-        * ('a stored, _, only, _, _) chain
+        * ('a stored_triple, _, only, _, _) chain
         * ('a, _ ge3) suffix
-       -> 'a stored
+       -> 'a stored_triple
 
 (** A body represents a descending preferred path : it follows yellow and
     orange nodes according to the preferred child relation. A body always end
@@ -407,17 +405,17 @@ and ('a, 'b, 'head_nkind, 'tail_nkind) body =
   | Hole : ('a, 'a, 'nkind, 'nkind) body
   | Single_child :
        ('a, eq1, 'head_nkind, nogreen * _ * _ * nored) node
-     * ('a stored, 'b, only, 'tail_nkind) body
+     * ('a stored_triple, 'b, only, 'tail_nkind) body
     -> ('a, 'b, 'head_nkind, 'tail_nkind) body
   | Pair_yellow :
        ('a, eq2, 'head_nkind, yellow) node
-     * ('a stored, 'b, left, 'tail_nkind) body
-     * ('a stored, single, right, 'c, 'c) chain
+     * ('a stored_triple, 'b, left, 'tail_nkind) body
+     * ('a stored_triple, single, right, 'c, 'c) chain
     -> ('a, 'b, 'head_nkind, 'tail_nkind) body
   | Pair_orange :
        ('a, eq2, 'head_nkind, orange) node
-     * ('a stored, single, left, green, green) chain
-     * ('a stored, 'b, right, 'tail_nkind) body
+     * ('a stored_triple, single, left, green, green) chain
+     * ('a stored_triple, 'b, right, 'tail_nkind) body
     -> ('a, 'b, 'head_nkind, 'tail_nkind) body
 
 (** A packet represents a preferred path and its last node. As the last node is
@@ -425,11 +423,11 @@ and ('a, 'b, 'head_nkind, 'tail_nkind) body =
     the place of the body's hole. Its parameter are its input and output types,
     its input kind, wether or not its last node is an ending one, and the color
     of its last node. *)
-and ('a, 'b, 'arity, 'nkind, 'color) packet =
+and ('a, 'b, 'nbr_child, 'nkind, 'color) packet =
   | Packet :
        ('a, 'b, 'nkind, 'tail_nkind) body
-     * ('b, 'arity, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
-    -> ('a, 'b stored, 'arity, 'nkind, 'c) packet
+     * ('b, 'nc, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
+    -> ('a, 'b stored_triple, 'nc, 'nkind, 'c) packet
 
 (** A chain represents a semi-regular cadeque with a lot of additional
     information. The first parameter is simply the input type of the cadeque.
@@ -455,18 +453,15 @@ and ('a, 'b, 'arity, 'nkind, 'color) packet =
     chain, two colors are needed to know the color of the left path and the
     color of the right path. If the chain is only, the left and right colors
     are the same, the color of its only path. *)
-and ('a, 'arity, 'kind, 'cl, 'cr) chain =
-  | Empty :
-       ('a, empty, _, _, _) chain
-  | Single :
-       ('c, _, 'arity1, 'cl1, 'cr1) regularity   (* regularity constraint *)
-     * ('a, 'b, 'arity1, 'kind, 'c) packet       (* root packet *)
-     * ('b , 'arity1, only, 'cl1, 'cr1) chain    (* child chain *)
-    -> ('a, single, 'kind, 'c, 'c) chain
-  | Pair :
-       ('a, single, left , 'cl, 'cl) chain       (* left single chain *)
-     * ('a, single, right, 'cr, 'cr) chain       (* right single chain *)
-    -> ('a, pair, _, 'cl, 'cr) chain
+and ('a, 'ckind, 'nkind, 'color_left, 'color_right) chain =
+  | Empty : ('a, empty, only, green, green) chain
+  | Single : ('c, 'c, 'nc, 'cl, 'cr) regularity
+           * ('a, 'b, 'nc, 'nk, 'c) packet
+           * ('b, 'nc, only, 'cl, 'cr) chain
+          -> ('a, single, 'nk, 'c, 'c) chain
+  | Pair : ('a, single, left , 'cl, 'cl) chain
+         * ('a, single, right, 'cr, 'cr) chain
+        -> ('a, pair, only, 'cl, 'cr) chain
 
 (** A type representing prefix and suffix of at least 3 elements. *)
 type _ stored_buffer =
@@ -477,15 +472,15 @@ type _ stored_buffer =
     child cadeque as a chain. *)
 type ('a, 'nkind, 'color_chain) triple =
   | Triple :
-       ('c, 'cc, 'arity, 'cl, 'cr) regularity
-     * ('a, 'arity, 'nk, 'c) node
-     * ('a stored, 'arity, only, 'cl, 'cr) chain
+       ('c, 'cc, 'nc, 'cl, 'cr) regularity
+     * ('a, 'nc, 'nk, 'c) node
+     * ('a stored_triple, 'nc, only, 'cl, 'cr) chain
     -> ('a, 'nk, 'cc) triple
 
 (** A type used to represent left or right triples. If there is not enough
     elements to make one, they are stored in a vector. *)
 type (_, _, _) left_right_triple =
-  | Not_enough : ('a, eq6) vector -> ('a, _, _) left_right_triple
+  | Not_enough : ('a, eq6) vector -> ('a, _, green) left_right_triple
   | Ok : ('a, 'k, 'c) triple -> ('a, 'k, 'c) left_right_triple
 
 (** A type used to represent triples after a pop or eject operation. If the
@@ -520,22 +515,22 @@ let push_left_node
 : type a ck c. a -> (a, ck, left, c) node -> (a, ck, left, c) node
 = fun x store ->
   match store with
-  | Left (Gc, p, s) -> Left (Gc, Buffer.push x p, s)
-  | Left (Yc, p, s) -> Left (Yc, Buffer.push x p, s)
-  | Left (Oc, p, s) -> Left (Oc, Buffer.push x p, s)
-  | Left (Rc, p, s) -> Left (Rc, Buffer.push x p, s)
-  | Left (Ec, p, s) -> Left (Ec, Buffer.push x p, s)
+  | Left (Gc, p, y, z) -> Left (Gc, Buffer.push x p, y, z)
+  | Left (Yc, p, y, z) -> Left (Yc, Buffer.push x p, y, z)
+  | Left (Oc, p, y, z) -> Left (Oc, Buffer.push x p, y, z)
+  | Left (Rc, p, y, z) -> Left (Rc, Buffer.push x p, y, z)
+  | Left (Ec, p, y, z) -> Left (Ec, Buffer.push x p, y, z)
 
 (** Injects on a right node. *)
 let inject_right_node
 : type a ck c. (a, ck, right, c) node -> a -> (a, ck, right, c) node
 = fun store x ->
   match store with
-  | Right (Gc, p, s) -> Right (Gc, p, Buffer.inject s x)
-  | Right (Yc, p, s) -> Right (Yc, p, Buffer.inject s x)
-  | Right (Oc, p, s) -> Right (Oc, p, Buffer.inject s x)
-  | Right (Rc, p, s) -> Right (Rc, p, Buffer.inject s x)
-  | Right (Ec, p, s) -> Right (Ec, p, Buffer.inject s x)
+  | Right (Gc, a, b, s) -> Right (Gc, a, b, Buffer.inject s x)
+  | Right (Yc, a, b, s) -> Right (Yc, a, b, Buffer.inject s x)
+  | Right (Oc, a, b, s) -> Right (Oc, a, b, Buffer.inject s x)
+  | Right (Rc, a, b, s) -> Right (Rc, a, b, Buffer.inject s x)
+  | Right (Ec, a, b, s) -> Right (Ec, a, b, Buffer.inject s x)
 
 (** Pushes on an only node. *)
 let push_only_node
@@ -673,9 +668,9 @@ let to_reg
      (a, single, nk, nogreen * y * o * nored as 'c) node
   -> ('c, _, single, _, _) regularity
 = function
-  | Only  (Yc, _, _) -> Y | Only  (Oc, _, _) -> OS
-  | Left  (Yc, _, _) -> Y | Left  (Oc, _, _) -> OS
-  | Right (Yc, _, _) -> Y | Right (Oc, _, _) -> OS
+  | Only  (Yc, _, _)    -> Y | Only  (Oc, _, _)    -> OS
+  | Left  (Yc, _, _, _) -> Y | Left  (Oc, _, _, _) -> OS
+  | Right (Yc, _, _, _) -> Y | Right (Oc, _, _, _) -> OS
 
 (** Returns the triple representation of a non-empty only chain. *)
 let triple_of_chain
@@ -714,14 +709,12 @@ let left_of_only
     | Less_than_7 v -> Not_enough v
     | At_least_7 p ->
       let p, y, x = Buffer.eject2 p in
-      let s = Buffer.pair y x in
-      Ok (Triple (G, Left (Ec, p, s), Empty))
+      Ok (Triple (G, Left (Ec, p, y, x), Empty))
     end
   | Triple (reg, Only (coloring, p, s), child) ->
     let s', y, x = Buffer.eject2 s in
-    let s = Buffer.pair y x in
     let child = inject_ne_chain child (Small s') in
-    Ok (Triple (reg, Left (coloring, p, s), child))
+    Ok (Triple (reg, Left (coloring, p, y, x), child))
 
 (** Makes a right [left_right_triple] out of an only triple. *)
 let right_of_only
@@ -732,54 +725,48 @@ let right_of_only
     | Less_than_7 v -> Not_enough v
     | At_least_7 s ->
       let x, y, s = Buffer.pop2 s in
-      let p = Buffer.pair x y in
-      Ok (Triple (G, Right (Ec, p, s), Empty))
+      Ok (Triple (G, Right (Ec, x, y, s), Empty))
     end
   | Triple (reg, Only (coloring, p, s), child) ->
     let x, y, p' = Buffer.pop2 p in
-    let p = Buffer.pair x y in
     let child = push_ne_chain (Small p') child in
-    Ok (Triple (reg, Right (coloring, p, s), child))
+    Ok (Triple (reg, Right (coloring, x, y, s), child))
 
 (** Takes a suffix of at least one element, a right prefix, a child chain and a
     right suffix, and returns a stored triple and a left suffix. *)
-let make_stored_suffix sleft p child s =
-  let pelt = Buffer.two p in
-  let p = Buffer.inject2 sleft pelt in
+let make_stored_suffix sleft a b child s =
+  let p = Buffer.inject2 sleft (a, b) in
   let s, y, x = Buffer.eject2 s in
-  let sleft = Buffer.pair y x in
-  (Big (p, child, s), sleft)
+  (Big (p, child, s), y, x)
 
 (** Takes a left prefix, a child chain, a left suffix and a prefix of at least
-    one elements, and returns a right prefix and a stored triple. *)
-let make_prefix_stored p child s pright =
-  let selt = Buffer.two s in
-  let s = Buffer.push2 selt pright in
+    one elements, and returns a right prefix and a stored_triple. *)
+let make_prefix_stored p child y z pright =
+  let s = Buffer.push2 (y, z) pright in
   let x, y, p = Buffer.pop2 p in
-  let pright = Buffer.pair x y in
-  (pright, Big (p, child, s))
+  (x, y, Big (p, child, s))
 
 (** Takes a suffix of at least one element and a right triple and returns a
     stored triple and a left suffix. *)
 let stored_of_right
 : type a cr.
      (a, _ ge1) suffix -> (a, right, cr) triple
-  -> a stored * (a, eq2) suffix
+  -> a stored_triple * a * a
 = fun sl tr ->
   match tr with
-  | Triple (_, Right (_, pr, sr), child) ->
-    make_stored_suffix sl pr child sr
+  | Triple (_, Right (_, a, b, sr), child) ->
+    make_stored_suffix sl a b child sr
 
 (** Takes a left triple and a prefix of at least one element and returns a
     right prefix and a stored triple. *)
 let stored_of_left
 : type a cl.
      (a, left, cl) triple -> (a, _ ge1) prefix
-  -> (a, eq2) prefix * a stored
+  -> a * a * a stored_triple
 = fun tl pr ->
   match tl with
-  | Triple (_, Left (_, pl, sl), child) ->
-    make_prefix_stored pl child sl pr
+  | Triple (_, Left (_, pl, y, z), child) ->
+    make_prefix_stored pl child y z pr
 
 (** Tells if a coloring applies to an ending node or not by looking at the
     emptyness of the child of the node. *)
@@ -793,18 +780,19 @@ let left_of_pair
      (a, left , cl) triple
   -> (a, right, cr) triple
   -> (a, left , cl) triple
-= fun (Triple (reg, Left (coloring, p, s), child)) tr ->
+= fun (Triple (reg, Left (coloring, p, y, z), child)) tr ->
   match reg, is_empty_coloring coloring with
   | G, Is_empty ->
-    let a, s = Buffer.pop s in
-    let p = Buffer.inject p a in
-    let stored, s = stored_of_right s tr in
+    let p = Buffer.inject p y in
+    let s = Buffer.single z in
+    let stored, y, z = stored_of_right s tr in
     let child = single_chain stored in
-    Triple (OS, Left (Oc, p, s), child)
+    Triple (OS, Left (Oc, p, y, z), child)
   | reg, Not_empty ->
-    let stored, s = stored_of_right s tr in
+    let s = Buffer.pair y z in
+    let stored, y, z = stored_of_right s tr in
     let child = inject_ne_chain child stored in
-    Triple (reg, Left (coloring, p, s), child)
+    Triple (reg, Left (coloring, p, y, z), child)
 
 (** Makes a right triple out of a pair of left and right triples. *)
 let right_of_pair
@@ -812,18 +800,19 @@ let right_of_pair
      (a, left , cl) triple
   -> (a, right, cr) triple
   -> (a, right, cr) triple
-= fun tl (Triple (reg, Right (coloring, p, s), child)) ->
+= fun tl (Triple (reg, Right (coloring, a, b, s), child)) ->
   match reg, is_empty_coloring coloring with
   | G, Is_empty ->
-    let p, a = Buffer.eject p in
-    let s = Buffer.push a s in
-    let p, stored = stored_of_left tl p in
+    let s = Buffer.push b s in
+    let p = Buffer.single a in
+    let a, b, stored = stored_of_left tl p in
     let child = single_chain stored in
-    Triple (OS, Right (Oc, p, s), child)
+    Triple (OS, Right (Oc, a, b, s), child)
   | reg, Not_empty ->
-    let p, stored = stored_of_left tl p in
+    let p = Buffer.pair a b in
+    let a, b, stored = stored_of_left tl p in
     let child = push_ne_chain stored child in
-    Triple (reg, Right (coloring, p, s), child)
+    Triple (reg, Right (coloring, a, b, s), child)
 
 (** Makes a left [left_right_triple] out of a chain. *)
 let make_left
@@ -866,39 +855,36 @@ let orange
 let pop_left_green
 : type a. (a, left, green) triple -> a * (a, pair, left) partial_triple
 = function
-  | Triple (reg, Left (coloring, p, s), child) ->
+  | Triple (reg, Left (coloring, p, y, z), child) ->
     let a, p = Buffer.pop p in
     match reg, coloring with
     | G , Ec ->
       begin match Buffer.has5 p with
-      | Exact_4 (b, c, d, e) ->
-        let f, g = Buffer.two s in
-        (a, End (b, c, d, e, f, g))
-      | At_least_5 p -> (a, Ok (Triple (G, Left (Ec, p, s), Empty)))
+      | Exact_4 (b, c, d, e) -> (a, End (b, c, d, e, y, z))
+      | At_least_5 p -> (a, Ok (Triple (G, Left (Ec, p, y, z), Empty)))
       end
-    | G , Gc -> (a, Ok (Triple (Y, Left (Yc, p, s), child)))
-    | Y , Yc -> (a, Ok (Triple (orange child, Left (Oc, p, s), child)))
-    | OS, Oc -> (a, Ok (Triple (R, Left (Rc, p, s), child)))
-    | OP, Oc -> (a, Ok (Triple (R, Left (Rc, p, s), child)))
+    | G , Gc -> (a, Ok (Triple (Y, Left (Yc, p, y, z), child)))
+    | Y , Yc -> (a, Ok (Triple (orange child, Left (Oc, p, y, z), child)))
+    | OS, Oc -> (a, Ok (Triple (R, Left (Rc, p, y, z), child)))
+    | OP, Oc -> (a, Ok (Triple (R, Left (Rc, p, y, z), child)))
 
 (** Ejects from a green right triple. *)
 let eject_right_green
 : type a. (a, right, green) triple -> (a, pair, right) partial_triple * a
 = function
-  | Triple (reg, Right (coloring, p, s), child) ->
-    let s, a = Buffer.eject s in
+  | Triple (reg, Right (coloring, a, b, s), child) ->
+    let s, z = Buffer.eject s in
     match reg, coloring with
     | G , Ec ->
       begin match Buffer.has5 s with
-      | Exact_4 (e, d, c, b) ->
-        let g, f = Buffer.two p in
-        (End (g, f, e, d, c, b), a)
-      | At_least_5 s -> (Ok (Triple (G, Right (Ec, p, s), Empty)), a)
+      | Exact_4 (v, w, x, y) ->
+        (End (a, b, v, w, x, y), z)
+      | At_least_5 s -> (Ok (Triple (G, Right (Ec, a, b, s), Empty)), z)
       end
-    | G , Gc -> (Ok (Triple (Y, Right (Yc, p, s), child)), a)
-    | Y , Yc -> (Ok (Triple (orange child, Right (Oc, p, s), child)), a)
-    | OS, Oc -> (Ok (Triple (R, Right (Rc, p, s), child)), a)
-    | OP, Oc -> (Ok (Triple (R, Right (Rc, p, s), child)), a)
+    | G , Gc -> (Ok (Triple (Y, Right (Yc, a, b, s), child)), z)
+    | Y , Yc -> (Ok (Triple (orange child, Right (Oc, a, b, s), child)), z)
+    | OS, Oc -> (Ok (Triple (R, Right (Rc, a, b, s), child)), z)
+    | OP, Oc -> (Ok (Triple (R, Right (Rc, a, b, s), child)), z)
 
 (** Pops from an green only triple. *)
 let pop_only_green = function
@@ -919,18 +905,18 @@ let pop_only_green = function
 (** Ejects from an green only triple. *)
 let eject_only_green = function
   | Triple (G, Only_end s, Empty) ->
-    let s, a = Buffer.eject s in
+    let s, z = Buffer.eject s in
     begin match Buffer.has1 s with
-    | Exact_0 -> (Empty, a)
-    | At_least_1 s -> (Ok (Triple (G, Only_end s, Empty)), a)
+    | Exact_0 -> (Empty, z)
+    | At_least_1 s -> (Ok (Triple (G, Only_end s, Empty)), z)
     end
   | Triple (reg, Only (coloring, p, s), child) ->
-    let s, a = Buffer.eject s in
+    let s, z = Buffer.eject s in
     match reg, coloring with
-    | G , Gc -> (Ok (Triple (Y, Only (Yc, p, s), child)), a)
-    | Y , Yc -> (Ok (Triple (orange child, Only (Oc, p, s), child)), a)
-    | OS, Oc -> (Ok (Triple (R, Only (Rc, p, s), child)), a)
-    | OP, Oc -> (Ok (Triple (R, Only (Rc, p, s), child)), a)
+    | G , Gc -> (Ok (Triple (Y, Only (Yc, p, s), child)), z)
+    | Y , Yc -> (Ok (Triple (orange child, Only (Oc, p, s), child)), z)
+    | OS, Oc -> (Ok (Triple (R, Only (Rc, p, s), child)), z)
+    | OP, Oc -> (Ok (Triple (R, Only (Rc, p, s), child)), z)
 
 (** Takes an green only triple and represent it as a sandwich. *)
 let sandwich_only_green
@@ -970,14 +956,14 @@ let only_of_right
      a six
   -> (a, right, c) triple
   -> (a, only, c) triple
-= fun six (Triple (reg, Right (coloring, p, s), child)) ->
+= fun six (Triple (reg, Right (coloring, a, b, s), child)) ->
   match reg, is_empty_coloring coloring, coloring with
   | G, Is_empty, Ec ->
-    let two = Buffer.two p in
-    let s = Buffer.push2 two s in
+    let s = Buffer.push2 (a, b) s in
     let s = Buffer.push6 six s in
     Triple (G, Only_end s, child)
   | reg, Not_empty, coloring ->
+    let p = Buffer.pair a b in
     let p = Buffer.push6 six p in
     Triple (reg, Only (adapt_to_prefix coloring, p, s), child)
 
@@ -993,14 +979,14 @@ let only_of_left
      (a, left, c) triple
   -> a six
   -> (a, only, c) triple
-= fun (Triple (reg, Left (coloring, p, s), child)) six ->
+= fun (Triple (reg, Left (coloring, p, y, z), child)) six ->
   match reg, is_empty_coloring coloring, coloring with
   | G, Is_empty, Ec ->
-    let two = Buffer.two s in
-    let p = Buffer.inject2 p two in
+    let p = Buffer.inject2 p (y, z) in
     let p = Buffer.inject6 p six in
     Triple (G, Only_end p, Empty)
   | reg, Not_empty, coloring ->
+    let s = Buffer.pair y z in
     let s = Buffer.inject6 s six in
     Triple (reg, Only (adapt_to_suffix coloring, p, s), child)
 
@@ -1155,19 +1141,19 @@ let ensure_green_suffix child s =
 
 (** Takes a body, a following red left node and the following green chain,
     and makes a green chain out of them. *)
-let green_of_red_left body (Left (Rc, p, s)) child =
+let green_of_red_left body (Left (Rc, p, y, z)) child =
   let p, S child = ensure_green_prefix p child in
   match is_empty child, child with
-  | Is_empty, Empty -> Single (G, Packet (body, Left (Ec, p, s)), Empty)
-  | Not_empty, child -> Single (G, Packet (body, Left (Gc, p, s)), child)
+  | Is_empty, Empty -> Single (G, Packet (body, Left (Ec, p, y, z)), Empty)
+  | Not_empty, child -> Single (G, Packet (body, Left (Gc, p, y, z)), child)
 
 (** Takes a body, a following red right node and the following green chain,
     and makes a green chain out of them. *)
-let green_of_red_right body (Right (Rc, p, s)) child =
+let green_of_red_right body (Right (Rc, a, b, s)) child =
   let S child, s = ensure_green_suffix child s in
   match is_empty child, child with
-  | Is_empty, Empty -> Single (G, Packet (body, Right (Ec, p, s)), Empty)
-  | Not_empty, child -> Single (G, Packet (body, Right (Gc, p, s)), child)
+  | Is_empty, Empty -> Single (G, Packet (body, Right (Ec, a, b, s)), Empty)
+  | Not_empty, child -> Single (G, Packet (body, Right (Gc, a, b, s)), child)
 
 (** Takes a body and a following green triple, and makes a green chain out of
     them. *)

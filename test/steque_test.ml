@@ -58,7 +58,6 @@ let some_snd t = function
 let () = Random.init 9
 
 let rec test n t =
-  print_endline (string_of_int n);
   match Random.int 5 with
   | 0 -> n, D2.push (elt ()) t
   | 1 -> n, D2.inject t (elt ())
@@ -82,5 +81,3 @@ let () =
   let ys = Cadeque.to_list d in
   assert (xs = ys) ;
   assert (List.length xs = Cadeque.Steque.length s)
-
-let () = print_endline "steque done"

@@ -87,7 +87,7 @@ type ('a, 'nkind) nocolor_chain =
   | Nocolor : ('a, 'ck ge1, 'nk, 'cl, 'cr) chain -> ('a, 'nk) nocolor_chain
 
 let rec stored_triple
-: type a. a m -> a stored m
+: type a. a m -> a stored_triple m
 = fun e ->
   if Random.bool ()
   then
@@ -149,31 +149,36 @@ and triple_left_green
   (fun () ->
   ( buffer_ge5 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
-    let hd = Left (Ec, p, s) in
+    let y, z = Buffer.two s in
+    let hd = Left (Ec, p, y, z) in
     return (Triple (G, hd, Empty)))
   @
   ( buffer_ge8 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     non_empty_chain (stored_triple e) >>= fun (Nocolor c) ->
-    let hd = Left (Gc, p, s) in
+    let y, z = Buffer.two s in
+    let hd = Left (Gc, p, y, z) in
     return (Triple (G, hd, c)))
   @
   ( buffer_ge7 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     non_empty_green_left_chain (stored_triple e) >>= fun (Lcolor c) ->
-    let hd = Left (Yc, p, s) in
+    let y, z = Buffer.two s in
+    let hd = Left (Yc, p, y, z) in
     return (Triple (Y, hd, c)))
   @
   ( buffer_ge6 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     single_green_chain (stored_triple e) >>= fun c ->
-    let hd = Left (Oc, p, s) in
+    let y, z = Buffer.two s in
+    let hd = Left (Oc, p, y, z) in
     return (Triple (OS, hd, c)))
   @
   ( buffer_ge6 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     pair_green_green_chain (stored_triple e) >>= fun c ->
-    let hd = Left (Oc, p, s) in
+    let y, z = Buffer.two s in
+    let hd = Left (Oc, p, y, z) in
     return (Triple (OP, hd, c))))
 
 and triple_right_green
@@ -183,31 +188,36 @@ and triple_right_green
   (fun () ->
   ( buffer_eq2 e >>= fun p ->
     buffer_ge5 e >>= fun s ->
-    let hd = Right (Ec, p, s) in
+    let a, b = Buffer.two p in
+    let hd = Right (Ec, a, b, s) in
     return (Triple (G, hd, Empty)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge8 e >>= fun s ->
     non_empty_chain (stored_triple e) >>= fun (Nocolor c) ->
-    let hd = Right (Gc, p, s) in
+    let a, b = Buffer.two p in
+    let hd = Right (Gc, a, b, s) in
     return (Triple (G, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge7 e >>= fun s ->
     non_empty_green_left_chain (stored_triple e) >>= fun (Lcolor c) ->
-    let hd = Right (Yc, p, s) in
+    let a, b = Buffer.two p in
+    let hd = Right (Yc, a, b, s) in
     return (Triple (Y, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge6 e >>= fun s ->
     single_green_chain (stored_triple e) >>= fun c ->
-    let hd = Right (Oc, p, s) in
+    let a, b = Buffer.two p in
+    let hd = Right (Oc, a, b, s) in
     return (Triple (OS, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge6 e >>= fun s ->
     pair_green_green_chain (stored_triple e) >>= fun c ->
-    let hd = Right (Oc, p, s) in
+    let a, b = Buffer.two p in
+    let hd = Right (Oc, a, b, s) in
     return (Triple (OP, hd, c))))
 
 and triple_only_red
@@ -247,25 +257,29 @@ and triple_left_red
   ( buffer_ge5 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     non_empty_green_chain (stored_triple e) >>= fun (Onecolor c) ->
-    let hd = Left (Rc, p, s) in
+    let y, z = Buffer.two s in
+    let hd = Left (Rc, p, y, z) in
     return (Triple (R, hd, c)))
   @
   ( buffer_ge7 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     non_empty_red_left_chain (stored_triple e) >>= fun (Lcolor c) ->
-    let hd = Left (Yc, p, s) in
+    let y, z = Buffer.two s in
+    let hd = Left (Yc, p, y, z) in
     return (Triple (Y, hd, c)))
   @
   ( buffer_ge6 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     single_red_chain (stored_triple e) >>= fun c ->
-    let hd = Left (Oc, p, s) in
+    let y, z = Buffer.two s in
+    let hd = Left (Oc, p, y, z) in
     return (Triple (OS, hd, c)))
   @
   ( buffer_ge6 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     pair_green_red_chain (stored_triple e) >>= fun c ->
-    let hd = Left (Oc, p, s) in
+    let y, z = Buffer.two s in
+    let hd = Left (Oc, p, y, z) in
     return (Triple (OP, hd, c))))
 
 and triple_right_red
@@ -276,25 +290,29 @@ and triple_right_red
   ( buffer_eq2 e >>= fun p ->
     buffer_ge5 e >>= fun s ->
     non_empty_green_chain (stored_triple e) >>= fun (Onecolor c) ->
-    let hd = Right (Rc, p, s) in
+    let a, b = Buffer.two p in
+    let hd = Right (Rc, a, b, s) in
     return (Triple (R, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge7 e >>= fun s ->
     non_empty_red_left_chain (stored_triple e) >>= fun (Lcolor c) ->
-    let hd = Right (Yc, p, s) in
+    let a, b = Buffer.two p in
+    let hd = Right (Yc, a, b, s) in
     return (Triple (Y, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge6 e >>= fun s ->
     single_red_chain (stored_triple e) >>= fun c ->
-    let hd = Right (Oc, p, s) in
+    let a, b = Buffer.two p in
+    let hd = Right (Oc, a, b, s) in
     return (Triple (OS, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge6 e >>= fun s ->
     pair_green_red_chain (stored_triple e) >>= fun c ->
-    let hd = Right (Oc, p, s) in
+    let a, b = Buffer.two p in
+    let hd = Right (Oc, a, b, s) in
     return (Triple (OP, hd, c))))
 
 and single_green_chain
@@ -431,7 +449,8 @@ let fold_left_to_list t =
 let test _ deq =
   let real_deq = D.regularize deq in
   let lst = to_list real_deq in
-  assert (lst = Lib.Cadeque.Package.to_list { core = real_deq; length = 0 }) ;
+  assert (lst = Lib.Cadeque.Package.to_list
+                  { core = real_deq; length = 0 }) ;
   assert (lst = fold_left_to_list real_deq) ;
   let x = elt () in
   assert (to_list (D.push x real_deq) = x :: lst) ;

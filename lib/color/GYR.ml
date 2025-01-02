@@ -11,6 +11,5 @@ type nored      = NO_RED
 (* Defining colors. *)
 type green  = somegreen * noyellow   * nored
 type yellow = nogreen   * someyellow * nored
-type orange = nogreen   * someyellow * somered
 type red    = nogreen   * noyellow   * somered
 type uncolored = nogreen * noyellow * nored

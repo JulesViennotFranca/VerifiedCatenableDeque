@@ -16,8 +16,8 @@ let () = Printf.printf "Cadeque:\n%!"
 module D = ListLike.Bench (Cadeque)
 let () = Printf.printf "\n%!"
 
-let () = Printf.printf "Cadeque with pair buffers:\n%!"
-module E = ListLike.Bench (Cadeque.PairBuffers)
+let () = Printf.printf "Arthur Wendling's cadeque:\n%!"
+module F = ListLike.Bench (Cadeque.ArtWend)
 let () = Printf.printf "\n%!"
 
 module type BENCH = sig

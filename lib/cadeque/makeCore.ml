@@ -14,33 +14,33 @@ module Make (Deque : DEQUE) = struct
   type 'a s
 
   type 'a ge1 = 'a s
-  type 'a ge2 = 'a s ge1
-  type 'a ge3 = 'a s ge2
-  type 'a ge4 = 'a s ge3
-  type 'a ge5 = 'a s ge4
-  type 'a ge6 = 'a s ge5
-  type 'a ge7 = 'a s ge6
-  type 'a ge8 = 'a s ge7
+  type 'a ge2 = 'a s s
+  type 'a ge3 = 'a s s s
+  type 'a ge4 = 'a s s s s
+  type 'a ge5 = 'a s s s s s
+  type 'a ge6 = 'a s s s s s s
+  type 'a ge7 = 'a s s s s s s s
+  type 'a ge8 = 'a s s s s s s s s
 
   type eq0 = z
   type eq1 = z s
   type eq2 = z ge2
   type eq6 = z ge6
 
-  (* Some tuple renaming. *)
+  (* Some tupple renaming. *)
 
   type 'a four  = 'a * 'a * 'a * 'a
   type 'a five  = 'a * 'a * 'a * 'a * 'a
   type 'a six   = 'a * 'a * 'a * 'a * 'a * 'a
   type 'a eight = 'a * 'a * 'a * 'a * 'a * 'a * 'a * 'a
 
-  (* +----------------------------------------------------------------------+ *)
-  (* |                               Vectors                                | *)
-  (* +----------------------------------------------------------------------+ *)
+  (* +------------------------------------------------------------------------+ *)
+  (* |                                Vectors                                 | *)
+  (* +------------------------------------------------------------------------+ *)
 
-  (** A type for vector of size 0 to 6. The second type parameter will always
-      be a natural number and represents the maximum number of elements the
-      vector can contain. *)
+  (** A type for vector of size 0 to 6. The second type parameter will always be a
+      natural number and represents the maximum number of elements the vector can
+      contain. *)
   type ('a, 'upperbound) vector =
     | V0 : ('a, 'n) vector
     | V1 : 'a -> ('a, 'n ge1) vector
@@ -74,9 +74,9 @@ module Make (Deque : DEQUE) = struct
     | V5 (a, b, c, d, e) -> fn (fn (fn (fn (fn z a) b) c) d) e
     | V6 (a, b, c, d, e, f) -> fn (fn (fn (fn (fn (fn z a) b) c) d) e) f
 
-  (* +----------------------------------------------------------------------+ *)
-  (* |                               Buffers                                | *)
-  (* +----------------------------------------------------------------------+ *)
+  (* +------------------------------------------------------------------------+ *)
+  (* |                                Buffers                                 | *)
+  (* +------------------------------------------------------------------------+ *)
 
   module Buffer : sig
     (** The type for buffer is parametrized by the type of elements it contains
@@ -137,8 +137,7 @@ module Make (Deque : DEQUE) = struct
         more than 6. *)
     val has3s : ('a, _ ge3) t -> 'a has3 * ('a * 'a * 'a)
 
-    (** A type storing either 4 elements or a buffer with at least 5
-        elements. *)
+    (** A type storing either 4 elements or a buffer with at least 5 elements. *)
     type 'a has5 =
       | Exact_4 : 'a four -> 'a has5
       | At_least_5 : ('a, _ ge5) t -> 'a has5
@@ -173,8 +172,8 @@ module Make (Deque : DEQUE) = struct
       | At_least_11 : ('a, z ge3) t * ('a, _ ge8) t -> 'a has3p8
 
     (** Tells if a given buffer of at least 8 elements has 8, 9 or 10 elements,
-        or if it has at least 11 elements. If it the case, it returns a buffer
-          of 3 elements and a buffer of at least 8 elements. *)
+        or if it has at least 11 elements. If it the case, it returns a buffer of
+        3 elements and a buffer of at least 8 elements. *)
     val has3p8 : ('a, _ ge8) t -> 'a has3p8
 
     (* Different operations needed for the cadeque package. *)
@@ -314,7 +313,7 @@ module Make (Deque : DEQUE) = struct
       | At_least_1 _ -> At_least_5 buffer
 
     let push_vector v t = vector_fold_right Deque.push v t
-    let inject_vector t v = vector_fold_left  Deque.inject t v
+    let inject_vector t v = vector_fold_left Deque.inject t v
 
     type 'a has3p8 =
       | Less_than_11 : 'a eight * ('a, eq2) vector -> 'a has3p8
@@ -350,9 +349,9 @@ module Make (Deque : DEQUE) = struct
       | _ -> At_least_1 (Deque.make n a)
   end
 
-  (* +----------------------------------------------------------------------+ *)
-  (* |                                Types                                 | *)
-  (* +----------------------------------------------------------------------+ *)
+  (* +------------------------------------------------------------------------+ *)
+  (* |                                 Types                                  | *)
+  (* +------------------------------------------------------------------------+ *)
 
   (* Prefixes and suffixes are simply buffers. *)
 
@@ -369,9 +368,8 @@ module Make (Deque : DEQUE) = struct
   type single = eq1
   type pair   = eq2
 
-  (** The coloring links a color to the size of a prefix and the size of a
-      suffix. *)
-  type ('prefix_delta, 'suffix_delta, 'arity, 'color) coloring =
+  (** The coloring links a color to the size of a prefix and the size of a suffix. *)
+  type ('prefix_size, 'suffix_size, 'nbr_child, 'color) coloring =
     | Gc : (_ ge3, _ ge3, _ ge1, green ) coloring
     | Yc : (_ ge2, _ ge2, _ ge1, yellow) coloring
     | Oc : (_ ge1, _ ge1, _ ge1, orange) coloring
@@ -381,29 +379,29 @@ module Make (Deque : DEQUE) = struct
   (** A node represents a prefix - suffix pair.
 
       [only] node follow the coloring constraints linking the prefix size, the
-      suffix size and the color, except for the ending one, representing solely
-      a prefix of at least one element.
+      suffix size and the color, except for the ending one, representing solely a
+      prefix of at least one element.
 
       [left] ([right]) node follow the coloring constraints only for the size
       of the prefix (suffix), the suffix (prefix) containing two elements. The
       prefix (suffix) of an ending left (right) node must contain at least
       five elements. *)
-  type ('a, 'arity, 'kind, 'color) node =
+  type ('a, 'nbr_child, 'kind, 'color) node =
     | Only_end  : ('a, _ ge1) prefix -> ('a, eq0, only, green) node
-    | Only  : ('pdelta, 'sdelta, 'n ge1, 'c) coloring
-            * ('a, 'pdelta ge5) prefix * ('a, 'sdelta ge5) suffix
-          -> ('a, 'n ge1, only, 'c) node
-    | Left  : ('pdelta, _, 'arity, 'c) coloring
-            * ('a, 'pdelta ge5) prefix * ('a, eq2) suffix
-          -> ('a, 'arity, left, 'c) node
-    | Right : (_, 'sdelta, 'arity, 'c) coloring
-            * ('a, eq2) prefix * ('a, 'sdelta ge5) suffix
-          -> ('a, 'arity, right, 'c) node
+    | Only  : ('psize, 'ssize, 'n ge1, 'c) coloring
+            * ('a, 'psize ge5) prefix * ('a, 'ssize ge5) suffix
+           -> ('a, 'n ge1, only, 'c) node
+    | Left  : ('psize, _, 'nc, 'c) coloring
+            * ('a, 'psize ge5) prefix * 'a * 'a
+           -> ('a, 'nc, left, 'c) node
+    | Right : (_, 'ssize, 'nc, 'c) coloring
+            * 'a * 'a * ('a, 'ssize ge5) suffix
+           -> ('a, 'nc, right, 'c) node
 
   (** Regularity represents constraints between a node color and its child chain
       parameters. The second parameter keeps track of the color of the single
-    chain represented by the node and its child chain. *)
-  type ('col_top, 'col_chain, 'ckind, 'col_left, 'col_right) regularity =
+      chain represented by the node and its child chain. *)
+  type ('color_top, 'color_chain, 'ckind, 'color_left, 'color_right) regularity =
     | G  : (green , green,      _,     _,     _) regularity
     | Y  : (yellow,   'cl,  _ ge1,   'cl,     _) regularity
     | OS : (orange,    'c, single,    'c,    'c) regularity
@@ -412,12 +410,12 @@ module Make (Deque : DEQUE) = struct
 
   (** A stored triple is either small, and made of one buffer, or big, and made
       of prefix - child - suffix triple. *)
-  type 'a stored =
-    | Small : ('a, _ ge3) prefix -> 'a stored
+  type 'a stored_triple =
+    | Small : ('a, _ ge3) prefix -> 'a stored_triple
     | Big : ('a, _ ge3) prefix
-          * ('a stored, _, only, _, _) chain
+          * ('a stored_triple, _, only, _, _) chain
           * ('a, _ ge3) suffix
-        -> 'a stored
+         -> 'a stored_triple
 
   (** A body represents a descending preferred path : it follows yellow and
       orange nodes according to the preferred child relation. A body always end
@@ -426,37 +424,37 @@ module Make (Deque : DEQUE) = struct
   and ('a, 'b, 'head_nkind, 'tail_nkind) body =
     | Hole : ('a, 'a, 'nkind, 'nkind) body
     | Single_child :
-        ('a, eq1, 'head_nkind, nogreen * _ * _ * nored) node
-      * ('a stored, 'b, only, 'tail_nkind) body
+         ('a, eq1, 'head_nkind, nogreen * _ * _ * nored) node
+       * ('a stored_triple, 'b, only, 'tail_nkind) body
       -> ('a, 'b, 'head_nkind, 'tail_nkind) body
     | Pair_yellow :
-        ('a, eq2, 'head_nkind, yellow) node
-      * ('a stored, 'b, left, 'tail_nkind) body
-      * ('a stored, single, right, 'c, 'c) chain
+         ('a, eq2, 'head_nkind, yellow) node
+       * ('a stored_triple, 'b, left, 'tail_nkind) body
+       * ('a stored_triple, single, right, 'c, 'c) chain
       -> ('a, 'b, 'head_nkind, 'tail_nkind) body
     | Pair_orange :
-        ('a, eq2, 'head_nkind, orange) node
-      * ('a stored, single, left, green, green) chain
-      * ('a stored, 'b, right, 'tail_nkind) body
+         ('a, eq2, 'head_nkind, orange) node
+       * ('a stored_triple, single, left, green, green) chain
+       * ('a stored_triple, 'b, right, 'tail_nkind) body
       -> ('a, 'b, 'head_nkind, 'tail_nkind) body
 
-  (** A packet represents a preferred path and its last node. As the last node
-      is not yellow or orange, it is necessarily green or red. The last node
-      take the place of the body's hole. Its parameter are its input and output
-      types, its input kind, wether or not its last node is an ending one, and
-      the color of its last node. *)
-  and ('a, 'b, 'arity, 'nkind, 'color) packet =
+  (** A packet represents a preferred path and its last node. As the last node is
+      not yellow or orange, it is necessarily green or red. The last node take
+      the place of the body's hole. Its parameter are its input and output types,
+      its input kind, wether or not its last node is an ending one, and the color
+      of its last node. *)
+  and ('a, 'b, 'nbr_child, 'nkind, 'color) packet =
     | Packet :
-        ('a, 'b, 'nkind, 'tail_nkind) body
-      * ('b, 'arity, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
-      -> ('a, 'b stored, 'arity, 'nkind, 'c) packet
+         ('a, 'b, 'nkind, 'tail_nkind) body
+       * ('b, 'nc, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
+      -> ('a, 'b stored_triple, 'nc, 'nkind, 'c) packet
 
   (** A chain represents a semi-regular cadeque with a lot of additional
       information. The first parameter is simply the input type of the cadeque.
 
       The second parameter concerns the shape of the chain. [single] means that
-      the chain starts with one branch, [pair] means that the chain starts with
-      a left and a right branch.
+      the chain starts with one branch, [pair] means that the chain starts with a
+      left and a right branch.
 
       The third parameter is the kind of the chain. Here, this parameter is used
       to describe two concepts. First, as for other types, the kind represents
@@ -464,63 +462,60 @@ module Make (Deque : DEQUE) = struct
       this only make sense for only chains, as pair chains have two top nodes.
       Hence, the kind of pair chains is considered to be [only]. In fact, the
       [only] kind also tells us that this chain can be a child of a node. [left]
-      and [right] chains can solely be only chains, and alone, they cannot be
-      the child of a node.
+      and [right] chains can solely be only chains, and alone, they cannot be the
+      child of a node.
 
-      The fourth parameter is straight forward, it differentiates the empty
-      chain from others. Thanks to it, a ending packet is necessarily followed
-      by the empty chain.
+      The fourth parameter is straight forward, it differentiates the empty chain
+      from others. Thanks to it, a ending packet is necessarily followed by the
+      empty chain.
 
       The last two parameters concerns the chain coloring. In the case of a pair
       chain, two colors are needed to know the color of the left path and the
       color of the right path. If the chain is only, the left and right colors
       are the same, the color of its only path. *)
-  and ('a, 'arity, 'kind, 'cl, 'cr) chain =
-    | Empty :
-         ('a, empty, _, _, _) chain
-    | Single :
-         ('c, _, 'arity1, 'cl1, 'cr1) regularity   (* regularity constraint *)
-       * ('a, 'b, 'arity1, 'kind, 'c) packet       (* root packet *)
-       * ('b , 'arity1, only, 'cl1, 'cr1) chain    (* child chain *)
-      -> ('a, single, 'kind, 'c, 'c) chain
-    | Pair :
-         ('a, single, left , 'cl, 'cl) chain       (* left single chain *)
-       * ('a, single, right, 'cr, 'cr) chain       (* right single chain *)
-      -> ('a, pair, _, 'cl, 'cr) chain
+  and ('a, 'ckind, 'nkind, 'color_left, 'color_right) chain =
+    | Empty : ('a, empty, only, green, green) chain
+    | Single : ('c, 'c, 'nc, 'cl, 'cr) regularity
+             * ('a, 'b, 'nc, 'nk, 'c) packet
+             * ('b, 'nc, only, 'cl, 'cr) chain
+            -> ('a, single, 'nk, 'c, 'c) chain
+    | Pair : ('a, single, left , 'cl, 'cl) chain
+           * ('a, single, right, 'cr, 'cr) chain
+          -> ('a, pair, only, 'cl, 'cr) chain
 
   (** A type representing prefix and suffix of at least 3 elements. *)
   type _ stored_buffer =
     | Stored_buffer : ('a, _ ge3) Buffer.t -> 'a stored_buffer
 
-  (** A type for the triple representation of a non-empty cadeque. First comes
-      the regularity constraints, then the node as a node, then the child
-      cadeque as a chain. *)
+  (** A type for the triple representation of a non-empty cadeque. First comes the
+      regularity constraints, then the prefix and suffix as a node, then the
+      child cadeque as a chain. *)
   type ('a, 'nkind, 'color_chain) triple =
     | Triple :
-        ('c, 'cc, 'arity, 'cl, 'cr) regularity
-      * ('a, 'arity, 'nk, 'c) node
-      * ('a stored, 'arity, only, 'cl, 'cr) chain
+         ('c, 'cc, 'nc, 'cl, 'cr) regularity
+       * ('a, 'nc, 'nk, 'c) node
+       * ('a stored_triple, 'nc, only, 'cl, 'cr) chain
       -> ('a, 'nk, 'cc) triple
 
   (** A type used to represent left or right triples. If there is not enough
       elements to make one, they are stored in a vector. *)
   type (_, _, _) left_right_triple =
-    | Not_enough : ('a, eq6) vector -> ('a, _, _) left_right_triple
+    | Not_enough : ('a, eq6) vector -> ('a, _, green) left_right_triple
     | Ok : ('a, 'k, 'c) triple -> ('a, 'k, 'c) left_right_triple
 
   (** A type used to represent triples after a pop or eject operation. If the
-      remaining triple is still valid, it is stored as it is. If not, it means
-      it remains six elements if it was a left or right triple, or noorange
-      element if it was an only triple. The [pair] parameter is used to
-      differentiate between those two possible cases. It translates to : was
-      the modified triple part of a pair or not. *)
+      remaining triple is still valid, it is stored as it is. If not, it means it
+      remains six elements if it was a left or right triple, or noorange element if it
+      was an only triple. The [pair] parameter is used to differentiate between
+      those two possible cases. It translates to : was the modified triple part
+      of a pair or not. *)
   type ('a, 'ckind, 'nkind) partial_triple =
     | Empty : ('a, single, _) partial_triple
     | End : 'a six -> ('a, pair, _) partial_triple
     | Ok : ('a, 'nk, _) triple -> ('a, _, 'nk) partial_triple
 
-  (** The sandwich type contains either one element of type [exter] or an
-      element of type [inter] sandwiched into two elements of type [exter]. *)
+  (** The sandwich type contains either one element of type [exter] or an element
+      of type [inter] sandwiched into two elements of type [exter]. *)
   type ('exter, 'inter) sandwich =
     | Alone : 'exter -> ('exter, _) sandwich
     | Sandwich : 'exter * 'inter * 'exter -> ('exter, 'inter) sandwich
@@ -531,31 +526,31 @@ module Make (Deque : DEQUE) = struct
   (** A type for regular cadeques. *)
   type 'a cadeque = T : ('a, _, only, green, green) chain -> 'a cadeque
 
-  (* +----------------------------------------------------------------------+ *)
-  (* |                                 Core                                 | *)
-  (* +----------------------------------------------------------------------+ *)
+  (* +------------------------------------------------------------------------+ *)
+  (* |                                  Core                                  | *)
+  (* +------------------------------------------------------------------------+ *)
 
   (** Pushes on a left node. *)
   let push_left_node
   : type a ck c. a -> (a, ck, left, c) node -> (a, ck, left, c) node
   = fun x store ->
     match store with
-    | Left (Gc, p, s) -> Left (Gc, Buffer.push x p, s)
-    | Left (Yc, p, s) -> Left (Yc, Buffer.push x p, s)
-    | Left (Oc, p, s) -> Left (Oc, Buffer.push x p, s)
-    | Left (Rc, p, s) -> Left (Rc, Buffer.push x p, s)
-    | Left (Ec, p, s) -> Left (Ec, Buffer.push x p, s)
+    | Left (Gc, p, y, z) -> Left (Gc, Buffer.push x p, y, z)
+    | Left (Yc, p, y, z) -> Left (Yc, Buffer.push x p, y, z)
+    | Left (Oc, p, y, z) -> Left (Oc, Buffer.push x p, y, z)
+    | Left (Rc, p, y, z) -> Left (Rc, Buffer.push x p, y, z)
+    | Left (Ec, p, y, z) -> Left (Ec, Buffer.push x p, y, z)
 
   (** Injects on a right node. *)
   let inject_right_node
   : type a ck c. (a, ck, right, c) node -> a -> (a, ck, right, c) node
   = fun store x ->
     match store with
-    | Right (Gc, p, s) -> Right (Gc, p, Buffer.inject s x)
-    | Right (Yc, p, s) -> Right (Yc, p, Buffer.inject s x)
-    | Right (Oc, p, s) -> Right (Oc, p, Buffer.inject s x)
-    | Right (Rc, p, s) -> Right (Rc, p, Buffer.inject s x)
-    | Right (Ec, p, s) -> Right (Ec, p, Buffer.inject s x)
+    | Right (Gc, a, b, s) -> Right (Gc, a, b, Buffer.inject s x)
+    | Right (Yc, a, b, s) -> Right (Yc, a, b, Buffer.inject s x)
+    | Right (Oc, a, b, s) -> Right (Oc, a, b, Buffer.inject s x)
+    | Right (Rc, a, b, s) -> Right (Rc, a, b, Buffer.inject s x)
+    | Right (Ec, a, b, s) -> Right (Ec, a, b, Buffer.inject s x)
 
   (** Pushes on an only node. *)
   let push_only_node
@@ -660,7 +655,7 @@ module Make (Deque : DEQUE) = struct
   (** Injects on a non-empty only chain. *)
   let inject_ne_chain
   : type a n cl cr. (a, n ge1, only, cl, cr) chain -> a
-                -> (a, n ge1, only, cl, cr) chain
+                 -> (a, n ge1, only, cl, cr) chain
   = fun c x ->
     match c with
     | Single (reg, pkt, c) -> Single (reg, inject_only_packet pkt x, c)
@@ -690,12 +685,12 @@ module Make (Deque : DEQUE) = struct
       child. *)
   let to_reg
   : type a nk y o.
-      (a, single, nk, nogreen * y * o * nored as 'c) node
+       (a, single, nk, nogreen * y * o * nored as 'c) node
     -> ('c, _, single, _, _) regularity
   = function
-    | Only  (Yc, _, _) -> Y | Only  (Oc, _, _) -> OS
-    | Left  (Yc, _, _) -> Y | Left  (Oc, _, _) -> OS
-    | Right (Yc, _, _) -> Y | Right (Oc, _, _) -> OS
+    | Only  (Yc, _, _)    -> Y | Only  (Oc, _, _)    -> OS
+    | Left  (Yc, _, _, _) -> Y | Left  (Oc, _, _, _) -> OS
+    | Right (Yc, _, _, _) -> Y | Right (Oc, _, _, _) -> OS
 
   (** Returns the triple representation of a non-empty only chain. *)
   let triple_of_chain
@@ -734,14 +729,12 @@ module Make (Deque : DEQUE) = struct
       | Less_than_7 v -> Not_enough v
       | At_least_7 p ->
         let p, y, x = Buffer.eject2 p in
-        let s = Buffer.pair y x in
-        Ok (Triple (G, Left (Ec, p, s), Empty))
+        Ok (Triple (G, Left (Ec, p, y, x), Empty))
       end
     | Triple (reg, Only (coloring, p, s), child) ->
       let s', y, x = Buffer.eject2 s in
-      let s = Buffer.pair y x in
       let child = inject_ne_chain child (Small s') in
-      Ok (Triple (reg, Left (coloring, p, s), child))
+      Ok (Triple (reg, Left (coloring, p, y, x), child))
 
   (** Makes a right [left_right_triple] out of an only triple. *)
   let right_of_only
@@ -752,54 +745,48 @@ module Make (Deque : DEQUE) = struct
       | Less_than_7 v -> Not_enough v
       | At_least_7 s ->
         let x, y, s = Buffer.pop2 s in
-        let p = Buffer.pair x y in
-        Ok (Triple (G, Right (Ec, p, s), Empty))
+        Ok (Triple (G, Right (Ec, x, y, s), Empty))
       end
     | Triple (reg, Only (coloring, p, s), child) ->
       let x, y, p' = Buffer.pop2 p in
-      let p = Buffer.pair x y in
       let child = push_ne_chain (Small p') child in
-      Ok (Triple (reg, Right (coloring, p, s), child))
+      Ok (Triple (reg, Right (coloring, x, y, s), child))
 
-  (** Takes a suffix of at least one element, a right prefix, a child chain and
-      a right suffix, and returns a stored triple and a left suffix. *)
-  let make_stored_suffix sleft p child s =
-    let pelt = Buffer.two p in
-    let p = Buffer.inject2 sleft pelt in
+  (** Takes a suffix of at least one element, a right prefix, a child chain and a
+      right suffix, and returns a stored triple and a left suffix. *)
+  let make_stored_suffix sleft a b child s =
+    let p = Buffer.inject2 sleft (a, b) in
     let s, y, x = Buffer.eject2 s in
-    let sleft = Buffer.pair y x in
-    (Big (p, child, s), sleft)
+    (Big (p, child, s), y, x)
 
   (** Takes a left prefix, a child chain, a left suffix and a prefix of at least
-      one elements, and returns a right prefix and a stored triple. *)
-  let make_prefix_stored p child s pright =
-    let selt = Buffer.two s in
-    let s = Buffer.push2 selt pright in
+      one elements, and returns a right prefix and a stored_triple. *)
+  let make_prefix_stored p child y z pright =
+    let s = Buffer.push2 (y, z) pright in
     let x, y, p = Buffer.pop2 p in
-    let pright = Buffer.pair x y in
-    (pright, Big (p, child, s))
+    (x, y, Big (p, child, s))
 
   (** Takes a suffix of at least one element and a right triple and returns a
       stored triple and a left suffix. *)
   let stored_of_right
   : type a cr.
-      (a, _ ge1) suffix -> (a, right, cr) triple
-    -> a stored * (a, eq2) suffix
+       (a, _ ge1) suffix -> (a, right, cr) triple
+    -> a stored_triple * a * a
   = fun sl tr ->
     match tr with
-    | Triple (_, Right (_, pr, sr), child) ->
-      make_stored_suffix sl pr child sr
+    | Triple (_, Right (_, a, b, sr), child) ->
+      make_stored_suffix sl a b child sr
 
   (** Takes a left triple and a prefix of at least one element and returns a
       right prefix and a stored triple. *)
   let stored_of_left
   : type a cl.
-      (a, left, cl) triple -> (a, _ ge1) prefix
-    -> (a, eq2) prefix * a stored
+       (a, left, cl) triple -> (a, _ ge1) prefix
+    -> a * a * a stored_triple
   = fun tl pr ->
     match tl with
-    | Triple (_, Left (_, pl, sl), child) ->
-      make_prefix_stored pl child sl pr
+    | Triple (_, Left (_, pl, y, z), child) ->
+      make_prefix_stored pl child y z pr
 
   (** Tells if a coloring applies to an ending node or not by looking at the
       emptyness of the child of the node. *)
@@ -810,40 +797,42 @@ module Make (Deque : DEQUE) = struct
   (** Makes a left triple out of a pair of left and right triples. *)
   let left_of_pair
   : type a cl cr.
-      (a, left , cl) triple
+       (a, left , cl) triple
     -> (a, right, cr) triple
     -> (a, left , cl) triple
-  = fun (Triple (reg, Left (coloring, p, s), child)) tr ->
+  = fun (Triple (reg, Left (coloring, p, y, z), child)) tr ->
     match reg, is_empty_coloring coloring with
     | G, Is_empty ->
-      let a, s = Buffer.pop s in
-      let p = Buffer.inject p a in
-      let stored, s = stored_of_right s tr in
+      let p = Buffer.inject p y in
+      let s = Buffer.single z in
+      let stored, y, z = stored_of_right s tr in
       let child = single_chain stored in
-      Triple (OS, Left (Oc, p, s), child)
+      Triple (OS, Left (Oc, p, y, z), child)
     | reg, Not_empty ->
-      let stored, s = stored_of_right s tr in
+      let s = Buffer.pair y z in
+      let stored, y, z = stored_of_right s tr in
       let child = inject_ne_chain child stored in
-      Triple (reg, Left (coloring, p, s), child)
+      Triple (reg, Left (coloring, p, y, z), child)
 
   (** Makes a right triple out of a pair of left and right triples. *)
   let right_of_pair
   : type a cl cr.
-      (a, left , cl) triple
+       (a, left , cl) triple
     -> (a, right, cr) triple
     -> (a, right, cr) triple
-  = fun tl (Triple (reg, Right (coloring, p, s), child)) ->
+  = fun tl (Triple (reg, Right (coloring, a, b, s), child)) ->
     match reg, is_empty_coloring coloring with
     | G, Is_empty ->
-      let p, a = Buffer.eject p in
-      let s = Buffer.push a s in
-      let p, stored = stored_of_left tl p in
+      let s = Buffer.push b s in
+      let p = Buffer.single a in
+      let a, b, stored = stored_of_left tl p in
       let child = single_chain stored in
-      Triple (OS, Right (Oc, p, s), child)
+      Triple (OS, Right (Oc, a, b, s), child)
     | reg, Not_empty ->
-      let p, stored = stored_of_left tl p in
+      let p = Buffer.pair a b in
+      let a, b, stored = stored_of_left tl p in
       let child = push_ne_chain stored child in
-      Triple (reg, Right (coloring, p, s), child)
+      Triple (reg, Right (coloring, a, b, s), child)
 
   (** Makes a left [left_right_triple] out of a chain. *)
   let make_left
@@ -876,7 +865,7 @@ module Make (Deque : DEQUE) = struct
       chain, i.e. if it is an only chain or a pair chain. *)
   let orange
   : type a n cr.
-      (a, n ge1, only, green, cr) chain
+       (a, n ge1, only, green, cr) chain
     -> (orange, cr, n ge1, green, cr) regularity
   = function
     | Single _ -> OS
@@ -886,39 +875,36 @@ module Make (Deque : DEQUE) = struct
   let pop_left_green
   : type a. (a, left, green) triple -> a * (a, pair, left) partial_triple
   = function
-    | Triple (reg, Left (coloring, p, s), child) ->
+    | Triple (reg, Left (coloring, p, y, z), child) ->
       let a, p = Buffer.pop p in
       match reg, coloring with
       | G , Ec ->
         begin match Buffer.has5 p with
-        | Exact_4 (b, c, d, e) ->
-          let f, g = Buffer.two s in
-          (a, End (b, c, d, e, f, g))
-        | At_least_5 p -> (a, Ok (Triple (G, Left (Ec, p, s), Empty)))
+        | Exact_4 (b, c, d, e) -> (a, End (b, c, d, e, y, z))
+        | At_least_5 p -> (a, Ok (Triple (G, Left (Ec, p, y, z), Empty)))
         end
-      | G , Gc -> (a, Ok (Triple (Y, Left (Yc, p, s), child)))
-      | Y , Yc -> (a, Ok (Triple (orange child, Left (Oc, p, s), child)))
-      | OS, Oc -> (a, Ok (Triple (R, Left (Rc, p, s), child)))
-      | OP, Oc -> (a, Ok (Triple (R, Left (Rc, p, s), child)))
+      | G , Gc -> (a, Ok (Triple (Y, Left (Yc, p, y, z), child)))
+      | Y , Yc -> (a, Ok (Triple (orange child, Left (Oc, p, y, z), child)))
+      | OS, Oc -> (a, Ok (Triple (R, Left (Rc, p, y, z), child)))
+      | OP, Oc -> (a, Ok (Triple (R, Left (Rc, p, y, z), child)))
 
   (** Ejects from a green right triple. *)
   let eject_right_green
   : type a. (a, right, green) triple -> (a, pair, right) partial_triple * a
   = function
-    | Triple (reg, Right (coloring, p, s), child) ->
-      let s, a = Buffer.eject s in
+    | Triple (reg, Right (coloring, a, b, s), child) ->
+      let s, z = Buffer.eject s in
       match reg, coloring with
       | G , Ec ->
         begin match Buffer.has5 s with
-        | Exact_4 (e, d, c, b) ->
-          let g, f = Buffer.two p in
-          (End (g, f, e, d, c, b), a)
-        | At_least_5 s -> (Ok (Triple (G, Right (Ec, p, s), Empty)), a)
+        | Exact_4 (v, w, x, y) ->
+          (End (a, b, v, w, x, y), z)
+        | At_least_5 s -> (Ok (Triple (G, Right (Ec, a, b, s), Empty)), z)
         end
-      | G , Gc -> (Ok (Triple (Y, Right (Yc, p, s), child)), a)
-      | Y , Yc -> (Ok (Triple (orange child, Right (Oc, p, s), child)), a)
-      | OS, Oc -> (Ok (Triple (R, Right (Rc, p, s), child)), a)
-      | OP, Oc -> (Ok (Triple (R, Right (Rc, p, s), child)), a)
+      | G , Gc -> (Ok (Triple (Y, Right (Yc, a, b, s), child)), z)
+      | Y , Yc -> (Ok (Triple (orange child, Right (Oc, a, b, s), child)), z)
+      | OS, Oc -> (Ok (Triple (R, Right (Rc, a, b, s), child)), z)
+      | OP, Oc -> (Ok (Triple (R, Right (Rc, a, b, s), child)), z)
 
   (** Pops from an green only triple. *)
   let pop_only_green = function
@@ -955,7 +941,7 @@ module Make (Deque : DEQUE) = struct
   (** Takes an green only triple and represent it as a sandwich. *)
   let sandwich_only_green
   : type a. (a, only, green) triple
-        -> (a, (a, single, only) partial_triple) sandwich
+         -> (a, (a, single, only) partial_triple) sandwich
   = function
     | Triple (G, Only_end p, Empty) ->
       let a, p = Buffer.pop p in
@@ -981,46 +967,46 @@ module Make (Deque : DEQUE) = struct
   (** Adapts a coloring to a prefix of 8 or more elements. *)
   let adapt_to_prefix
   : type sp sp1 ss1 nc c.
-      (sp1, ss1, nc, c) coloring -> (sp ge3, ss1, nc, c) coloring
+       (sp1, ss1, nc, c) coloring -> (sp ge3, ss1, nc, c) coloring
   = function Gc -> Gc | Yc -> Yc | Oc -> Oc | Rc -> Rc | Ec -> Ec
 
   (** Makes an only triple out of six elements and a right triple. *)
   let only_of_right
   : type a c.
-      a six
+       a six
     -> (a, right, c) triple
     -> (a, only, c) triple
-  = fun six (Triple (reg, Right (coloring, p, s), child)) ->
+  = fun six (Triple (reg, Right (coloring, a, b, s), child)) ->
     match reg, is_empty_coloring coloring, coloring with
     | G, Is_empty, Ec ->
-      let two = Buffer.two p in
-      let s = Buffer.push2 two s in
+      let s = Buffer.push2 (a, b) s in
       let s = Buffer.push6 six s in
       Triple (G, Only_end s, child)
     | reg, Not_empty, coloring ->
+      let p = Buffer.pair a b in
       let p = Buffer.push6 six p in
       Triple (reg, Only (adapt_to_prefix coloring, p, s), child)
 
   (** Adapts a coloring to a suffix of 8 or more elements. *)
   let adapt_to_suffix
   : type ss sp1 ss1 nc c.
-      (sp1, ss1, nc, c) coloring -> (sp1, ss ge3, nc, c) coloring
+       (sp1, ss1, nc, c) coloring -> (sp1, ss ge3, nc, c) coloring
   = function Gc -> Gc | Yc -> Yc | Oc -> Oc | Rc -> Rc | Ec -> Ec
 
   (** Makes an only triple out of a left triple and six elements. *)
   let only_of_left
   : type a c.
-      (a, left, c) triple
+       (a, left, c) triple
     -> a six
     -> (a, only, c) triple
-  = fun (Triple (reg, Left (coloring, p, s), child)) six ->
+  = fun (Triple (reg, Left (coloring, p, y, z), child)) six ->
     match reg, is_empty_coloring coloring, coloring with
     | G, Is_empty, Ec ->
-      let two = Buffer.two s in
-      let p = Buffer.inject2 p two in
+      let p = Buffer.inject2 p (y, z) in
       let p = Buffer.inject6 p six in
       Triple (G, Only_end p, Empty)
     | reg, Not_empty, coloring ->
+      let s = Buffer.pair y z in
       let s = Buffer.inject6 s six in
       Triple (reg, Only (adapt_to_suffix coloring, p, s), child)
 
@@ -1070,7 +1056,7 @@ module Make (Deque : DEQUE) = struct
   (** Pops from a non-empty green chain. *)
   let pop_green
   : type a n.
-      (a, n ge1, only, green, green) chain
+       (a, n ge1, only, green, green) chain
     -> a * a semi_cadeque
   = function
     | Pair _ as c -> pop_pair_green c
@@ -1084,7 +1070,7 @@ module Make (Deque : DEQUE) = struct
   (** Ejects from a non-empty green chain. *)
   let eject_green
   : type a n.
-      (a, n ge1, only, green, green) chain
+       (a, n ge1, only, green, green) chain
     -> a semi_cadeque * a
   = function
     | Pair _ as c -> eject_pair_green c
@@ -1098,7 +1084,7 @@ module Make (Deque : DEQUE) = struct
   (** Takes a non-empty green chain and represent it as a sandwich. *)
   let sandwich_green
   : type a n.
-      (a, n ge1, only, green, green) chain
+       (a, n ge1, only, green, green) chain
     -> (a, a semi_cadeque) sandwich
   = function
     | Pair _ as c -> sandwich_pair_green c
@@ -1110,9 +1096,8 @@ module Make (Deque : DEQUE) = struct
       | Sandwich (a, Ok t, z) -> Sandwich (a, S (chain_of_triple t), z)
 
   (** Takes a prefix of at least 5 elements, a prefix of at least 3 elements and
-      and a semi-regular cadeque of stored triples. Rearranges the elements of
-      the second prefix to make the first one green (i.e. at least 8
-      elements). *)
+      and a semi-regular cadeque of stored triples. Rearranges the elements of the
+      second prefix to make the first one green (i.e. at least 8 elements). *)
   let make_green_prefix p1 p2 child =
     match Buffer.has3p p2 with
     | three, Less_than_3 v ->
@@ -1126,8 +1111,7 @@ module Make (Deque : DEQUE) = struct
 
   (** Takes a semi-regular cadeque of stored triples, a suffix of at least 3
       elements and a suffix of at least 5 elements. Rearranges the elements of
-      the first suffix to make the second one green (i.e. at least 8
-      elements). *)
+      the first suffix to make the second one green (i.e. at least 8 elements). *)
   let make_green_suffix child s2 s1 =
     match Buffer.has3s s2 with
     | Less_than_3 v, three ->
@@ -1139,9 +1123,9 @@ module Make (Deque : DEQUE) = struct
       let child = semi_inject child (Small s2) in
       (child, s1)
 
-  (** Takes a stored triple and a semi-regular cadeque of stored triples.
-      Extracts the prefix of the stored triple, the remaining elements and the
-      semi-regular cadeque form a new semi-regular cadeque. *)
+  (** Takes a stored triple and a semi-regular cadeque of stored triples. Extracts
+      the prefix of the stored triple, the remaining elements and the semi-
+      regular cadeque form a new semi-regular cadeque. *)
   let extract_prefix stored child = match stored with
     | Small p -> (Stored_buffer p, child)
     | Big (p, stored_child, s) ->
@@ -1149,9 +1133,9 @@ module Make (Deque : DEQUE) = struct
       let child = semi_concat (S stored_child) child in
       (Stored_buffer p, child)
 
-  (** Takes a semi-regular cadeque of stored triples and a stored triple.
-      Extracs the suffix of the stored triple, the semi-regular cadeque and the
-      remaining elements form a new semi-regular cadeque. *)
+  (** Takes a semi-regular cadeque of stored triples and a stored triple. Extracs
+      the suffix of the stored triple, the semi-regular cadeque and the remaining
+      elements form a new semi-regular cadeque. *)
   let extract_suffix child stored = match stored with
     | Small s -> (child, Stored_buffer s)
     | Big (p, stored_child, s) ->
@@ -1160,16 +1144,16 @@ module Make (Deque : DEQUE) = struct
       (child, Stored_buffer s)
 
   (** Takes a prefix of at least 5 elements and a semi-regular cadeque of stored
-      triples. Rearranges elements of the semi-regular cadeque to make the
-      prefix green. *)
+      triples. Rearranges elements of the semi-regular cadeque to make the prefix
+      green. *)
   let ensure_green_prefix p child =
     let stored, child = pop_green child in
     let Stored_buffer p2, child = extract_prefix stored child in
     make_green_prefix p p2 child
 
   (** Takes a semi-regular cadeque of stored triples and a suffix of at least 5
-      elements. Rearranges elements of the semi-regular cadeque to make the
-      suffix green. *)
+      elements. Rearranges elements of the semi-regular cadeque to make the suffix
+      green. *)
   let ensure_green_suffix child s =
     let child, stored = eject_green child in
     let child, Stored_buffer s2 = extract_suffix child stored in
@@ -1177,19 +1161,19 @@ module Make (Deque : DEQUE) = struct
 
   (** Takes a body, a following red left node and the following green chain,
       and makes a green chain out of them. *)
-  let green_of_red_left body (Left (Rc, p, s)) child =
+  let green_of_red_left body (Left (Rc, p, y, z)) child =
     let p, S child = ensure_green_prefix p child in
     match is_empty child, child with
-    | Is_empty, Empty -> Single (G, Packet (body, Left (Ec, p, s)), Empty)
-    | Not_empty, child -> Single (G, Packet (body, Left (Gc, p, s)), child)
+    | Is_empty, Empty -> Single (G, Packet (body, Left (Ec, p, y, z)), Empty)
+    | Not_empty, child -> Single (G, Packet (body, Left (Gc, p, y, z)), child)
 
   (** Takes a body, a following red right node and the following green chain,
       and makes a green chain out of them. *)
-  let green_of_red_right body (Right (Rc, p, s)) child =
+  let green_of_red_right body (Right (Rc, a, b, s)) child =
     let S child, s = ensure_green_suffix child s in
     match is_empty child, child with
-    | Is_empty, Empty -> Single (G, Packet (body, Right (Ec, p, s)), Empty)
-    | Not_empty, child -> Single (G, Packet (body, Right (Gc, p, s)), child)
+    | Is_empty, Empty -> Single (G, Packet (body, Right (Ec, a, b, s)), Empty)
+    | Not_empty, child -> Single (G, Packet (body, Right (Gc, a, b, s)), child)
 
   (** Takes a body and a following green triple, and makes a green chain out of
       them. *)
@@ -1237,7 +1221,7 @@ module Make (Deque : DEQUE) = struct
   (** Takes any chain and makes it green. *)
   let rec ensure_green
   : type a ck k cl cr.
-      (a, ck, k, cl, cr) chain
+       (a, ck, k, cl, cr) chain
     -> (a, ck, k, green, green) chain
   = function
     | Empty -> Empty
@@ -1252,14 +1236,14 @@ module Make (Deque : DEQUE) = struct
     | Pair (cl, cr) ->
       Pair (ensure_green cl, ensure_green cr)
 
-  (** Regularizes a semi-regular cadeque. *)
-  let regularize
-  : type a. a semi_cadeque -> a cadeque
-  = fun (S c) -> T (ensure_green c)
+    (** Regularizes a semi-regular cadeque. *)
+    let regularize
+    : type a. a semi_cadeque -> a cadeque
+    = fun (S c) -> T (ensure_green c)
 
-  (* +----------------------------------------------------------------------+ *)
-  (* |                              Operations                              | *)
-  (* +----------------------------------------------------------------------+ *)
+  (* +------------------------------------------------------------------------+ *)
+  (* |                               Operations                               | *)
+  (* +------------------------------------------------------------------------+ *)
 
   (** The empty cadeque. *)
   let empty = T Empty

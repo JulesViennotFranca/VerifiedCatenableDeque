@@ -59,9 +59,9 @@ module Cadeque = struct
   let color = "#5C7AFF"
 end
 
-module PairBuffers = struct
-  include Cadeque.PairBuffers
+module ArtWend = struct
+  include Cadeque.ArtWend
 
-  let name = "pair buffers"
+  let name = "AW cadeque"
   let color = "#6338B3"
 end

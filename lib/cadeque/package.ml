@@ -41,18 +41,18 @@ module Base = struct
         let z = fold_left_buffer f z p in
         let z = fold_left z follow in
         fold_left_buffer f z s
-      | Left (_, p, s) ->
+      | Left (_, p, a, b) ->
         let z = fold_left_buffer f z p in
         let z = fold_left z follow in
-        fold_left_buffer f z s
-      | Right (_, p, s) ->
-        let z = fold_left_buffer f z p in
+        f (f z a) b
+      | Right (_, a, b, s) ->
+        let z = f (f z a) b in
         let z = fold_left z follow in
         fold_left_buffer f z s
     in
 
     let rec fold_left_stored_triple
-    : type a. (z -> a -> z) -> z -> a stored -> z
+    : type a. (z -> a -> z) -> z -> a stored_triple -> z
     = fun f z st ->
       match st with
       | Small b -> fold_left_buffer f z b
@@ -119,18 +119,18 @@ module Base = struct
         let z = fold_right_buffer f s z in
         let z = fold_right follow z in
         fold_right_buffer f p z
-      | Left (_, p, s) ->
-        let z = fold_right_buffer f s z in
+      | Left (_, p, a, b) ->
+        let z = f a (f b z) in
         let z = fold_right follow z in
         fold_right_buffer f p z
-      | Right (_, p, s) ->
+      | Right (_, a, b, s) ->
         let z = fold_right_buffer f s z in
         let z = fold_right follow z in
-        fold_right_buffer f p z
+        f a (f b z)
     in
 
     let rec fold_right_stored_triple
-    : type a. (a -> z -> z) -> a stored -> z -> z
+    : type a. (a -> z -> z) -> a stored_triple -> z -> z
     = fun f st z ->
       match st with
       | Small b -> fold_right_buffer f b z

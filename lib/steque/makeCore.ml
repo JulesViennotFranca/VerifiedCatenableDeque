@@ -1,4 +1,5 @@
 open Color.GYR
+type orange = nogreen * someyellow * somered
 
 module Make (Deque : ListLike.DEQUE) = struct
 

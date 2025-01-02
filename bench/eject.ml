@@ -9,7 +9,7 @@ let modules : (module OP) list = [
   (module Modules.List);
   (module Modules.Deque);
   (module Modules.Cadeque);
-  (module Modules.PairBuffers)
+  (module Modules.ArtWend)
 ]
 
 let make_point steps size (module M : OP) =
