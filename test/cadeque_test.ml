@@ -77,14 +77,14 @@ let buffer_ge3 e : ('a, z ge3) Buffer.t m = buffer_make e (3 + Random.int 6)
 let buffer_eq2 e : ('a, z ge2) Buffer.t m = buffer_make e 2
 let buffer_ge1 e : ('a, z ge1) Buffer.t m = buffer_make e (1 + Random.int 6)
 
-type ('a, 'nkind, 'color_left) lcolor_chain =
-  | Lcolor : ('a, 'ck ge1, 'nk, 'cl, 'cr) chain -> ('a, 'nk, 'cl) lcolor_chain
+type ('a, 'nkind, 'left_color) lchain_color =
+  | Lcolor : ('a, 'ck ge1, 'nk, 'cl, 'cr) chain -> ('a, 'nk, 'cl) lchain_color
 
-type ('a, 'nkind, 'color) onecolor_chain =
-  | Onecolor : ('a, 'ck ge1, 'nk, 'c, 'c) chain -> ('a, 'nk, 'c) onecolor_chain
+type ('a, 'nkind, 'color) onechain_color =
+  | Onecolor : ('a, 'ck ge1, 'nk, 'c, 'c) chain -> ('a, 'nk, 'c) onechain_color
 
-type ('a, 'nkind) nocolor_chain =
-  | Nocolor : ('a, 'ck ge1, 'nk, 'cl, 'cr) chain -> ('a, 'nk) nocolor_chain
+type ('a, 'nkind) nochain_color =
+  | Nocolor : ('a, 'ck ge1, 'nk, 'cl, 'cr) chain -> ('a, 'nk) nochain_color
 
 let rec stored_triple
 : type a. a m -> a stored_triple m
@@ -350,7 +350,7 @@ and pair_green_red_chain
     return (Pair (chain_of_triple tl, chain_of_triple tr))))
 
 and non_empty_green_chain
-: type a. a m -> (a, only, green) onecolor_chain m
+: type a. a m -> (a, only, green) onechain_color m
 = fun e ->
   Nest
   (fun () ->
@@ -361,7 +361,7 @@ and non_empty_green_chain
     return (Onecolor c)))
 
 and non_empty_green_left_chain
-: type a. a m -> (a, only, green) lcolor_chain m
+: type a. a m -> (a, only, green) lchain_color m
 = fun e ->
   Nest
   (fun () ->
@@ -372,7 +372,7 @@ and non_empty_green_left_chain
     return (Lcolor c)))
 
 and non_empty_red_left_chain
-: type a. a m -> (a, only, red) lcolor_chain m
+: type a. a m -> (a, only, red) lchain_color m
 = fun e ->
   Nest
   (fun () ->
@@ -388,7 +388,7 @@ and non_empty_red_left_chain
     return (Lcolor (Pair (chain_of_triple tl, chain_of_triple tr)))))
 
 and non_empty_chain
-: type a. a m -> (a, only) nocolor_chain m
+: type a. a m -> (a, only) nochain_color m
 = fun e ->
   Nest
   (fun () ->

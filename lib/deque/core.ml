@@ -22,7 +22,7 @@ type ('a, 'b, 'color) packet =
           -> ('a, 'b, 'c) packet
 
 (** A type for the regularity relation. *)
-type ('color_pkt, 'color_chain) regularity =
+type ('pkt_color, 'chain_color) regularity =
   | G : (green , _ * noyellow * _) regularity
   | Y : (yellow, green) regularity
   | R : (red   , green) regularity

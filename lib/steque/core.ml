@@ -1,14 +1,14 @@
 open Color.GYR
 type orange = nogreen * someyellow * somered
 
-module Deque = Deque.Core
+module Deque = Deque.Package
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
 (* +------------------------------------------------------------------------+ *)
 
 (** A type for suffix buffers. *)
-type 'a suffix = 'a Deque.deque
+type 'a suffix = 'a Deque.t
 
 (** A type for prefix buffers that need to have at least two elements. *)
 type ('a, 'color) prefix =
@@ -20,7 +20,7 @@ type ('a, 'color) prefix =
 type 'a gy_prefix = GY : ('a, _ * _ * nored) prefix -> 'a gy_prefix
 
 (** A type for the regularity relation. *)
-type ('color_pkt, 'color_sub, 'color_chain) regularity =
+type ('pkt_color, 'color_sub, 'chain_color) regularity =
   | G : ( green, _ * noyellow * _,  green) regularity
   | Y : (yellow, green, yellow) regularity
   | O : (yellow,   red, orange) regularity
@@ -40,7 +40,7 @@ and ('a, 'b, 'color) packet =
 
 (** A type for chains. *)
 and ('a, 'color) chain =
-  | Ending : 'a Deque.deque -> ('a, green) chain
+  | Ending : 'a Deque.t -> ('a, green) chain
   | Chain : ('c1, 'c2, 'c3) regularity
           * ('a, 'b, 'c1) packet
           * ('b, 'c2) chain

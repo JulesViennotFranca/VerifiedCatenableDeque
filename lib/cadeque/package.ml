@@ -1,4 +1,3 @@
-module Core = MakeCore.Make(Deque.Package)
 open Core
 
 module Base = struct
