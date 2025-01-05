@@ -40,11 +40,11 @@ module Base = struct
         let z = fold_left_buffer f z p in
         let z = fold_left z follow in
         fold_left_buffer f z s
-      | Left (_, p, a, b) ->
+      | Left (_, p, (b, a)) ->
         let z = fold_left_buffer f z p in
         let z = fold_left z follow in
-        f (f z a) b
-      | Right (_, a, b, s) ->
+        f (f z b) a
+      | Right (_, (a, b), s) ->
         let z = f (f z a) b in
         let z = fold_left z follow in
         fold_left_buffer f z s
@@ -118,11 +118,11 @@ module Base = struct
         let z = fold_right_buffer f s z in
         let z = fold_right follow z in
         fold_right_buffer f p z
-      | Left (_, p, a, b) ->
-        let z = f a (f b z) in
+      | Left (_, p, (b, a)) ->
+        let z = f b (f a z) in
         let z = fold_right follow z in
         fold_right_buffer f p z
-      | Right (_, a, b, s) ->
+      | Right (_, (a, b), s) ->
         let z = fold_right_buffer f s z in
         let z = fold_right follow z in
         f a (f b z)

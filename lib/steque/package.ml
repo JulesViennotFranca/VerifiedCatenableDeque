@@ -27,10 +27,10 @@ module Base = struct
       | P2 (a, b) -> f (f z a) b
       | P3 (a, b, c) -> f (f (f z a) b) c
       | P4 (a, b, c, d, e) ->
-        Deque.Package.fold_left f (f (f (f (f z a) b) c) d) e
+        Deque.fold_left f (f (f (f (f z a) b) c) d) e
     in
 
-    let fold_left_suffix = Deque.Package.fold_left in
+    let fold_left_suffix = Deque.fold_left in
 
     let rec fold_left_pair
     : type a. (z -> a -> z) -> z -> a pair -> z
@@ -53,7 +53,7 @@ module Base = struct
     : type a c. (z -> a -> z) -> z -> (a, c) chain -> z
     = fun f z c ->
       match c with
-      | Ending d -> Deque.Package.fold_left f z d
+      | Ending d -> Deque.fold_left f z d
       | Chain (_, pkt, c) -> fold_left_packet f z (pkt, c)
     in
 
@@ -70,10 +70,10 @@ module Base = struct
       | P2 (a, b) -> f a (f b z)
       | P3 (a, b, c) -> f a (f b (f c z))
       | P4 (a, b, c, d, e) ->
-        f a (f b (f c (f d (Deque.Package.fold_right f e z))))
+        f a (f b (f c (f d (Deque.fold_right f e z))))
     in
 
-    let fold_right_suffix = Deque.Package.fold_right in
+    let fold_right_suffix = Deque.fold_right in
 
     let rec fold_right_pair
     : type a. (a -> z -> z) -> a pair -> z -> z
@@ -96,7 +96,7 @@ module Base = struct
     : type a c. (a -> z -> z) -> (a, c) chain -> z -> z
     = fun f c z ->
       match c with
-      | Ending d -> Deque.Package.fold_right f d z
+      | Ending d -> Deque.fold_right f d z
       | Chain (_, pkt, c) -> fold_right_packet f (pkt, c) z
     in
 
@@ -120,6 +120,6 @@ end
 include Base
 include ListLike.OfSteque(Base)
 
-let make n a = { core = T (Ending (Deque.Package.make n a)) ; length = n }
+let make n a = { core = T (Ending (Deque.make n a)) ; length = n }
 
-let singleton x = { core = T (Ending (Deque.Package.singleton x)) ; length = 1 }
+let singleton x = { core = T (Ending (Deque.singleton x)) ; length = 1 }
