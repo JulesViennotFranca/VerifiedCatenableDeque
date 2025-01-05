@@ -55,7 +55,7 @@ let rec iteri
 let iteri f d xs = iteri 0 f d xs
 
 open Lib.Color.GYOR
-module D = Lib.Cadeque.Package.Core
+module D = Lib.Cadeque.Core
 open D
 
 let rec list_gen size m =
