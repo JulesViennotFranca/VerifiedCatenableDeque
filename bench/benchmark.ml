@@ -26,7 +26,8 @@ module type BENCH = sig
   val make_plot : int -> int -> (string * string) list * float list list
 end
 
-let display (module B : BENCH) steps size datafile scriptfile outputfile =
+let display
+  (module B : BENCH) steps size datafile scriptfile outputfile =
 
   (* Compute the points *)
   let plot_infos, times = B.make_plot steps size in
@@ -94,4 +95,9 @@ let () =
   display (module Concat : BENCH) steps 300
             "bench/tmp/data_concat.txt"
             "bench/tmp/plot_concat.gnu"
-            "bench/result/concat.png"
+            "bench/result/concat.png";
+
+  display (module Rdbench : BENCH) steps 1000
+            "bench/tmp/data_random.txt"
+            "bench/tmp/plot_random.txt"
+            "bench/result/random.png"

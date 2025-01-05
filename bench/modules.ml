@@ -28,11 +28,10 @@ module List = struct
 end
 
 module ListRev = struct
-  type 'a t = 'a list
+  include List
+
   let inject l x = Stdlib.List.rev (x :: Stdlib.List.rev l)
   let append l1 l2 = Stdlib.List.rev_append (Stdlib.List.rev l1) l2
-
-  let make n x = Stdlib.List.init n (Fun.const x)
 
   let name = "ListRev"
   let color = "#EE594D"
