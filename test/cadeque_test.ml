@@ -149,36 +149,36 @@ and triple_left_green
   (fun () ->
   ( buffer_ge5 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
-    let y, z = Buffer.two s in
-    let hd = Left (EN, p, y, z) in
+    let s = Buffer.two s in
+    let hd = Left (EN, p, s) in
     return (Triple (GT, hd, Empty)))
   @
   ( buffer_ge8 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     non_empty_chain (stored_triple e) >>= fun (Nocolor c) ->
-    let y, z = Buffer.two s in
-    let hd = Left (GN, p, y, z) in
+    let s = Buffer.two s in
+    let hd = Left (GN, p, s) in
     return (Triple (GT, hd, c)))
   @
   ( buffer_ge7 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     non_empty_green_left_chain (stored_triple e) >>= fun (Lcolor c) ->
-    let y, z = Buffer.two s in
-    let hd = Left (YN, p, y, z) in
+    let s = Buffer.two s in
+    let hd = Left (YN, p, s) in
     return (Triple (YT, hd, c)))
   @
   ( buffer_ge6 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     single_green_chain (stored_triple e) >>= fun c ->
-    let y, z = Buffer.two s in
-    let hd = Left (ON, p, y, z) in
+    let s = Buffer.two s in
+    let hd = Left (ON, p, s) in
     return (Triple (OST, hd, c)))
   @
   ( buffer_ge6 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     pair_green_green_chain (stored_triple e) >>= fun c ->
-    let y, z = Buffer.two s in
-    let hd = Left (ON, p, y, z) in
+    let s = Buffer.two s in
+    let hd = Left (ON, p, s) in
     return (Triple (OPT, hd, c))))
 
 and triple_right_green
@@ -188,36 +188,36 @@ and triple_right_green
   (fun () ->
   ( buffer_eq2 e >>= fun p ->
     buffer_ge5 e >>= fun s ->
-    let a, b = Buffer.two p in
-    let hd = Right (EN, a, b, s) in
+    let p = Buffer.two p in
+    let hd = Right (EN, p, s) in
     return (Triple (GT, hd, Empty)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge8 e >>= fun s ->
     non_empty_chain (stored_triple e) >>= fun (Nocolor c) ->
-    let a, b = Buffer.two p in
-    let hd = Right (GN, a, b, s) in
+    let p = Buffer.two p in
+    let hd = Right (GN, p, s) in
     return (Triple (GT, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge7 e >>= fun s ->
     non_empty_green_left_chain (stored_triple e) >>= fun (Lcolor c) ->
-    let a, b = Buffer.two p in
-    let hd = Right (YN, a, b, s) in
+    let p = Buffer.two p in
+    let hd = Right (YN, p, s) in
     return (Triple (YT, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge6 e >>= fun s ->
     single_green_chain (stored_triple e) >>= fun c ->
-    let a, b = Buffer.two p in
-    let hd = Right (ON, a, b, s) in
+    let p = Buffer.two p in
+    let hd = Right (ON, p, s) in
     return (Triple (OST, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge6 e >>= fun s ->
     pair_green_green_chain (stored_triple e) >>= fun c ->
-    let a, b = Buffer.two p in
-    let hd = Right (ON, a, b, s) in
+    let p = Buffer.two p in
+    let hd = Right (ON, p, s) in
     return (Triple (OPT, hd, c))))
 
 and triple_only_red
@@ -257,29 +257,29 @@ and triple_left_red
   ( buffer_ge5 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     non_empty_green_chain (stored_triple e) >>= fun (Onecolor c) ->
-    let y, z = Buffer.two s in
-    let hd = Left (RN, p, y, z) in
+    let s = Buffer.two s in
+    let hd = Left (RN, p, s) in
     return (Triple (RT, hd, c)))
   @
   ( buffer_ge7 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     non_empty_red_left_chain (stored_triple e) >>= fun (Lcolor c) ->
-    let y, z = Buffer.two s in
-    let hd = Left (YN, p, y, z) in
+    let s = Buffer.two s in
+    let hd = Left (YN, p, s) in
     return (Triple (YT, hd, c)))
   @
   ( buffer_ge6 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     single_red_chain (stored_triple e) >>= fun c ->
-    let y, z = Buffer.two s in
-    let hd = Left (ON, p, y, z) in
+    let s = Buffer.two s in
+    let hd = Left (ON, p, s) in
     return (Triple (OST, hd, c)))
   @
   ( buffer_ge6 e >>= fun p ->
     buffer_eq2 e >>= fun s ->
     pair_green_red_chain (stored_triple e) >>= fun c ->
-    let y, z = Buffer.two s in
-    let hd = Left (ON, p, y, z) in
+    let s = Buffer.two s in
+    let hd = Left (ON, p, s) in
     return (Triple (OPT, hd, c))))
 
 and triple_right_red
@@ -290,29 +290,29 @@ and triple_right_red
   ( buffer_eq2 e >>= fun p ->
     buffer_ge5 e >>= fun s ->
     non_empty_green_chain (stored_triple e) >>= fun (Onecolor c) ->
-    let a, b = Buffer.two p in
-    let hd = Right (RN, a, b, s) in
+    let p = Buffer.two p in
+    let hd = Right (RN, p, s) in
     return (Triple (RT, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge7 e >>= fun s ->
     non_empty_red_left_chain (stored_triple e) >>= fun (Lcolor c) ->
-    let a, b = Buffer.two p in
-    let hd = Right (YN, a, b, s) in
+    let p = Buffer.two p in
+    let hd = Right (YN, p, s) in
     return (Triple (YT, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge6 e >>= fun s ->
     single_red_chain (stored_triple e) >>= fun c ->
-    let a, b = Buffer.two p in
-    let hd = Right (ON, a, b, s) in
+    let p = Buffer.two p in
+    let hd = Right (ON, p, s) in
     return (Triple (OST, hd, c)))
   @
   ( buffer_eq2 e >>= fun p ->
     buffer_ge6 e >>= fun s ->
     pair_green_red_chain (stored_triple e) >>= fun c ->
-    let a, b = Buffer.two p in
-    let hd = Right (ON, a, b, s) in
+    let p = Buffer.two p in
+    let hd = Right (ON, p, s) in
     return (Triple (OPT, hd, c))))
 
 and single_green_chain

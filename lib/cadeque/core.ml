@@ -116,6 +116,7 @@ module Buffer : sig
   type _ has1 =
     | Exact_0 : 'a has1
     | At_least_1 : ('a, _ ge1) t -> 'a has1
+
   (** Tells if a given buffer is empty or not. *)
   val has1 : ('a, 'n) t -> 'a has1
 
@@ -179,8 +180,8 @@ module Buffer : sig
     | At_least_11 : ('a, z ge3) t * ('a, _ ge8) t -> 'a has3p8
 
   (** Tells if a given buffer of at least 8 elements has 8, 9 or 10 elements,
-      or if it has at least 11 elements. If it the case, it returns a buffer of
-      3 elements and a buffer of at least 8 elements. *)
+      or if it has at least 11 elements. If the case latest case, it returns a
+      buffer of 3 elements and a buffer of at least 8 elements. *)
   val has3p8 : ('a, _ ge8) t -> 'a has3p8
 
   (* Different operations needed for the cadeque package. *)
@@ -207,6 +208,7 @@ end = struct
 
   let single x = push x empty
   let pair (x, y) = push x (single y)
+  let triple (x, y, z) = push x (pair (y, z))
 
   let pop2 t =
     let x, t = pop t in
@@ -249,32 +251,11 @@ end = struct
     | Less_than_3 : ('a, eq2) vector -> 'a has3
     | At_least_3 : ('a, _ ge3) t -> 'a has3
 
-  let has3 t =
-    match Deque.pop t with
-    | None -> Less_than_3 V0
-    | Some (x, s) ->
-    match Deque.pop s with
-    | None -> Less_than_3 (V1 x)
-    | Some (y, s) ->
-    match Deque.pop s with
-    | None -> Less_than_3 (V2 (x, y))
-    | Some _ -> At_least_3 t
-
-  type 'a has8 =
-    | Less_than_8 : ('a five * ('a, eq2) vector) -> 'a has8
-    | At_least_8 : ('a, _ ge8) t -> 'a has8
-
-  let pop5 t =
-    let a, b, t = pop2 t in
-    let c, d, t = pop2 t in
-    let e, t = pop t in
-    (a, b, c, d, e), t
-
-  let has8 buffer =
-    let five, t = pop5 buffer in
-    match has3 t with
-    | Less_than_3 vec -> Less_than_8 (five, vec)
-    | At_least_3 _ -> At_least_8 buffer
+  let has3 t = match Deque.length t with
+    | 0 -> Less_than_3 V0
+    | 1 -> let a, _ = pop t in Less_than_3 (V1 a)
+    | 2 -> let a, b, _ = pop2 t in Less_than_3 (V2 (a, b))
+    | _ -> At_least_3 t
 
   let has3p buf =
     let three, buf = pop3 buf in
@@ -283,56 +264,6 @@ end = struct
   let has3s buf =
     let buf, three = eject3 buf in
     has3 buf, three
-
-  type 'a has7s =
-    | Less_than_7 : ('a, eq6) vector -> 'a has7s
-    | At_least_7 : ('a, _ ge5) t * ('a * 'a) -> 'a has7s
-
-  let has7s t =
-    let t, z = eject t in
-    match Deque.eject t with
-    | None -> Less_than_7 (V1 z)
-    | Some (t, y) ->
-    match Deque.eject t with
-    | None -> Less_than_7 (V2 (y, z))
-    | Some (t', x) ->
-    match Deque.eject t' with
-    | None -> Less_than_7 (V3 (x, y, z))
-    | Some (t', w) ->
-    match Deque.eject t' with
-    | None -> Less_than_7 (V4 (w, x, y, z))
-    | Some (t', v) ->
-    match Deque.eject t' with
-    | None -> Less_than_7 (V5 (v, w, x, y, z))
-    | Some (t', u) ->
-    match Deque.eject t' with
-    | None -> Less_than_7 (V6 (u, v, w, x, y, z))
-    | Some _ -> At_least_7 (t, (y, z))
-
-  type 'a has7p =
-    | Less_than_7 : ('a, eq6) vector -> 'a has7p
-    | At_least_7 : ('a * 'a) * ('a, _ ge5) t -> 'a has7p
-
-  let has7p t =
-    let a, t = pop t in
-    match Deque.pop t with
-    | None -> Less_than_7 (V1 a)
-    | Some (b, t) ->
-    match Deque.pop t with
-    | None -> Less_than_7 (V2 (a, b))
-    | Some (c, t') ->
-    match Deque.pop t' with
-    | None -> Less_than_7 (V3 (a, b, c))
-    | Some (d, t') ->
-    match Deque.pop t' with
-    | None -> Less_than_7 (V4 (a, b, c, d))
-    | Some (e, t') ->
-    match Deque.pop t' with
-    | None -> Less_than_7 (V5 (a, b, c, d, e))
-    | Some (f, t') ->
-    match Deque.pop t' with
-    | None -> Less_than_7 (V6 (a, b, c, d, e, f))
-    | Some _ -> At_least_7 ((a, b), t)
 
   type 'a has5 =
     | Exact_4 : 'a four -> 'a has5
@@ -345,6 +276,58 @@ end = struct
     | Exact_0 -> Exact_4 (a, b, c, d)
     | At_least_1 _ -> At_least_5 buffer
 
+  type 'a has7s =
+    | Less_than_7 : ('a, eq6) vector -> 'a has7s
+    | At_least_7 : ('a, _ ge5) t * ('a * 'a) -> 'a has7s
+
+  let has7s t =
+    let t, z = eject t in
+    match Deque.length t with
+    | 0 -> Less_than_7 (V1 z)
+    | 1 -> let _, y = eject t in Less_than_7 (V2 (y, z))
+    | 2 -> let _, x, y = eject2 t in Less_than_7 (V3 (x, y, z))
+    | 3 -> let _, (w, x, y) = eject3 t in Less_than_7 (V4 (w, x, y, z))
+    | 4 -> let t, x, y = eject2 t in let _, v, w = eject2 t in
+      Less_than_7 (V5 (v, w, x, y, z))
+    | 5 -> let t, (w, x, y) = eject3 t in let _, u, v = eject2 t in
+      Less_than_7 (V6 (u, v, w, x, y, z))
+    | _ -> let t', y = eject t in At_least_7 (t', (y, z))
+
+  type 'a has7p =
+    | Less_than_7 : ('a, eq6) vector -> 'a has7p
+    | At_least_7 : ('a * 'a) * ('a, _ ge5) t -> 'a has7p
+
+  let has7p t =
+    let a, t = pop t in
+    match Deque.length t with
+    | 0 -> Less_than_7 (V1 a)
+    | 1 -> let b, _ = pop t in Less_than_7 (V2 (a, b))
+    | 2 -> let b, c, _ = pop2 t in Less_than_7 (V3 (a, b, c))
+    | 3 -> let (b, c, d), _ = pop3 t in Less_than_7 (V4 (a, b, c, d))
+    | 4 -> let b, c, t = pop2 t in let d, e, _ = pop2 t in
+      Less_than_7 (V5 (a, b, c, d, e))
+    | 5 -> let (b, c, d), t = pop3 t in let e, f, _ = pop2 t in
+      Less_than_7 (V6 (a, b, c, d, e, f))
+    | _ -> let b, t' = pop t in At_least_7 ((a, b), t')
+
+  type 'a has8 =
+    | Less_than_8 : ('a five * ('a, eq2) vector) -> 'a has8
+    | At_least_8 : ('a, _ ge8) t -> 'a has8
+
+  let pop5 t =
+    let (a, b, c), t = pop3 t in
+    let d, e, t = pop2 t in
+    (a, b, c, d, e), t
+
+  let has8 t = match Deque.length t with
+    | 0 | 1 | 2 | 3 | 4 -> assert false
+    | 5 -> let five, _ = pop5 t in Less_than_8 (five, V0)
+    | 6 -> let five, t = pop5 t in let f, _ = pop t in
+      Less_than_8 (five, V1 f)
+    | 7 -> let five, t = pop5 t in let f, g, _ = pop2 t in
+      Less_than_8 (five, V2 (f, g))
+    | _ -> At_least_8 t
+
   let push_vector v t = vector_fold_right Deque.push v t
   let inject_vector t v = vector_fold_left Deque.inject t v
 
@@ -353,14 +336,12 @@ end = struct
     | At_least_11 : ('a, z ge3) t * ('a, _ ge8) t -> 'a has3p8
 
   let has3p8 t =
-    let (a, b, c), (t as t8) = pop3 t in
-    let d, e, t = pop2 t in
-    let (f, g, h), t = pop3 t in
-    match has3 t with
-    | Less_than_3 vec -> Less_than_11 ((a, b, c, d, e, f, g, h), vec)
-    | At_least_3 _ ->
-      let t3 = push a (pair (b, c)) in
-      At_least_11 (t3, t8)
+    let (a, b, c), t' = pop3 t in
+    match has8 t' with
+    | Less_than_8 ((d, e, f, g, h), v) ->
+      Less_than_11 ((a, b, c, d, e, f, g, h), v)
+    | At_least_8 t' ->
+      At_least_11 (triple (a, b, c), t')
 
   let push5 (a, b, c, d, e) t =
     push a (push b (push c (push d (push e t))))
@@ -1253,7 +1234,7 @@ let push x (T c) = match is_empty_chain c with
 (** Injects on a cadeque. *)
 let inject (T c) x = match is_empty_chain c with
   | Is_empty -> T (single_chain x)
-  | Not_empty -> T (push_ne_chain x c)
+  | Not_empty -> T (inject_ne_chain c x)
 
 (** Pops from a cadeque. *)
 let pop (T c) = match is_empty_chain c with

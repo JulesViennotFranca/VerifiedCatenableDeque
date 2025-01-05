@@ -37,7 +37,8 @@ module TestS (S : module type of Cadeque.Steque) = struct
     let deq = S.of_list lst in
     lst, deq
 
-  let assert_eq lst deq = assert (lst = S.to_list deq)
+  let assert_eq lst deq =
+    assert (lst = S.to_list deq)
   let assert_not_found f =
     assert (try let _ = f () in false with Not_found -> true)
   let assert_invalid f =
