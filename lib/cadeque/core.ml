@@ -416,29 +416,29 @@ type ('pkt_color, 'chain_left_color, 'chain_right_color) regularity =
   | R : (  red, green, green) regularity
 
 (** A type for stored triples. *)
-type 'a stored_triple =
-  | Small : ('a, _ ge3) prefix -> 'a stored_triple
+type 'a stored =
+  | Small : ('a, _ ge3) prefix -> 'a stored
   | Big : ('a, _ ge3) prefix
-        * ('a stored_triple, _, only, _, _) chain
+        * ('a stored, _, only, _, _) chain
         * ('a, _ ge3) suffix
-       -> 'a stored_triple
+       -> 'a stored
 
 (** A type for bodies of packets. *)
 and ('a, 'b, 'head_kind, 'tail_kind) body =
   | Hole : ('a, 'a, 'kind, 'kind) body
   | Single_child :
        ('a, eq1, 'head_kind, nogreen * _ * _ * nored) node
-     * ('a stored_triple, 'b, only, 'tail_kind) body
+     * ('a stored, 'b, only, 'tail_kind) body
     -> ('a, 'b, 'head_kind, 'tail_kind) body
   | Pair_yellow :
        ('a, eq2, 'head_kind, yellow) node
-     * ('a stored_triple, 'b, left, 'tail_kind) body
-     * ('a stored_triple, single, right, 'c, 'c) chain
+     * ('a stored, 'b, left, 'tail_kind) body
+     * ('a stored, single, right, 'c, 'c) chain
     -> ('a, 'b, 'head_kind, 'tail_kind) body
   | Pair_orange :
        ('a, eq2, 'head_kind, orange) node
-     * ('a stored_triple, single, left, green, green) chain
-     * ('a stored_triple, 'b, right, 'tail_kind) body
+     * ('a stored, single, left, green, green) chain
+     * ('a stored, 'b, right, 'tail_kind) body
     -> ('a, 'b, 'head_kind, 'tail_kind) body
 
 (** A type for packets. *)
@@ -446,7 +446,7 @@ and ('a, 'b, 'arity, 'kind, 'color) packet =
   | Packet :
        ('a, 'b, 'kind, 'tail_kind) body
      * ('b, 'arity, 'tail_kind, _ * noyellow * noorange * _ as 'c) node
-    -> ('a, 'b stored_triple, 'arity, 'kind, 'c) packet
+    -> ('a, 'b stored, 'arity, 'kind, 'c) packet
 
 (** A type for chains. *)
 and ('a, 'arity, 'kind, 'left_color, 'right_color) chain =
@@ -479,7 +479,7 @@ type ('a, 'kind, 'color) triple =
   | Triple :
        ('node_color, 'arity, 'lc, 'rc, 'c) triple_coloring
      * ('a, 'arity, 'kind, 'node_color) node
-     * ('a stored_triple, 'arity, only, 'lc, 'rc) chain
+     * ('a stored, 'arity, only, 'lc, 'rc) chain
     -> ('a, 'kind, 'c) triple
 
 (** A type used to represent left or right triples. If there is not enough
@@ -749,7 +749,7 @@ let right_of_only
     stored triple and a left suffix. *)
 let stored_of_right
 : type a rc. (a, _ ge1) suffix -> (a, right, rc) triple
-          -> a stored_triple * a * a
+          -> a stored * a * a
 = fun sl (Triple (_, Right (_, p, sr), child)) ->
   let p = Buffer.inject2 sl p in
   let s, y, x = Buffer.eject2 sr in
@@ -759,7 +759,7 @@ let stored_of_right
     right prefix and a stored triple. *)
 let stored_of_left
 : type a lc. (a, left, lc) triple -> (a, _ ge1) prefix
-          -> a * a * a stored_triple
+          -> a * a * a stored
 = fun (Triple (_, Left (_, pl, s), child)) pr ->
   let s = Buffer.push2 s pr in
   let x, y, p = Buffer.pop2 pl in

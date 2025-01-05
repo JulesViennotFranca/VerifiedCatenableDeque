@@ -50,14 +50,14 @@ module Base = struct
         fold_left_buffer f z s
     in
 
-    let rec fold_left_stored_triple
-    : type a. (z -> a -> z) -> z -> a stored_triple -> z
+    let rec fold_left_stored
+    : type a. (z -> a -> z) -> z -> a stored -> z
     = fun f z st ->
       match st with
       | Small b -> fold_left_buffer f z b
       | Big (p, child, s) ->
         let z = fold_left_buffer f z p in
-        let z = fold_left_chain (fold_left_stored_triple f) z child in
+        let z = fold_left_chain (fold_left_stored f) z child in
         fold_left_buffer f z s
 
     and fold_left_packet
@@ -70,22 +70,22 @@ module Base = struct
       match bd with
       | Hole ->
         fold_left_node
-          (fold_left_chain (fold_left_stored_triple f)) c
+          (fold_left_chain (fold_left_stored f)) c
           f z tl
       | Single_child (hd, bd) ->
         fold_left_node
-          (fold_left_packet (fold_left_stored_triple f)) (Packet (bd, tl), c)
+          (fold_left_packet (fold_left_stored f)) (Packet (bd, tl), c)
           f z hd
       | Pair_yellow (hd, bd, cr) ->
         let local_fold_left z (pkt, c, cr) =
-          let z = fold_left_packet (fold_left_stored_triple f) z (pkt, c) in
-          fold_left_chain (fold_left_stored_triple f) z cr
+          let z = fold_left_packet (fold_left_stored f) z (pkt, c) in
+          fold_left_chain (fold_left_stored f) z cr
         in
         fold_left_node local_fold_left (Packet (bd, tl), c, cr) f z hd
       | Pair_orange (hd, cl, bd) ->
         let local_fold_left z (cl, pkt, c) =
-          let z = fold_left_chain (fold_left_stored_triple f) z cl in
-          fold_left_packet (fold_left_stored_triple f) z (pkt, c)
+          let z = fold_left_chain (fold_left_stored f) z cl in
+          fold_left_packet (fold_left_stored f) z (pkt, c)
         in
         fold_left_node local_fold_left (cl, Packet (bd, tl), c) f z hd
 
@@ -128,14 +128,14 @@ module Base = struct
         f a (f b z)
     in
 
-    let rec fold_right_stored_triple
-    : type a. (a -> z -> z) -> a stored_triple -> z -> z
+    let rec fold_right_stored
+    : type a. (a -> z -> z) -> a stored -> z -> z
     = fun f st z ->
       match st with
       | Small b -> fold_right_buffer f b z
       | Big (p, child, s) ->
         let z = fold_right_buffer f s z in
-        let z = fold_right_chain (fold_right_stored_triple f) child z in
+        let z = fold_right_chain (fold_right_stored f) child z in
         fold_right_buffer f p z
 
     and fold_right_packet
@@ -148,22 +148,22 @@ module Base = struct
       match bd with
       | Hole ->
         fold_right_node
-          (fold_right_chain (fold_right_stored_triple f)) c
+          (fold_right_chain (fold_right_stored f)) c
           f tl z
       | Single_child (hd, bd) ->
         fold_right_node
-          (fold_right_packet (fold_right_stored_triple f)) (Packet (bd, tl), c)
+          (fold_right_packet (fold_right_stored f)) (Packet (bd, tl), c)
           f hd z
       | Pair_yellow (hd, bd, cr) ->
         let local_fold_right (pkt, c, cr) z =
-          let z = fold_right_chain (fold_right_stored_triple f) cr z in
-          fold_right_packet (fold_right_stored_triple f) (pkt, c) z
+          let z = fold_right_chain (fold_right_stored f) cr z in
+          fold_right_packet (fold_right_stored f) (pkt, c) z
         in
         fold_right_node local_fold_right (Packet (bd, tl), c, cr) f hd z
       | Pair_orange (hd, cl, bd) ->
         let local_fold_right (cl, pkt, c) z =
-          let z = fold_right_packet (fold_right_stored_triple f) (pkt, c) z in
-          fold_right_chain (fold_right_stored_triple f) cl z
+          let z = fold_right_packet (fold_right_stored f) (pkt, c) z in
+          fold_right_chain (fold_right_stored f) cl z
         in
         fold_right_node local_fold_right (cl, Packet (bd, tl), c) f hd z
 
