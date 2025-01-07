@@ -1,3 +1,6 @@
+* The OCaml code currently does not build.
+  `Unbound module Lib.ArtWend`
+
 * `make` currently fails with Coq 8.20.
   It works with Coq 8.19.
 
