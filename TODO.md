@@ -30,11 +30,8 @@
 
 * Clean up `theory/cadeque/abstraction.v`.
 
-* Why do we have both `core.ml` and `makeCore.ml`?
-  Can we avoid this duplication?
-
 * Why does the code in `theory/extraction` contain manual modifications?
   This cannot be trusted / maintained.
-
-* In `theory/cadeque`, I have renamed the type `ckind` to `arity`,
-  but there are still many variables named `ck`. Rename?
+  -> the code didn't type checked because some importation of modules were not used,
+     so I only commented out the modules that weren't used,
+     maybe there exist a dune flag to not raise errors for unused modules.
