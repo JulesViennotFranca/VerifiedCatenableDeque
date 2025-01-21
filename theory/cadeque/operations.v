@@ -63,4 +63,4 @@ concat (T c1) (T c2) with semi_concat (Semi c1) (Semi c2) => {
 End D.
 
 (* Extract the code to OCaml. *)
-Separate Extraction D models.
+(* Separate Extraction D models. *)
