@@ -412,7 +412,7 @@ decode_chain (PairChain lch rch) :=
 Lemma decode_chain_decode_chain1 cc (ch : chain 1 cc) :
   decode_chain ch = Single (decode_chain1 ch).
 Proof.
-  dependent destruction ch. reflexivity.
+  dependent elimination ch. reflexivity.
 Qed.
 
 Lemma invert_is_ValidPartitioned_chain1 cc (ch : chain 1 cc) :
@@ -459,7 +459,7 @@ Proof.
     eauto with valid. }
 
   (* Single chains. *)
-  { dependent destruction ch.
+  { dependent elimination ch.
     rewrite decode_chain1_equation_1.
     eauto with valid. }
 

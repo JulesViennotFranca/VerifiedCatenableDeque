@@ -356,7 +356,7 @@ to_yellow (B4 a b c d) := B4 a b c d.
 Lemma to_yellow_seq [A g y] (b : buffer A (Mix g y NoRed)) :
   buffer_seq (to_yellow b) = buffer_seq b.
 Proof.
-  dependent destruction b; reflexivity.
+  dependent elimination b; reflexivity.
 Qed.
 
 (* Makes a buffer of any color red. *)

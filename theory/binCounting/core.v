@@ -97,21 +97,21 @@ Module NoSubsetType.
   Lemma green_of_red_correct (c : chain red) :
       chain_nat (green_of_red c) = chain_nat c.
   Proof.
-    dependent destruction c.
-    dependent destruction r.
-    dependent destruction p.
-    dependent destruction p.
-    - dependent destruction c.
+    dependent elimination c.
+    dependent elimination r.
+    dependent elimination p.
+    dependent elimination p1.
+    - dependent elimination c.
       + simp green_of_red.
         reflexivity.
-      + dependent destruction r.
-        dependent destruction p.
+      + dependent elimination r.
+        dependent elimination p.
         simp green_of_red. simpl.
         remember (packet_nat p (chain_nat c)) as numb.
         lia.
     - simp green_of_red.
       simpl.
-      remember (packet_nat p (chain_nat c)) as numb.
+      remember (packet_nat p0 (chain_nat c)) as numb.
       lia.
   Qed.
 End NoSubsetType.

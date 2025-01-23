@@ -426,7 +426,7 @@ to_yellow (B4 a b c d) := B4 a b c d.
 Lemma to_yellow_seq [A lvl size g y] (b : buffer A lvl size (Mix g y NoRed)) :
   buffer_seq (to_yellow b) = buffer_seq b.
 Proof.
-  dependent destruction b; reflexivity.
+  dependent elimination b; reflexivity.
 Qed.
 
 (* Makes a buffer of any color red. *)
@@ -664,7 +664,7 @@ Qed.
 Lemma yellow_size {A lvl size g y} (b : buffer A lvl size (Mix g y NoRed)) :
   exists p, size = S p.
 Proof.
-  dependent destruction b.
+  dependent elimination b.
   - exists 0. reflexivity.
   - exists 1. reflexivity.
   - exists 2. reflexivity.

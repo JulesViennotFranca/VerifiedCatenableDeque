@@ -1,4 +1,4 @@
-From Coq Require Import Program List.
+From Coq Require Import Program List Lia.
 Import ListNotations.
 From Equations Require Import Equations.
 From Hammer Require Import Tactics.
@@ -171,16 +171,15 @@ eject2 b with eject b => {
    empty. *)
 Lemma empty_buffer [A] (b : t A 0) : seq b = [].
 Proof.
-  dependent destruction b. simpl.
-  dependent destruction d. simpl.
-  dependent destruction c; simpl.
-  - dependent destruction b. reflexivity.
-  - dependent destruction p; simpl.
-    + dependent destruction r.
-    + pose (yellow_size b) as Hpsize.
+  dependent elimination b. simpl.
+  dependent elimination d. simpl.
+  dependent elimination c; simpl.
+  - dependent elimination b. reflexivity.
+  - inversion p; subst.
+    + dependent elimination r.
+    + pose (yellow_size X) as Hpsize.
       destruct Hpsize as [ps Hpsize].
-      rewrite Hpsize in x0.
-      dependent destruction x0.
+      exfalso; lia.
 Qed.
 
 (* The last lemma is added to the hint database. *)
