@@ -7,6 +7,7 @@ From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
 From Theory.color Require Import GYR.
+From Theory.cadeque Require Import equtil.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
@@ -725,9 +726,10 @@ chain_of_opt3 (SomeN a) (SomeN (prodS b c)) (SomeN d) := ? Ending (B4 a b c d).
 
 (* Provided the equality of two natural numbers, translates a chain of size the
    first into a chain of size the second. *)
-Equations translate {A lvl size1 size2 C} (c : chain A lvl size1 C) :
-  size1 = size2 -> { c' : chain A lvl size2 C | chain_seq c' = chain_seq c } :=
-translate c eq_refl := ? c.
+Equations translate {A lvl size1 size2 C}
+  (c : chain A lvl size1 C) (eq : size1 = size2) :
+  { c' : chain A lvl size2 C | chain_seq c' = chain_seq c } :=
+translate c eq with comp_eq eq => { | eq_refl := ? c }.
 
 (* Proves that all natural numbers [n] can be writen as [n mod 2] plus 2 times
    [n / 2]. *)
@@ -912,8 +914,10 @@ Equations make_yellow {A lvl ps pkts ss cs size} {gp yp ypkt gs ys gc rc}
   size = ps + 2 * pkts + ss ->
   { d : deque A size | deque_seq d =
     buffer_seq p ++ packet_seq pkt (chain_seq c) ++ buffer_seq s } :=
-make_yellow p1 child s1 c eq_refl with ensure_green c => {
-  | ? c' => ? T (Chain Y (Packet (to_yellow p1) child (to_yellow s1)) c') }.
+make_yellow p1 child s1 c eq
+  with comp_eq eq => {
+    | eq_refl with ensure_green c => {
+      | ? c' => ? T (Chain Y (Packet (to_yellow p1) child (to_yellow s1)) c') } }.
 
 (* Takes a prefix buffer of any color, a child packet and a suffix buffer of
    any color, and a following green chain, and makes a deque out of them. *)
@@ -925,9 +929,10 @@ Equations make_red {A lvl ps pkts ss cs size} {Cp ypkt Cs}
   size = ps + 2 * pkts + ss ->
   { d : deque A size | deque_seq d =
     buffer_seq p ++ packet_seq pkt (chain_seq c) ++ buffer_seq s } :=
-make_red p1 child s1 c eq_refl
-  with green_of_red (Chain R (Packet (to_red p1) child (to_red s1)) c) => {
-    | ? c' => ? T c' }.
+make_red p1 child s1 c eq
+  with comp_eq eq => {
+    | eq_refl with green_of_red (Chain R (Packet (to_red p1) child (to_red s1)) c) => {
+      | ? c' => ? T c' } }.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                               Operations                               | *)

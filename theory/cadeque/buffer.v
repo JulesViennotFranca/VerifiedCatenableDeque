@@ -3,7 +3,7 @@ Import ListNotations.
 From Equations Require Import Equations.
 From Hammer Require Import Tactics.
 
-From Theory.cadeque Require Import deque.
+From Theory.cadeque Require Import deque equtil.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                Vectors                                 | *)
@@ -269,9 +269,9 @@ pop8 b with pop b => { | ? (a1, b') with pop5 b' => {
 
 (* Provided the equality of two natural numbers, translates a buffer of size
    the first into a buffer of size the second. *)
-Equations translate {A q1 q2} (b : t A q1) :
-  q1 = q2 -> { b' : t A q2 | seq b' = seq b } :=
-translate b eq_refl := ? b.
+Equations translate {A q1 q2} (b : t A q1) (eq : q1 = q2) :
+  { b' : t A q2 | seq b' = seq b } :=
+translate b eq with comp_eq eq => { | eq_refl := ? b }.
 
 (* Pushes a vector on a buffer. *)
 Equations push_vector {A n q} (v : vector A n) (b : t A q) :
