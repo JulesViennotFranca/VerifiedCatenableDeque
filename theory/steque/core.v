@@ -6,8 +6,8 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Theory.color Require Import GYR.
-From Theory.steque Require Import deque.
+From Cadeque.color Require Import GYR.
+From Cadeque.steque Require Import deque.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)

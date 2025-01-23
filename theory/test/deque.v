@@ -1,4 +1,4 @@
-From Theory.deque Require Import core.
+From Cadeque.deque Require Import core.
 
 Definition test : option (deque nat * nat) :=
   let d := proj1_sig empty in

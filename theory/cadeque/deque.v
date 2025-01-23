@@ -6,8 +6,8 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Theory.color Require Import GYR.
-From Theory.cadeque Require Import equtil.
+From Cadeque.color Require Import GYR.
+From Cadeque.cadeque Require Import equtil.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)

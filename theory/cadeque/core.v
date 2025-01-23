@@ -7,8 +7,8 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Theory.color Require Import GYOR.
-From Theory.cadeque Require Import buffer types models.
+From Cadeque.color Require Import GYOR.
+From Cadeque.cadeque Require Import buffer types models.
 
 (* The [app] function and the singleton list are made opaque. *)
 Opaque app.

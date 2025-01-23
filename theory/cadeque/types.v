@@ -1,5 +1,5 @@
-From Theory.color Require Import GYOR.
-From Theory.cadeque Require Import buffer.
+From Cadeque.color Require Import GYOR.
+From Cadeque.cadeque Require Import buffer.
 
 (* A type for node kinds. *)
 Inductive nkind : Type := only | left | right.
