@@ -1,4 +1,3 @@
 (executable
   (name benchmark)
-  (public_name benchmark)
   (libraries cadeque unix graphics))

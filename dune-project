@@ -10,6 +10,14 @@
 (version 0.1)
 
 (package
-  (name Cadeque)
+  (name cadeque)
   (allow_empty)
   (depends (ocaml (>= "4.08"))))
+
+(package
+  (name coq-cadeque)
+  (depends
+    (coq (= "8.19.0"))
+    (coq-aac-tactics (>= "8.19.1"))
+    (coq-hammer-tactics (>= "1.3.2+8.19"))
+    (coq-equations (>= "1.3+8.19"))))
