@@ -68,15 +68,13 @@ Inductive regularity : color -> color -> Type :=
 
 (* A type for sized chains. *)
 Inductive chain (A : Type) (lvl : nat) : nat -> color -> Type :=
-  | Ending {size : nat} {C : color} :
-      buffer A lvl size C ->
-      chain A lvl size green
+  | Ending {size : nat} : buffer A lvl size red -> chain A lvl size green
   | Chain {hlvl size hsize : nat} {C1 C2 : color} :
       regularity C1 C2 ->
       packet A lvl hlvl size hsize C1 ->
       chain A hlvl hsize C2 ->
       chain A lvl size C1.
-Arguments Ending {A lvl size C}.
+Arguments Ending {A lvl size}.
 Arguments Chain {A lvl hlvl size hsize C1 C2}.
 
 (* A type decomposing buffers according to their number of elements.
@@ -97,10 +95,10 @@ Arguments Overflow {A lvl size}.
    representing the buffer is returned with [Alone]. *)
 Inductive sandwich (A : Type) (lvl : nat) : nat -> Type :=
   | Alone {s : nat} : optionN A lvl s -> sandwich A lvl s
-  | Sandwich {s : nat} {C : color} :
-    prodN A lvl -> buffer A lvl s C -> prodN A lvl -> sandwich A lvl (2 + s).
+  | Sandwich {s : nat} :
+    prodN A lvl -> buffer A lvl s red -> prodN A lvl -> sandwich A lvl (2 + s).
 Arguments Alone {A lvl s}.
-Arguments Sandwich {A lvl s C}.
+Arguments Sandwich {A lvl s}.
 
 (* A type for sized deque. *)
 Inductive deque (A : Type) (size : nat) : Type :=

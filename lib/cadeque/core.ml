@@ -749,21 +749,21 @@ let right_of_only
     stored triple and a left suffix. *)
 let stored_of_right
 : type a rc. (a, _ ge1) suffix -> (a, right, rc) triple
-          -> a stored * a * a
+          -> a stored * (a * a)
 = fun sl (Triple (_, Right (_, p, sr), child)) ->
   let p = Buffer.inject2 sl p in
   let s, y, x = Buffer.eject2 sr in
-  (Big (p, child, s), y, x)
+  (Big (p, child, s), (y, x))
 
 (** Takes a left triple and a prefix of at least one element and returns a
     right prefix and a stored triple. *)
 let stored_of_left
 : type a lc. (a, left, lc) triple -> (a, _ ge1) prefix
-          -> a * a * a stored
+          -> (a * a) * a stored
 = fun (Triple (_, Left (_, pl, s), child)) pr ->
   let s = Buffer.push2 s pr in
   let x, y, p = Buffer.pop2 pl in
-  (x, y, Big (p, child, s))
+  ((x, y), Big (p, child, s))
 
 (** Tells if a node is an ending node given its coloring. *)
 let is_empty_node :
@@ -782,14 +782,14 @@ let left_of_pair
   | GT, Is_empty ->
     let p = Buffer.inject p y in
     let s = Buffer.single z in
-    let stored, y, z = stored_of_right s tr in
+    let stored, s = stored_of_right s tr in
     let child = single_chain stored in
-    Triple (OST, Left (ON, p, (y, z)), child)
+    Triple (OST, Left (ON, p, s), child)
   | tc, Not_empty ->
     let s = Buffer.pair (y, z) in
-    let stored, y, z = stored_of_right s tr in
+    let stored, s = stored_of_right s tr in
     let child = inject_ne_chain child stored in
-    Triple (tc, Left (nc, p, (y, z)), child)
+    Triple (tc, Left (nc, p, s), child)
 
 (** Makes a right triple out of a pair of left and right triples. *)
 let right_of_pair
@@ -802,14 +802,14 @@ let right_of_pair
   | GT, Is_empty ->
     let s = Buffer.push b s in
     let p = Buffer.single a in
-    let a, b, stored = stored_of_left tl p in
+    let p, stored = stored_of_left tl p in
     let child = single_chain stored in
-    Triple (OST, Right (ON, (a, b), s), child)
+    Triple (OST, Right (ON, p, s), child)
   | tc, Not_empty ->
     let p = Buffer.pair (a, b) in
-    let a, b, stored = stored_of_left tl p in
+    let p, stored = stored_of_left tl p in
     let child = push_ne_chain stored child in
-    Triple (tc, Right (nc, (a, b), s), child)
+    Triple (tc, Right (nc, p, s), child)
 
 (** Makes a left [left_right_triple] out of a chain. *)
 let make_left
@@ -943,7 +943,7 @@ let sandwich_only_green
     in
     Sandwich (a, t, z)
 
-(** Adapts a coloring to a prefix of 8 or more elements. *)
+(** Adapts a node coloring to a prefix of 8 or more elements. *)
 let adapt_to_prefix
 : type sp sp1 ss1 arity c.
      (sp1, ss1, arity, c) node_coloring -> (sp ge3, ss1, arity, c) node_coloring
@@ -966,7 +966,7 @@ let only_of_right
     let p = Buffer.push6 six p in
     Triple (tc, Only (adapt_to_prefix nc, p, s), child)
 
-(** Adapts a coloring to a suffix of 8 or more elements. *)
+(** Adapts a node coloring to a suffix of 8 or more elements. *)
 let adapt_to_suffix
 : type ss sp1 ss1 arity c.
      (sp1, ss1, arity, c) node_coloring -> (sp1, ss ge3, arity, c) node_coloring
