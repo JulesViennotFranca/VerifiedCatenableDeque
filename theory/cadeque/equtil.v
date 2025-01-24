@@ -1,4 +1,3 @@
-From Coq Require Import Arith.
 From Equations Require Import Equations.
 
 (* Helper definition that we use to ensure that our functions fully reduce when
@@ -8,7 +7,7 @@ From Equations Require Import Equations.
    (e.g. defined with Qed) into an equality proof that reduces for sure (it
    directly computes whether the two integers are equal). (We thank Guillaume
    Melquiond for this trick.) *)
-Equations comp_eq {n1 n2 : nat} (eq : n1 = n2) : n1 = n2 :=
-comp_eq eq with Nat.eq_dec n1 n2 => {
+Equations comp_eq {A} {eq_dec: EqDec A} {x y : A} (eq : x = y) : x = y :=
+comp_eq eq with eq_dec x y => {
   | left e => e;
   | right ne => False_rect _ _ }.
