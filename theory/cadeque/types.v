@@ -30,16 +30,25 @@ Inductive coloring : nat -> nat -> nat -> color -> Type :=
 (* A type for general nodes, in the following, they will contain stored
    triples. *)
 Inductive node' (A : Type) : nat -> kind -> color -> Type :=
-  | Only_end {q  : nat} : prefix' A (S q) -> node' A 0 only green
+  | Only_end {q  : nat} :
+      prefix' A (S q) ->
+      node' A 0 only green
   | Only {qp qs nc : nat} {C : color} :
-    coloring qp qs (S nc) C -> prefix' A (5 + qp) -> suffix' A (5 + qs) ->
-    node' A (S nc) only C
+      coloring qp qs (S nc) C ->
+      prefix' A (5 + qp) ->
+      suffix' A (5 + qs) ->
+      node' A (S nc) only C
   | Left {qp qs nc : nat} {C : color} :
-    coloring qp qs nc C -> prefix' A (5 + qp) -> suffix' A 2 ->
-    node' A nc left C
+      coloring qp qs nc C ->
+      prefix' A (5 + qp) ->
+      suffix' A 2 ->
+      node' A nc left C
   | Right {qp qs nc : nat} {C : color} :
-    coloring qp qs nc C -> prefix' A 2 -> suffix' A (5 + qs) ->
-    node' A nc right C.
+      coloring qp qs nc C ->
+      prefix' A 2 ->
+      suffix' A (5 + qs) ->
+      node' A nc right C.
+
 Arguments Only_end {A q}.
 Arguments Only {A qp qs nc C}.
 Arguments Left {A qp qs nc C}.
