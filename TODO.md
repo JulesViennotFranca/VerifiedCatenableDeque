@@ -33,3 +33,9 @@
 
 * Why do we have both `core.ml` and `makeCore.ml`?
   Can we avoid this duplication?
+
+* Why does the code in `theory/extraction` contain manual modifications?
+  This cannot be trusted / maintained.
+
+* In `theory/cadeque`, I have renamed the type `ckind` to `arity`,
+  but there are still many variables named `ck`. Rename?
