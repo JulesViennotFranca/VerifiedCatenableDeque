@@ -68,31 +68,32 @@ Inductive regularity : color -> color -> arity -> color -> color -> Type :=
 Unset Elimination Schemes.
 
 (* A type for stored triples. *)
-Inductive stored_triple (A : Type) : nat -> Type :=
-  | Ground : A -> stored_triple A 0
+Inductive stored (A : Type) : nat -> Type :=
+  | Ground :
+      A -> stored A 0
   | Small {l q : nat} :
-    suffix' (stored_triple A l) (3 + q) ->
-    stored_triple A (S l)
+    suffix' (stored A l) (3 + q) ->
+    stored A (S l)
   | Big {l qp qs : nat} {ck : arity} {Cl Cr : color} :
-    prefix' (stored_triple A l) (3 + qp) ->
+    prefix' (stored A l) (3 + qp) ->
     chain A (S l) ck only Cl Cr ->
-    suffix' (stored_triple A l) (3 + qs) ->
-    stored_triple A (S l)
+    suffix' (stored A l) (3 + qs) ->
+    stored A (S l)
 
 (* A type for bodies. *)
 with body (A : Type) : nat -> nat -> kind -> kind -> Type :=
   | Hole {l : nat} {k : kind} : body A l l k k
   | Single_child {hl tl : nat} {hk tk : kind} {y o}:
-    node' (stored_triple A hl) 1 hk (Mix NoGreen y o NoRed) ->
+    node' (stored A hl) 1 hk (Mix NoGreen y o NoRed) ->
     body A (S hl) tl only tk ->
     body A hl tl hk tk
   | Pair_yellow {hl tl : nat} {hk tk : kind} {C : color} :
-    node' (stored_triple A hl) 2 hk yellow ->
+    node' (stored A hl) 2 hk yellow ->
     body A (S hl) tl left tk ->
     chain A (S hl) single right C C ->
     body A hl tl hk tk
   | Pair_orange {hl tl : nat} {hk tk : kind} :
-    node' (stored_triple A hl) 2 hk orange ->
+    node' (stored A hl) 2 hk orange ->
     chain A (S hl) single left green green ->
     body A (S hl) tl right tk ->
     body A hl tl hk tk
@@ -101,7 +102,7 @@ with body (A : Type) : nat -> nat -> kind -> kind -> Type :=
 with packet (A : Type) : nat -> nat -> nat -> kind -> color -> Type :=
   | Packet {hl tl nc : nat} {hk tk : kind} {g r} :
     body A hl tl hk tk ->
-    node' (stored_triple A tl) nc tk (Mix g NoYellow NoOrange r) ->
+    node' (stored A tl) nc tk (Mix g NoYellow NoOrange r) ->
     packet A hl (S tl) nc hk (Mix g NoYellow NoOrange r)
 
 (* A type for chains. *)
@@ -134,21 +135,21 @@ Arguments Pair {A l Cl Cr}.
 
 (* Types for prefixes, suffixes, and nodes containing stored triples. *)
 
-Definition prefix (A : Type) (l : nat) := prefix' (stored_triple A l).
-Definition suffix (A : Type) (l : nat) := suffix' (stored_triple A l).
+Definition prefix (A : Type) (l : nat) := prefix' (stored A l).
+Definition suffix (A : Type) (l : nat) := suffix' (stored A l).
 
-Definition node (A : Type) (l : nat) := node' (stored_triple A l).
+Definition node (A : Type) (l : nat) := node' (stored A l).
 
 (* A type for green buffers, buffers of at least eight elements. *)
 Inductive green_buffer (A : Type) (l : nat) : Type :=
   | Gbuf {q : nat} :
-    buffer.t (stored_triple A l) (8 + q) -> green_buffer A l.
+    buffer.t (stored A l) (8 + q) -> green_buffer A l.
 Arguments Gbuf {A l q}.
 
 (* A type for stored buffers, buffers of at least three elements. *)
 Inductive stored_buffer (A : Type) (l : nat) : Type :=
   | Sbuf {q : nat} :
-    buffer.t (stored_triple A l) (3 + q) -> stored_buffer A l.
+    buffer.t (stored A l) (3 + q) -> stored_buffer A l.
 Arguments Sbuf {A l q}.
 
 (* A type for triples. *)
@@ -163,22 +164,22 @@ Inductive triple : Type -> nat -> kind -> color -> Type :=
 (* A type for left or right triples. *)
 Inductive left_right_triple : Type -> nat -> kind -> color -> Type :=
   | Not_enough {A : Type} {l : nat} {k : kind} :
-    vector (stored_triple A l) 6 ->
+    vector (stored A l) 6 ->
     left_right_triple A l k green
   | Ok_lrt {A : Type} {l : nat} {k : kind} {Cpkt : color} :
     triple A l k Cpkt -> left_right_triple A l k Cpkt.
 
 (* A type for a tuple of six stored triples. *)
-Definition six_stored_triple (A : Type) (l : nat) : Type :=
-  stored_triple A l * stored_triple A l * stored_triple A l *
-  stored_triple A l * stored_triple A l * stored_triple A l.
+Definition six_stored (A : Type) (l : nat) : Type :=
+  stored A l * stored A l * stored A l *
+  stored A l * stored A l * stored A l.
 
 (* A type for partial triples. *)
 Inductive partial_triple : Type -> nat -> arity -> kind -> Type :=
   | Zero_element {A : Type} {l : nat} {k : kind} :
     partial_triple A l single k
   | Six_elements {A : Type} {l : nat} {k : kind} :
-    six_stored_triple A l ->
+    six_stored A l ->
     partial_triple A l pair k
   | Ok_pt {A : Type} {l : nat} {ck : arity} {k : kind} {C : color} :
     triple A l k C -> partial_triple A l ck k.

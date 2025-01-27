@@ -128,7 +128,7 @@ Opaque singleton.
 
    These functions are needed for the implementation of catenable deques. In
    this implementation, non-catenable deques contain elements of type
-   [T A lvl] where [T] is instanciated with [stored_triple].
+   [T A lvl] where [T] is instanciated with [stored].
 
    Such functions compute the sequence associated to the [***] structure, then
    perform a map on them using the model functions [f] of the type [T], and

@@ -36,11 +36,11 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 
 (* Pushes on a left node. *)
 Equations push_left_node {A lvl nc C}
-  (a1 : stored_triple A lvl)
+  (a1 : stored A lvl)
   (st : node A lvl nc left C) :
   { st' : node A lvl nc left C |
     forall (l : list A),
-      node_seq st' l = stored_triple_seq a1 ++ node_seq st l } :=
+      node_seq st' l = stored_seq a1 ++ node_seq st l } :=
 push_left_node a1 (Left Gc p s) with buffer.push a1 p => {
   | ? p' := ? Left Gc p' s };
 push_left_node a1 (Left Yc p s) with buffer.push a1 p => {
@@ -55,10 +55,10 @@ push_left_node a1 (Left Ec p s) with buffer.push a1 p => {
 (* Injects on a right node. *)
 Equations inject_right_node {A lvl nc C}
   (st : node A lvl nc right C)
-  (a1 : stored_triple A lvl) :
+  (a1 : stored A lvl) :
   { st' : node A lvl nc right C |
     forall (l : list A),
-      node_seq st' l = node_seq st l ++ stored_triple_seq a1 } :=
+      node_seq st' l = node_seq st l ++ stored_seq a1 } :=
 inject_right_node (Right Gc p s) a1 with buffer.inject s a1 => {
   | ? s' := ? Right Gc p s' };
 inject_right_node (Right Yc p s) a1 with buffer.inject s a1 => {
@@ -72,11 +72,11 @@ inject_right_node (Right Ec p s) a1 with buffer.inject s a1 => {
 
 (* Pushes on an only node. *)
 Equations push_only_node {A lvl nc C}
-  (a1 : stored_triple A lvl)
+  (a1 : stored A lvl)
   (st : node A lvl nc only C) :
   { st' : node A lvl nc only C |
     forall (l : list A),
-      node_seq st' l = stored_triple_seq a1 ++ node_seq st l } :=
+      node_seq st' l = stored_seq a1 ++ node_seq st l } :=
 push_only_node a1 (Only Gc p s) with buffer.push a1 p => {
   | ? p' := ? Only Gc p' s };
 push_only_node a1 (Only Yc p s) with buffer.push a1 p => {
@@ -91,10 +91,10 @@ push_only_node a1 (Only_end p) with buffer.push a1 p => {
 (* Injects on an only node. *)
 Equations inject_only_node {A lvl nc C}
   (st : node A lvl nc only C)
-  (a1 : stored_triple A lvl) :
+  (a1 : stored A lvl) :
   { st' : node A lvl nc only C |
     forall (l : list A),
-      node_seq st' l = node_seq st l ++ stored_triple_seq a1 } :=
+      node_seq st' l = node_seq st l ++ stored_seq a1 } :=
 inject_only_node (Only Gc p s) a1 with buffer.inject s a1 => {
   | ? s' := ? Only Gc p s' };
 inject_only_node (Only Yc p s) a1 with buffer.inject s a1 => {
@@ -108,11 +108,11 @@ inject_only_node (Only_end p) a1 with buffer.inject p a1 => {
 
 (* Pushes on a left packet. *)
 Equations push_left_packet {A hlvl tlvl nc C}
-  (a1 : stored_triple A hlvl)
+  (a1 : stored A hlvl)
   (pkt : packet A hlvl tlvl nc left C) :
   { pkt' : packet A hlvl tlvl nc left C |
     forall (l : list A),
-      packet_seq pkt' l = stored_triple_seq a1 ++ packet_seq pkt l } :=
+      packet_seq pkt' l = stored_seq a1 ++ packet_seq pkt l } :=
 push_left_packet a1 (Packet Hole tl) with push_left_node a1 tl => {
   | ? tl' := ? Packet Hole tl' };
 push_left_packet a1 (Packet (Single_child hd bd) tl)
@@ -128,10 +128,10 @@ push_left_packet a1 (Packet (Pair_orange hd cl bd) tl)
 (* Injects on a right packet. *)
 Equations inject_right_packet {A hlvl tlvl nc C}
   (pkt : packet A hlvl tlvl nc right C)
-  (a1 : stored_triple A hlvl) :
+  (a1 : stored A hlvl) :
   { pkt' : packet A hlvl tlvl nc right C |
     forall (l : list A),
-      packet_seq pkt' l = packet_seq pkt l ++ stored_triple_seq a1 } :=
+      packet_seq pkt' l = packet_seq pkt l ++ stored_seq a1 } :=
 inject_right_packet (Packet Hole tl) a1 with inject_right_node tl a1 => {
   | ? tl' := ? Packet Hole tl' };
 inject_right_packet (Packet (Single_child hd bd) tl) a1
@@ -146,11 +146,11 @@ inject_right_packet (Packet (Pair_orange hd cl bd) tl) a1
 
 (* Pushes on an only packet. *)
 Equations push_only_packet {A hlvl tlvl nc C}
-  (a1 : stored_triple A hlvl)
+  (a1 : stored A hlvl)
   (pkt : packet A hlvl tlvl nc only C) :
   { pkt' : packet A hlvl tlvl nc only C |
     forall (l : list A),
-      packet_seq pkt' l = stored_triple_seq a1 ++ packet_seq pkt l } :=
+      packet_seq pkt' l = stored_seq a1 ++ packet_seq pkt l } :=
 push_only_packet a1 (Packet Hole tl) with push_only_node a1 tl => {
   | ? tl' := ? Packet Hole tl' };
 push_only_packet a1 (Packet (Single_child hd bd) tl)
@@ -166,10 +166,10 @@ push_only_packet a1 (Packet (Pair_orange hd cl bd) tl)
 (* Injects on an only packet. *)
 Equations inject_only_packet {A hlvl tlvl nc C}
   (pkt : packet A hlvl tlvl nc only C)
-  (a1 : stored_triple A hlvl) :
+  (a1 : stored A hlvl) :
   { pkt' : packet A hlvl tlvl nc only C |
     forall (l : list A),
-      packet_seq pkt' l = packet_seq pkt l ++ stored_triple_seq a1 } :=
+      packet_seq pkt' l = packet_seq pkt l ++ stored_seq a1 } :=
 inject_only_packet (Packet Hole tl) a1 with inject_only_node tl a1 => {
   | ? tl' := ? Packet Hole tl' };
 inject_only_packet (Packet (Single_child hd bd) tl) a1
@@ -184,23 +184,23 @@ inject_only_packet (Packet (Pair_orange hd cl bd) tl) a1
 
 (* Returns an only node containing one element. *)
 Equations single_node {A lvl}
-  (a1 : stored_triple A lvl) :
+  (a1 : stored A lvl) :
   { st : node A lvl 0 only green |
-    forall (l : list A), node_seq st l = stored_triple_seq a1 } :=
+    forall (l : list A), node_seq st l = stored_seq a1 } :=
 single_node a1 with buffer.single a1 => { | ? p := ? Only_end p }.
 
 (* Returns a packet containing one element. *)
 Equations single_packet {A lvl}
-  (a1 : stored_triple A lvl) :
+  (a1 : stored A lvl) :
   { pkt : packet A lvl (S lvl) 0 only green |
-    forall (l : list A), packet_seq pkt l = stored_triple_seq a1 } :=
+    forall (l : list A), packet_seq pkt l = stored_seq a1 } :=
 single_packet a1 with single_node a1 => { | ? tl := ? Packet Hole tl }.
 
 (* Returns a chain containing one element. *)
 Equations single_chain {A lvl}
-  (a1 : stored_triple A lvl) :
+  (a1 : stored A lvl) :
   { c : chain A lvl single only green green |
-    chain_seq c = stored_triple_seq a1 } :=
+    chain_seq c = stored_seq a1 } :=
 single_chain a1 with single_packet a1 => {
   | ? pkt := ? Single G pkt Empty }.
 
@@ -209,28 +209,28 @@ Set Equations With UIP.
 
 (* Pushes on a left chain. *)
 Equations push_left_chain {A lvl C}
-  (a1 : stored_triple A lvl)
+  (a1 : stored A lvl)
   (c : chain A lvl single left C C) :
   { c' : chain A lvl single left C C |
-    chain_seq c' = stored_triple_seq a1 ++ chain_seq c } :=
+    chain_seq c' = stored_seq a1 ++ chain_seq c } :=
 push_left_chain a1 (Single reg pkt c)
   with push_left_packet a1 pkt => { | ? pkt' := ? Single reg pkt' c }.
 
 (* Injects on a right chain. *)
 Equations inject_right_chain {A lvl C}
   (c : chain A lvl single right C C)
-  (a1 : stored_triple A lvl) :
+  (a1 : stored A lvl) :
   { c' : chain A lvl single right C C |
-    chain_seq c' = chain_seq c ++ stored_triple_seq a1 } :=
+    chain_seq c' = chain_seq c ++ stored_seq a1 } :=
 inject_right_chain (Single reg pkt c) a1
   with inject_right_packet pkt a1 => { | ? pkt' := ? Single reg pkt' c }.
 
 (* Pushse on a non-empty only chain. *)
 Equations push_ne_chain {A lvl ck Cl Cr}
-  (a1 : stored_triple A lvl)
+  (a1 : stored A lvl)
   (c : chain A lvl (S ck) only Cl Cr) :
   { c' : chain A lvl (S ck) only Cl Cr |
-    chain_seq c' = stored_triple_seq a1 ++ chain_seq c } :=
+    chain_seq c' = stored_seq a1 ++ chain_seq c } :=
 push_ne_chain a1 (Single reg pkt c) with push_only_packet a1 pkt => {
   | ? pkt' := ? Single reg pkt' c };
 push_ne_chain a1 (Pair cl cr) with push_left_chain a1 cl => {
@@ -239,9 +239,9 @@ push_ne_chain a1 (Pair cl cr) with push_left_chain a1 cl => {
 (* Injects on a non-empty only chain. *)
 Equations inject_ne_chain {A lvl ck Cl Cr}
   (c : chain A lvl (S ck) only Cl Cr)
-  (a1 : stored_triple A lvl) :
+  (a1 : stored A lvl) :
   { c' : chain A lvl (S ck) only Cl Cr |
-    chain_seq c' = chain_seq c ++ stored_triple_seq a1 } :=
+    chain_seq c' = chain_seq c ++ stored_seq a1 } :=
 inject_ne_chain (Single reg pkt c) a1 with inject_only_packet pkt a1 => {
   | ? pkt' := ? Single reg pkt' c };
 inject_ne_chain (Pair cl cr) a1 with inject_right_chain cr a1 => {
@@ -249,10 +249,10 @@ inject_ne_chain (Pair cl cr) a1 with inject_right_chain cr a1 => {
 
 (* Pushes on a semi-regular cadeque. *)
 Equations semi_push {A lvl}
-  (a1 : stored_triple A lvl)
+  (a1 : stored A lvl)
   (sd : semi_cadeque A lvl) :
   { sd' : semi_cadeque A lvl |
-    semi_cadeque_seq sd' = stored_triple_seq a1 ++ semi_cadeque_seq sd } :=
+    semi_cadeque_seq sd' = stored_seq a1 ++ semi_cadeque_seq sd } :=
 semi_push a1 (Semi Empty) with single_chain a1 => {
   | ? c := ? Semi c };
 semi_push a1 (Semi c) with push_ne_chain a1 c => {
@@ -261,9 +261,9 @@ semi_push a1 (Semi c) with push_ne_chain a1 c => {
 (* Injects on a semi-regular cadeque. *)
 Equations semi_inject {A lvl}
   (sd : semi_cadeque A lvl)
-  (a1 : stored_triple A lvl) :
+  (a1 : stored A lvl) :
   { sd' : semi_cadeque A lvl |
-    semi_cadeque_seq sd' = semi_cadeque_seq sd ++ stored_triple_seq a1 } :=
+    semi_cadeque_seq sd' = semi_cadeque_seq sd ++ stored_seq a1 } :=
 semi_inject (Semi Empty) a1 with single_chain a1 => {
   | ? c := ? Semi c };
 semi_inject (Semi c) a1 with inject_ne_chain c a1 => {
@@ -271,11 +271,11 @@ semi_inject (Semi c) a1 with inject_ne_chain c a1 => {
 
 (* Pushes a vector on a semi-regular cadeque. *)
 Equations push_vector {A lvl n}
-  (v : vector (stored_triple A lvl) n)
+  (v : vector (stored A lvl) n)
   (sd : semi_cadeque A lvl) :
   { sd' : semi_cadeque A lvl |
     semi_cadeque_seq sd' =
-      concat (map stored_triple_seq (vector_seq v)) ++ semi_cadeque_seq sd } :=
+      concat (map stored_seq (vector_seq v)) ++ semi_cadeque_seq sd } :=
 push_vector V0 sd0 := ? sd0;
 push_vector (V1 a1) sd0 with semi_push a1 sd0 => { | ? sd1 := ? sd1 };
 push_vector (V2 a2 a1) sd0 with semi_push a1 sd0 => {
@@ -298,10 +298,10 @@ push_vector (V6 a6 a5 a4 a3 a2 a1) sd0 with semi_push a1 sd0 => {
 (* Injects a vector on a semi-regular cadeque. *)
 Equations inject_vector {A lvl n}
   (sd : semi_cadeque A lvl)
-  (v : vector (stored_triple A lvl) n) :
+  (v : vector (stored A lvl) n) :
   { sd' : semi_cadeque A lvl |
     semi_cadeque_seq sd' =
-      semi_cadeque_seq sd ++ concat (map stored_triple_seq (vector_seq v)) } :=
+      semi_cadeque_seq sd ++ concat (map stored_seq (vector_seq v)) } :=
 inject_vector sd0 V0 := ? sd0;
 inject_vector sd0 (V1 a1) with semi_inject sd0 a1 => { | ? sd1 := ? sd1 };
 inject_vector sd0 (V2 a1 a2) with semi_inject sd0 a1 => {
@@ -396,8 +396,8 @@ Equations make_stored_suffix {A lvl ql q ck Cl Cr}
   (p : prefix A lvl 2)
   (child : chain A (S lvl) ck only Cl Cr)
   (s : suffix A lvl (5 + q)) :
-  { '(stored, sleft) : stored_triple A (S lvl) * suffix A lvl 2 |
-    stored_triple_seq stored ++ suffix_seq sleft =
+  { '(stored, sleft) : stored A (S lvl) * suffix A lvl 2 |
+    stored_seq stored ++ suffix_seq sleft =
     suffix_seq sl ++ prefix_seq p ++ chain_seq child ++ suffix_seq s } :=
 make_stored_suffix sl p child s with buffer.two p, buffer.eject2 s => {
   | ? (a1, a2), ? (sstored, c, d)
@@ -405,14 +405,14 @@ make_stored_suffix sl p child s with buffer.two p, buffer.eject2 s => {
       | ? pstored, ? sleft := ? (Big pstored child sstored, sleft) } }.
 
 (* Takes a left prefix, a child chain, a left suffix and a prefix of at least
-   one elements, and returns a right prefix and a stored_triple. *)
+   one elements, and returns a right prefix and a stored. *)
 Equations make_prefix_stored {A lvl q qr ck Cl Cr}
   (p : prefix A lvl (5 + q))
   (child : chain A (S lvl) ck only Cl Cr)
   (s : suffix A lvl 2)
   (pr : prefix A lvl (1 + qr)) :
-  { '(pright, stored) : prefix A lvl 2 * stored_triple A (S lvl) |
-    prefix_seq pright ++ stored_triple_seq stored =
+  { '(pright, stored) : prefix A lvl 2 * stored A (S lvl) |
+    prefix_seq pright ++ stored_seq stored =
     prefix_seq p ++ chain_seq child ++ suffix_seq s ++ prefix_seq pr } :=
 make_prefix_stored p child s pr with buffer.pop2 p, buffer.two s => {
   | ? (a1, a2, pstored), ? (c, d)
@@ -424,8 +424,8 @@ make_prefix_stored p child s pr with buffer.pop2 p, buffer.two s => {
 Equations stored_of_right {A lvl ql C}
   (sl : suffix A lvl (1 + ql))
   (tr : triple A lvl right C) :
-  { '(stored, sleft) : stored_triple A (S lvl) * suffix A lvl 2 |
-    stored_triple_seq stored ++ suffix_seq sleft =
+  { '(stored, sleft) : stored A (S lvl) * suffix A lvl 2 |
+    stored_seq stored ++ suffix_seq sleft =
     suffix_seq sl ++ triple_seq tr } :=
 stored_of_right sl (Triple G (Right Ec p s) Empty)
   with make_stored_suffix sl p Empty s => { | ? (st, s1) := ? (st, s1) };
@@ -437,8 +437,8 @@ stored_of_right sl (Triple reg (Right col p s) child)
 Equations stored_of_left {A lvl qr C}
   (tl : triple A lvl left C)
   (pr : prefix A lvl (1 + qr)) :
-  { '(pright, stored) : prefix A lvl 2 * stored_triple A (S lvl) |
-    prefix_seq pright ++ stored_triple_seq stored =
+  { '(pright, stored) : prefix A lvl 2 * stored A (S lvl) |
+    prefix_seq pright ++ stored_seq stored =
     triple_seq tl ++ prefix_seq pr } :=
 stored_of_left (Triple G (Left Ec p s) Empty) pr
   with make_prefix_stored p Empty s pr => { | ? (p1, st) := ? (p1, st) };
@@ -518,8 +518,8 @@ orange (Pair _ _)     := OP.
 
 (* Pops from a green left triple. *)
 Equations pop_left_green {A lvl} (tl : triple A lvl left green) :
-  { '(a1, pt) : stored_triple A lvl * partial_triple A lvl pair left |
-    triple_seq tl = stored_triple_seq a1 ++ pt_triple_seq pt } :=
+  { '(a1, pt) : stored A lvl * partial_triple A lvl pair left |
+    triple_seq tl = stored_seq a1 ++ pt_triple_seq pt } :=
 pop_left_green (Triple G (Left Ec p s) Empty) with buffer.pop p => {
   | ? (a1, p1) with buffer.has5 p1 => {
     | ? inl (a2, a3, a4, a5) with buffer.two s => {
@@ -539,8 +539,8 @@ pop_left_green (Triple OP (Left Oc p s) child)
 
 (* Ejects from a green right triple. *)
 Equations eject_right_green {A lvl} (tr : triple A lvl right green) :
-  { '(pt, a1) : partial_triple A lvl pair right * stored_triple A lvl |
-    triple_seq tr = pt_triple_seq pt ++ stored_triple_seq a1 } :=
+  { '(pt, a1) : partial_triple A lvl pair right * stored A lvl |
+    triple_seq tr = pt_triple_seq pt ++ stored_seq a1 } :=
 eject_right_green (Triple G (Right Ec p s) Empty) with buffer.eject s => {
   | ? (s1, a1) with buffer.has5 s1 => {
     | ? inl (a5, a4, a3, a2) with buffer.two p => {
@@ -560,8 +560,8 @@ eject_right_green (Triple OP (Right Oc p s) child)
 
 (* Pops from an green only triple. *)
 Equations pop_only_green {A lvl} (t : triple A lvl only green) :
-  { '(a1, pt) : stored_triple A lvl * partial_triple A lvl single only |
-    triple_seq t = stored_triple_seq a1 ++ pt_triple_seq pt } :=
+  { '(a1, pt) : stored A lvl * partial_triple A lvl single only |
+    triple_seq t = stored_seq a1 ++ pt_triple_seq pt } :=
 pop_only_green (Triple G (Only_end p) Empty) with buffer.pop p => {
   | ? (a1, p1) with buffer.has1 p1 => {
     | ? None := ? (a1, Zero_element);
@@ -578,8 +578,8 @@ pop_only_green (Triple OP (Only Oc p s) child) with buffer.pop p => {
 
 (* Ejects from an green only triple. *)
 Equations eject_only_green {A lvl} (t : triple A lvl only green) :
-  { '(pt, a1) : partial_triple A lvl single only * stored_triple A lvl |
-    triple_seq t = pt_triple_seq pt ++ stored_triple_seq a1 } :=
+  { '(pt, a1) : partial_triple A lvl single only * stored A lvl |
+    triple_seq t = pt_triple_seq pt ++ stored_seq a1 } :=
 eject_only_green (Triple G (Only_end s) Empty) with buffer.eject s => {
   | ? (s1, a1) with buffer.has1 s1 => {
     | ? None := ? (Zero_element, a1);
@@ -596,8 +596,8 @@ eject_only_green (Triple OP (Only Oc p s) child) with buffer.eject s => {
 
 (* Takes an green only triple and represent it as a sandwich. *)
 Equations sandwich_only_green {A lvl} (t : triple A lvl only green) :
-  { s : sandwich (stored_triple A lvl) (partial_triple A lvl single only) |
-    triple_seq t = sandwich_seq stored_triple_seq pt_triple_seq s } :=
+  { s : sandwich (stored A lvl) (partial_triple A lvl single only) |
+    triple_seq t = sandwich_seq stored_seq pt_triple_seq s } :=
 sandwich_only_green (Triple G (Only_end p) Empty) with buffer.pop p => {
   | ? (a1, p1) with buffer.has1 p1 => {
     | ? None := ? Alone a1;
@@ -631,10 +631,10 @@ adapt_to_prefix Ec := Ec.
 
 (* Makes an only triple out of six elements and a right triple. *)
 Equations only_of_right {A lvl C}
-  (six : six_stored_triple A lvl)
+  (six : six_stored A lvl)
   (tr : triple A lvl right C) :
   { t : triple A lvl only C |
-    triple_seq t = six_stored_triple_seq six ++ triple_seq tr } :=
+    triple_seq t = six_stored_seq six ++ triple_seq tr } :=
 only_of_right (a1, a2, a3, a4, a5, a6) (Triple G (Right Ec p s) Empty)
   with buffer.two p => {
     | ? (a7, a8) with buffer.push2 a7 a8 s => {
@@ -656,9 +656,9 @@ adapt_to_suffix Ec := Ec.
 (* Makes an only triple out of a left triple and six elements. *)
 Equations only_of_left {A lvl C}
   (tl : triple A lvl left C)
-  (six : six_stored_triple A lvl) :
+  (six : six_stored A lvl) :
   { t : triple A lvl only C |
-    triple_seq t = triple_seq tl ++ six_stored_triple_seq six } :=
+    triple_seq t = triple_seq tl ++ six_stored_seq six } :=
 only_of_left (Triple G (Left Ec p s) Empty) (a6, a5, a4, a3, a2, a1)
   with buffer.two s => {
     | ? (a8, a7) with buffer.inject2 p a8 a7 => {
@@ -671,8 +671,8 @@ only_of_left (Triple reg (Left col p s) child) (a6, a5, a4, a3, a2, a1)
 (* Pops from a green pair chain. *)
 Equations pop_pair_green {A lvl}
   (c : chain A lvl pair only green green) :
-  { '(a1, sd) : stored_triple A lvl * semi_cadeque A lvl |
-    chain_seq c = stored_triple_seq a1 ++ semi_cadeque_seq sd } :=
+  { '(a1, sd) : stored A lvl * semi_cadeque A lvl |
+    chain_seq c = stored_seq a1 ++ semi_cadeque_seq sd } :=
 pop_pair_green (Pair cl cr) with triple_of_chain cl => {
   | ? tl with pop_left_green tl => {
     | ? (a1, Six_elements six) with triple_of_chain cr => {
@@ -689,8 +689,8 @@ pop_pair_green (Pair cl cr) with triple_of_chain cl => {
 (* Ejects from a green pair chain. *)
 Equations eject_pair_green {A lvl}
   (c : chain A lvl pair only green green) :
-  { '(sd, a1) : semi_cadeque A lvl * stored_triple A lvl |
-    chain_seq c = semi_cadeque_seq sd ++ stored_triple_seq a1 } :=
+  { '(sd, a1) : semi_cadeque A lvl * stored A lvl |
+    chain_seq c = semi_cadeque_seq sd ++ stored_seq a1 } :=
 eject_pair_green (Pair cl cr) with triple_of_chain cr => {
   | ? tr with eject_right_green tr => {
     | ? (Six_elements six, a1) with triple_of_chain cl => {
@@ -703,8 +703,8 @@ eject_pair_green (Pair cl cr) with triple_of_chain cr => {
 (* Takes a green pair chain and represent it as a sandwich. *)
 Equations sandwich_pair_green {A lvl}
   (c : chain A lvl pair only green green) :
-  { s : sandwich (stored_triple A lvl) (semi_cadeque A lvl) |
-    chain_seq c = sandwich_seq stored_triple_seq semi_cadeque_seq s } :=
+  { s : sandwich (stored A lvl) (semi_cadeque A lvl) |
+    chain_seq c = sandwich_seq stored_seq semi_cadeque_seq s } :=
 sandwich_pair_green (Pair cl cr)
   with triple_of_chain cl, triple_of_chain cr => {
     | ? tl, ? tr with pop_left_green tl, eject_right_green tr => {
@@ -731,8 +731,8 @@ sandwich_pair_green (Pair cl cr)
 
 (* Pops from a non-empty green chain. *)
 Equations pop_green {A lvl ck} (c : chain A lvl (S ck) only green green) :
-  { '(a1, sd) : stored_triple A lvl * semi_cadeque A lvl |
-    chain_seq c = stored_triple_seq a1 ++ semi_cadeque_seq sd } :=
+  { '(a1, sd) : stored A lvl * semi_cadeque A lvl |
+    chain_seq c = stored_seq a1 ++ semi_cadeque_seq sd } :=
 pop_green (ck := 0) c with triple_of_chain c => {
   | ? t with pop_only_green t => {
     | ? (a1, Zero_element) := ? (a1, Semi Empty)
@@ -743,8 +743,8 @@ pop_green (ck := 1) c with pop_pair_green c => {
 
 (* Ejects from a non-empty green chain. *)
 Equations eject_green {A lvl ck} (c : chain A lvl (S ck) only green green) :
-  { '(sd, a1) : semi_cadeque A lvl * stored_triple A lvl |
-    chain_seq c = semi_cadeque_seq sd ++ stored_triple_seq a1 } :=
+  { '(sd, a1) : semi_cadeque A lvl * stored A lvl |
+    chain_seq c = semi_cadeque_seq sd ++ stored_seq a1 } :=
 eject_green (ck := 0) c with triple_of_chain c => {
   | ? t with eject_only_green t => {
     | ? (Zero_element, a1) := ? (Semi Empty, a1);
@@ -756,8 +756,8 @@ eject_green (ck := 1) c with eject_pair_green c => {
 (* Takes a non-empty green chain and represent it as a sandwich. *)
 Equations sandwich_green {A lvl ck}
   (c : chain A lvl (S ck) only green green) :
-  { s : sandwich (stored_triple A lvl) (semi_cadeque A lvl) |
-    chain_seq c = sandwich_seq stored_triple_seq semi_cadeque_seq s } :=
+  { s : sandwich (stored A lvl) (semi_cadeque A lvl) |
+    chain_seq c = sandwich_seq stored_seq semi_cadeque_seq s } :=
 sandwich_green (ck := 0) c with triple_of_chain c => {
   | ? t with sandwich_only_green t => {
     | ? Alone a1 := ? Alone a1;
@@ -806,11 +806,11 @@ make_green_suffix child sstored s with buffer.has3s sstored => {
    the prefix of the stored triple, the remaining elements and the semi
    regular cadeque form a new semi-regular cadeque. *)
 Equations extract_prefix {A lvl}
-  (stored : stored_triple A (S lvl))
+  (stored : stored A (S lvl))
   (child : semi_cadeque A (S lvl)) :
   { '(pstored, child') : stored_buffer A lvl * semi_cadeque A (S lvl) |
     stored_buffer_seq pstored ++ semi_cadeque_seq child' =
-    stored_triple_seq stored ++ semi_cadeque_seq child } :=
+    stored_seq stored ++ semi_cadeque_seq child } :=
 extract_prefix (Small p) child := ? (Sbuf p, child);
 extract_prefix (Big p schild s) child with semi_push (Small s) child => {
     | ? child1 with semi_concat (Semi schild) child1 => {
@@ -821,10 +821,10 @@ extract_prefix (Big p schild s) child with semi_push (Small s) child => {
    elements form a new semi-regular cadeque. *)
 Equations extract_suffix {A lvl}
   (child : semi_cadeque A (S lvl))
-  (stored : stored_triple A (S lvl)) :
+  (stored : stored A (S lvl)) :
   { '(child', sstored) : semi_cadeque A (S lvl) * stored_buffer A lvl |
     semi_cadeque_seq child' ++ stored_buffer_seq sstored =
-    semi_cadeque_seq child ++ stored_triple_seq stored } :=
+    semi_cadeque_seq child ++ stored_seq stored } :=
 extract_suffix child (Small s) := ? (child, Sbuf s);
 extract_suffix child (Big p schild s) with semi_inject child (Small p) => {
   | ? child1 with semi_concat child1 (Semi schild) => {

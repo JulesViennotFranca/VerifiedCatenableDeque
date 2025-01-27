@@ -20,31 +20,31 @@ Definition concat_map_node'_seq
 Set Equations Transparent.
 
 (* Returns the sequence associated to a stored triple. *)
-Equations stored_triple_seq A lvl
-  (st : stored_triple A lvl) : list A by struct st :=
-stored_triple_seq A lvl (Ground a) := [a];
-stored_triple_seq A lvl (Small s) := buffer.concat_map_seq stored_triple_seq s;
-stored_triple_seq A lvl (Big p child s) :=
-  buffer.concat_map_seq stored_triple_seq p ++
+Equations stored_seq A lvl
+  (st : stored A lvl) : list A by struct st :=
+stored_seq A lvl (Ground a) := [a];
+stored_seq A lvl (Small s) := buffer.concat_map_seq stored_seq s;
+stored_seq A lvl (Big p child s) :=
+  buffer.concat_map_seq stored_seq p ++
   chain_seq child ++
-  buffer.concat_map_seq stored_triple_seq s
+  buffer.concat_map_seq stored_seq s
 
 (* Returns the sequence associated to a body. *)
 with body_seq {A hlvl tlvl hk tk}
   (b : body A hlvl tlvl hk tk) : list A -> list A by struct b :=
 body_seq Hole l := l;
 body_seq (Single_child hd b) l :=
-  concat_map_node'_seq stored_triple_seq hd (body_seq b l);
+  concat_map_node'_seq stored_seq hd (body_seq b l);
 body_seq (Pair_yellow hd b cr) l :=
-  concat_map_node'_seq stored_triple_seq hd (body_seq b l ++ chain_seq cr);
+  concat_map_node'_seq stored_seq hd (body_seq b l ++ chain_seq cr);
 body_seq (Pair_orange hd cl b) l :=
-  concat_map_node'_seq stored_triple_seq hd (chain_seq cl ++ body_seq b l)
+  concat_map_node'_seq stored_seq hd (chain_seq cl ++ body_seq b l)
 
 (* Returns the sequence associated to a packet. *)
 with packet_seq {A hlvl tlvl nc nk C} :
   packet A hlvl tlvl nc nk C -> list A -> list A :=
 packet_seq (Packet b tl) l :=
-  body_seq b (concat_map_node'_seq stored_triple_seq tl l)
+  body_seq b (concat_map_node'_seq stored_seq tl l)
 
 (* Returns the sequence associated to a chain. *)
 with chain_seq {A lvl ck nk Cl Cr}
@@ -53,10 +53,10 @@ chain_seq Empty := [];
 chain_seq (Single _ pkt rest) := packet_seq pkt (chain_seq rest);
 chain_seq (Pair cl cr) := chain_seq cl ++ chain_seq cr.
 
-Arguments stored_triple_seq {A lvl}.
+Arguments stored_seq {A lvl}.
 
 (* Returns the sequence associated to a buffer containing stored triples. *)
-Notation buffer_seq b := (buffer.concat_map_seq (@stored_triple_seq) b).
+Notation buffer_seq b := (buffer.concat_map_seq (@stored_seq) b).
 
 (* Returns the sequence associated to a prefix containing stored triples. *)
 Notation prefix_seq p := (buffer_seq p).
@@ -65,7 +65,7 @@ Notation prefix_seq p := (buffer_seq p).
 Notation suffix_seq s := (buffer_seq s).
 
 (* Returns the sequence associated to a node containing stored triples. *)
-Notation node_seq n l := (concat_map_node'_seq (@stored_triple_seq) n l).
+Notation node_seq n l := (concat_map_node'_seq (@stored_seq) n l).
 
 (* Returns the sequence associated to a green buffer. *)
 Equations green_buffer_seq {A lvl} : green_buffer A lvl -> list A :=
@@ -81,19 +81,19 @@ triple_seq (Triple _ hd child) := node_seq hd (chain_seq child).
 
 (* Returns the sequence associated to a left or right triple. *)
 Equations lr_triple_seq {A lvl k C} : left_right_triple A lvl k C -> list A :=
-lr_triple_seq (Not_enough v) := concat (map stored_triple_seq (vector_seq v));
+lr_triple_seq (Not_enough v) := concat (map stored_seq (vector_seq v));
 lr_triple_seq (Ok_lrt t) := triple_seq t.
 
 (* Returns the sequence associated to six stored triples. *)
-Equations six_stored_triple_seq {A lvl} : six_stored_triple A lvl -> list A :=
-six_stored_triple_seq (a1, a2, a3, a4, a5, a6) :=
-  stored_triple_seq a1 ++ stored_triple_seq a2 ++ stored_triple_seq a3 ++
-  stored_triple_seq a4 ++ stored_triple_seq a5 ++ stored_triple_seq a6.
+Equations six_stored_seq {A lvl} : six_stored A lvl -> list A :=
+six_stored_seq (a1, a2, a3, a4, a5, a6) :=
+  stored_seq a1 ++ stored_seq a2 ++ stored_seq a3 ++
+  stored_seq a4 ++ stored_seq a5 ++ stored_seq a6.
 
 (* Returns the sequence associated to a partial triple. *)
 Equations pt_triple_seq {A lvl pk k} : partial_triple A lvl pk k -> list A :=
 pt_triple_seq Zero_element := [];
-pt_triple_seq (Six_elements six) := six_stored_triple_seq six;
+pt_triple_seq (Six_elements six) := six_stored_seq six;
 pt_triple_seq (Ok_pt t) := triple_seq t.
 
 (* Provided model functions for the types A and B, returns the sequence
