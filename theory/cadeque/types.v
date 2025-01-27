@@ -71,9 +71,9 @@ Unset Elimination Schemes.
 Inductive stored (A : Type) : nat -> Type :=
   | Ground :
       A -> stored A 0
-  | Big {l qp qs : nat} {ck : arity} {lC rC : color} :
+  | Big {l qp qs : nat} {a : arity} {lC rC : color} :
       prefix' (stored A l) (3 + qp) ->
-      chain A (S l) ck only lC rC ->
+      chain A (S l) a only lC rC ->
       suffix' (stored A l) (3 + qs) ->
       stored A (S l)
   | Small {l q : nat} :
@@ -110,10 +110,10 @@ with packet (A : Type) : nat -> nat -> nat -> kind -> color -> Type :=
 with chain (A : Type) : nat -> arity -> kind -> color -> color -> Type :=
   | Empty {l : nat} :
       chain A l empty only green green
-  | Single {hl tl : nat} {ck : arity} {k : kind} {C lC rC : color} :
-      regularity C C ck lC rC ->
-      packet A hl tl ck k C ->
-      chain A tl ck only lC rC ->
+  | Single {hl tl : nat} {a : arity} {k : kind} {C lC rC : color} :
+      regularity C C a lC rC ->
+      packet A hl tl a k C ->
+      chain A tl a only lC rC ->
       chain A hl single k C C
   | Pair {l : nat} {lC rC : color} :
       chain A l single left lC lC ->
@@ -122,7 +122,7 @@ with chain (A : Type) : nat -> arity -> kind -> color -> color -> Type :=
 
 Arguments Ground {A}.
 Arguments Small {A l q}.
-Arguments Big {A l qp qs ck lC rC}.
+Arguments Big {A l qp qs a lC rC}.
 
 Arguments Hole {A l k}.
 Arguments Single_child {A hl tl hk tk y o}.
@@ -132,7 +132,7 @@ Arguments Pair_orange {A hl tl hk tk}.
 Arguments Packet {A hl tl nc hk tk g r}.
 
 Arguments Empty {A l}.
-Arguments Single {A hl tl ck k C lC rC}.
+Arguments Single {A hl tl a k C lC rC}.
 Arguments Pair {A l lC rC}.
 
 (* Types for prefixes, suffixes, and nodes containing stored triples. *)
@@ -156,11 +156,11 @@ Arguments Sbuf {A l q}.
 
 (* A type for triples. *)
 Inductive triple : Type -> nat -> kind -> color -> Type :=
-  | Triple {A : Type} {l : nat} {ck : arity}
+  | Triple {A : Type} {l : nat} {a : arity}
            {k : kind} {C lC rC Cpkt : color} :
-    regularity C Cpkt ck lC rC ->
-    node A l ck k C ->
-    chain A (S l) ck only lC rC ->
+    regularity C Cpkt a lC rC ->
+    node A l a k C ->
+    chain A (S l) a only lC rC ->
     triple A l k Cpkt.
 
 (* A type for left or right triples. *)
@@ -183,8 +183,8 @@ Inductive partial_triple : Type -> nat -> arity -> kind -> Type :=
   | Six_elements {A : Type} {l : nat} {k : kind} :
     six_stored A l ->
     partial_triple A l pair k
-  | Ok_pt {A : Type} {l : nat} {ck : arity} {k : kind} {C : color} :
-    triple A l k C -> partial_triple A l ck k.
+  | Ok_pt {A : Type} {l : nat} {a : arity} {k : kind} {C : color} :
+    triple A l k C -> partial_triple A l a k.
 
 (* A general sandwich type. *)
 Inductive sandwich : Type -> Type -> Type :=
@@ -193,9 +193,9 @@ Inductive sandwich : Type -> Type -> Type :=
 
 (* A type for semi-regular cadeques. *)
 Inductive semi_cadeque : Type -> nat -> Type :=
-  | Semi {A : Type} {l : nat} {ck : arity} {lC rC : color} :
-    chain A l ck only lC rC -> semi_cadeque A l.
+  | Semi {A : Type} {l : nat} {a : arity} {lC rC : color} :
+    chain A l a only lC rC -> semi_cadeque A l.
 
 (* A type for cadeques. *)
 Inductive cadeque : Type -> Type :=
-  | T {A : Type} {ck : arity} : chain A 0 ck only green green -> cadeque A.
+  | T {A : Type} {a : arity} : chain A 0 a only green green -> cadeque A.
