@@ -71,52 +71,54 @@ Unset Elimination Schemes.
 Inductive stored (A : Type) : nat -> Type :=
   | Ground :
       A -> stored A 0
-  | Small {l q : nat} :
-    suffix' (stored A l) (3 + q) ->
-    stored A (S l)
   | Big {l qp qs : nat} {ck : arity} {Cl Cr : color} :
-    prefix' (stored A l) (3 + qp) ->
-    chain A (S l) ck only Cl Cr ->
-    suffix' (stored A l) (3 + qs) ->
-    stored A (S l)
+      prefix' (stored A l) (3 + qp) ->
+      chain A (S l) ck only Cl Cr ->
+      suffix' (stored A l) (3 + qs) ->
+      stored A (S l)
+  | Small {l q : nat} :
+      suffix' (stored A l) (3 + q) ->
+      stored A (S l)
 
 (* A type for bodies. *)
 with body (A : Type) : nat -> nat -> kind -> kind -> Type :=
-  | Hole {l : nat} {k : kind} : body A l l k k
+  | Hole {l : nat} {k : kind} :
+      body A l l k k
   | Single_child {hl tl : nat} {hk tk : kind} {y o}:
-    node' (stored A hl) 1 hk (Mix NoGreen y o NoRed) ->
-    body A (S hl) tl only tk ->
-    body A hl tl hk tk
+      node' (stored A hl) 1 hk (Mix NoGreen y o NoRed) ->
+      body A (S hl) tl only tk ->
+      body A hl tl hk tk
   | Pair_yellow {hl tl : nat} {hk tk : kind} {C : color} :
-    node' (stored A hl) 2 hk yellow ->
-    body A (S hl) tl left tk ->
-    chain A (S hl) single right C C ->
-    body A hl tl hk tk
+      node' (stored A hl) 2 hk yellow ->
+      body A (S hl) tl left tk ->
+      chain A (S hl) single right C C ->
+      body A hl tl hk tk
   | Pair_orange {hl tl : nat} {hk tk : kind} :
-    node' (stored A hl) 2 hk orange ->
-    chain A (S hl) single left green green ->
-    body A (S hl) tl right tk ->
-    body A hl tl hk tk
+      node' (stored A hl) 2 hk orange ->
+      chain A (S hl) single left green green ->
+      body A (S hl) tl right tk ->
+      body A hl tl hk tk
 
 (* A type for packets. *)
 with packet (A : Type) : nat -> nat -> nat -> kind -> color -> Type :=
   | Packet {hl tl nc : nat} {hk tk : kind} {g r} :
-    body A hl tl hk tk ->
-    node' (stored A tl) nc tk (Mix g NoYellow NoOrange r) ->
-    packet A hl (S tl) nc hk (Mix g NoYellow NoOrange r)
+      body A hl tl hk tk ->
+      node' (stored A tl) nc tk (Mix g NoYellow NoOrange r) ->
+      packet A hl (S tl) nc hk (Mix g NoYellow NoOrange r)
 
 (* A type for chains. *)
 with chain (A : Type) : nat -> arity -> kind -> color -> color -> Type :=
-  | Empty {l : nat} : chain A l empty only green green
+  | Empty {l : nat} :
+      chain A l empty only green green
   | Single {hl tl : nat} {ck : arity} {k : kind} {C Cl Cr : color} :
-    regularity C C ck Cl Cr ->
-    packet A hl tl ck k C ->
-    chain A tl ck only Cl Cr ->
-    chain A hl single k C C
+      regularity C C ck Cl Cr ->
+      packet A hl tl ck k C ->
+      chain A tl ck only Cl Cr ->
+      chain A hl single k C C
   | Pair {l : nat} {Cl Cr : color} :
-    chain A l single left Cl Cl ->
-    chain A l single right Cr Cr ->
-    chain A l pair only Cl Cr.
+      chain A l single left Cl Cl ->
+      chain A l single right Cr Cr ->
+      chain A l pair only Cl Cr.
 
 Arguments Ground {A}.
 Arguments Small {A l q}.
