@@ -56,10 +56,10 @@ Arguments Right {A qp qs nc C}.
 
 (* A type for the regularity relation. *)
 Inductive regularity : color -> color -> arity -> color -> color -> Type :=
- | G {a Cl Cr} : regularity green  green a      Cl    Cr
- | Y {a Cl Cr} : regularity yellow Cl    (S a)  Cl    Cr
+ | G {a Cl rC} : regularity green  green a      Cl    rC
+ | Y {a Cl rC} : regularity yellow Cl    (S a)  Cl    rC
  | OS {C}      : regularity orange C     single C     C
- | OP {Cr}     : regularity orange Cr    pair   green Cr
+ | OP {rC}     : regularity orange rC    pair   green rC
  | R {a}       : regularity red    red   (S a)  green green.
 
 (* The computation of elimination schemes is disabled. Elimination schemes are
@@ -71,9 +71,9 @@ Unset Elimination Schemes.
 Inductive stored (A : Type) : nat -> Type :=
   | Ground :
       A -> stored A 0
-  | Big {l qp qs : nat} {ck : arity} {Cl Cr : color} :
+  | Big {l qp qs : nat} {ck : arity} {lC rC : color} :
       prefix' (stored A l) (3 + qp) ->
-      chain A (S l) ck only Cl Cr ->
+      chain A (S l) ck only lC rC ->
       suffix' (stored A l) (3 + qs) ->
       stored A (S l)
   | Small {l q : nat} :
@@ -110,19 +110,19 @@ with packet (A : Type) : nat -> nat -> nat -> kind -> color -> Type :=
 with chain (A : Type) : nat -> arity -> kind -> color -> color -> Type :=
   | Empty {l : nat} :
       chain A l empty only green green
-  | Single {hl tl : nat} {ck : arity} {k : kind} {C Cl Cr : color} :
-      regularity C C ck Cl Cr ->
+  | Single {hl tl : nat} {ck : arity} {k : kind} {C lC rC : color} :
+      regularity C C ck lC rC ->
       packet A hl tl ck k C ->
-      chain A tl ck only Cl Cr ->
+      chain A tl ck only lC rC ->
       chain A hl single k C C
-  | Pair {l : nat} {Cl Cr : color} :
-      chain A l single left Cl Cl ->
-      chain A l single right Cr Cr ->
-      chain A l pair only Cl Cr.
+  | Pair {l : nat} {lC rC : color} :
+      chain A l single left lC lC ->
+      chain A l single right rC rC ->
+      chain A l pair only lC rC.
 
 Arguments Ground {A}.
 Arguments Small {A l q}.
-Arguments Big {A l qp qs ck Cl Cr}.
+Arguments Big {A l qp qs ck lC rC}.
 
 Arguments Hole {A l k}.
 Arguments Single_child {A hl tl hk tk y o}.
@@ -132,8 +132,8 @@ Arguments Pair_orange {A hl tl hk tk}.
 Arguments Packet {A hl tl nc hk tk g r}.
 
 Arguments Empty {A l}.
-Arguments Single {A hl tl ck k C Cl Cr}.
-Arguments Pair {A l Cl Cr}.
+Arguments Single {A hl tl ck k C lC rC}.
+Arguments Pair {A l lC rC}.
 
 (* Types for prefixes, suffixes, and nodes containing stored triples. *)
 
@@ -157,10 +157,10 @@ Arguments Sbuf {A l q}.
 (* A type for triples. *)
 Inductive triple : Type -> nat -> kind -> color -> Type :=
   | Triple {A : Type} {l : nat} {ck : arity}
-           {k : kind} {C Cl Cr Cpkt : color} :
-    regularity C Cpkt ck Cl Cr ->
+           {k : kind} {C lC rC Cpkt : color} :
+    regularity C Cpkt ck lC rC ->
     node A l ck k C ->
-    chain A (S l) ck only Cl Cr ->
+    chain A (S l) ck only lC rC ->
     triple A l k Cpkt.
 
 (* A type for left or right triples. *)
@@ -193,8 +193,8 @@ Inductive sandwich : Type -> Type -> Type :=
 
 (* A type for semi-regular cadeques. *)
 Inductive semi_cadeque : Type -> nat -> Type :=
-  | Semi {A : Type} {l : nat} {ck : arity} {Cl Cr : color} :
-    chain A l ck only Cl Cr -> semi_cadeque A l.
+  | Semi {A : Type} {l : nat} {ck : arity} {lC rC : color} :
+    chain A l ck only lC rC -> semi_cadeque A l.
 
 (* A type for cadeques. *)
 Inductive cadeque : Type -> Type :=
