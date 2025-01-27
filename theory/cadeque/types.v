@@ -55,13 +55,12 @@ Arguments Left {A qp qs nc C}.
 Arguments Right {A qp qs nc C}.
 
 (* A type for the regularity relation. *)
-Inductive regularity :
-  color -> color -> arity -> color -> color -> Type :=
- | G {ck Cl Cr} : regularity green  green ck     Cl    Cr
- | Y {ck Cl Cr} : regularity yellow Cl    (S ck) Cl    Cr
- | OS {C}       : regularity orange C     single C     C
- | OP {Cr}      : regularity orange Cr    pair   green Cr
- | R {ck}       : regularity red    red   (S ck) green green.
+Inductive regularity : color -> color -> arity -> color -> color -> Type :=
+ | G {a Cl Cr} : regularity green  green a      Cl    Cr
+ | Y {a Cl Cr} : regularity yellow Cl    (S a)  Cl    Cr
+ | OS {C}      : regularity orange C     single C     C
+ | OP {Cr}     : regularity orange Cr    pair   green Cr
+ | R {a}       : regularity red    red   (S a)  green green.
 
 (* The computation of elimination schemes is disabled. Elimination schemes are
    not necessary in the code and their definition takes a long time to compute
