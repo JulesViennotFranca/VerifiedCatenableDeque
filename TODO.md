@@ -2,7 +2,7 @@
   `Unbound module Lib.ArtWend`
 
 * `make` currently fails with Coq 8.20.
-  It works with Coq 8.19.
+  It used to work with Coq 8.19, but maybe is broken now.
 
 * Clean up `README.md`.
 
@@ -29,7 +29,7 @@
 
 * Should `lib` move inside `src`?
 
-* Cleanup `theory/cadeque/abstraction.v`.
+* Clean up `theory/cadeque/abstraction.v`.
 
 * Why do we have both `core.ml` and `makeCore.ml`?
   Can we avoid this duplication?
