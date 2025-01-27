@@ -71,118 +71,118 @@ Unset Elimination Schemes.
 (* A type for stored triples. *)
 Inductive stored_triple (A : Type) : nat -> Type :=
   | Ground : A -> stored_triple A 0
-  | Small {lvl q : nat} :
-    suffix' (stored_triple A lvl) (3 + q) ->
-    stored_triple A (S lvl)
-  | Big {lvl qp qs : nat} {ck : arity} {Cl Cr : color} :
-    prefix' (stored_triple A lvl) (3 + qp) ->
-    chain A (S lvl) ck only Cl Cr ->
-    suffix' (stored_triple A lvl) (3 + qs) ->
-    stored_triple A (S lvl)
+  | Small {l q : nat} :
+    suffix' (stored_triple A l) (3 + q) ->
+    stored_triple A (S l)
+  | Big {l qp qs : nat} {ck : arity} {Cl Cr : color} :
+    prefix' (stored_triple A l) (3 + qp) ->
+    chain A (S l) ck only Cl Cr ->
+    suffix' (stored_triple A l) (3 + qs) ->
+    stored_triple A (S l)
 
 (* A type for bodies. *)
 with body (A : Type) : nat -> nat -> kind -> kind -> Type :=
-  | Hole {lvl : nat} {k : kind} : body A lvl lvl k k
-  | Single_child {hlvl tlvl : nat} {hk tk : kind} {y o}:
-    node' (stored_triple A hlvl) 1 hk (Mix NoGreen y o NoRed) ->
-    body A (S hlvl) tlvl only tk ->
-    body A hlvl tlvl hk tk
-  | Pair_yellow {hlvl tlvl : nat} {hk tk : kind} {C : color} :
-    node' (stored_triple A hlvl) 2 hk yellow ->
-    body A (S hlvl) tlvl left tk ->
-    chain A (S hlvl) single right C C ->
-    body A hlvl tlvl hk tk
-  | Pair_orange {hlvl tlvl : nat} {hk tk : kind} :
-    node' (stored_triple A hlvl) 2 hk orange ->
-    chain A (S hlvl) single left green green ->
-    body A (S hlvl) tlvl right tk ->
-    body A hlvl tlvl hk tk
+  | Hole {l : nat} {k : kind} : body A l l k k
+  | Single_child {hl tl : nat} {hk tk : kind} {y o}:
+    node' (stored_triple A hl) 1 hk (Mix NoGreen y o NoRed) ->
+    body A (S hl) tl only tk ->
+    body A hl tl hk tk
+  | Pair_yellow {hl tl : nat} {hk tk : kind} {C : color} :
+    node' (stored_triple A hl) 2 hk yellow ->
+    body A (S hl) tl left tk ->
+    chain A (S hl) single right C C ->
+    body A hl tl hk tk
+  | Pair_orange {hl tl : nat} {hk tk : kind} :
+    node' (stored_triple A hl) 2 hk orange ->
+    chain A (S hl) single left green green ->
+    body A (S hl) tl right tk ->
+    body A hl tl hk tk
 
 (* A type for packets. *)
 with packet (A : Type) : nat -> nat -> nat -> kind -> color -> Type :=
-  | Packet {hlvl tlvl nc : nat} {hk tk : kind} {g r} :
-    body A hlvl tlvl hk tk ->
-    node' (stored_triple A tlvl) nc tk (Mix g NoYellow NoOrange r) ->
-    packet A hlvl (S tlvl) nc hk (Mix g NoYellow NoOrange r)
+  | Packet {hl tl nc : nat} {hk tk : kind} {g r} :
+    body A hl tl hk tk ->
+    node' (stored_triple A tl) nc tk (Mix g NoYellow NoOrange r) ->
+    packet A hl (S tl) nc hk (Mix g NoYellow NoOrange r)
 
 (* A type for chains. *)
 with chain (A : Type) : nat -> arity -> kind -> color -> color -> Type :=
-  | Empty {lvl : nat} : chain A lvl empty only green green
-  | Single {hlvl tlvl : nat} {ck : arity} {k : kind} {C Cl Cr : color} :
+  | Empty {l : nat} : chain A l empty only green green
+  | Single {hl tl : nat} {ck : arity} {k : kind} {C Cl Cr : color} :
     regularity C C ck Cl Cr ->
-    packet A hlvl tlvl ck k C ->
-    chain A tlvl ck only Cl Cr ->
-    chain A hlvl single k C C
-  | Pair {lvl : nat} {Cl Cr : color} :
-    chain A lvl single left Cl Cl ->
-    chain A lvl single right Cr Cr ->
-    chain A lvl pair only Cl Cr.
+    packet A hl tl ck k C ->
+    chain A tl ck only Cl Cr ->
+    chain A hl single k C C
+  | Pair {l : nat} {Cl Cr : color} :
+    chain A l single left Cl Cl ->
+    chain A l single right Cr Cr ->
+    chain A l pair only Cl Cr.
 
 Arguments Ground {A}.
-Arguments Small {A lvl q}.
-Arguments Big {A lvl qp qs ck Cl Cr}.
+Arguments Small {A l q}.
+Arguments Big {A l qp qs ck Cl Cr}.
 
-Arguments Hole {A lvl k}.
-Arguments Single_child {A hlvl tlvl hk tk y o}.
-Arguments Pair_yellow {A hlvl tlvl hk tk C}.
-Arguments Pair_orange {A hlvl tlvl hk tk}.
+Arguments Hole {A l k}.
+Arguments Single_child {A hl tl hk tk y o}.
+Arguments Pair_yellow {A hl tl hk tk C}.
+Arguments Pair_orange {A hl tl hk tk}.
 
-Arguments Packet {A hlvl tlvl nc hk tk g r}.
+Arguments Packet {A hl tl nc hk tk g r}.
 
-Arguments Empty {A lvl}.
-Arguments Single {A hlvl tlvl ck k C Cl Cr}.
-Arguments Pair {A lvl Cl Cr}.
+Arguments Empty {A l}.
+Arguments Single {A hl tl ck k C Cl Cr}.
+Arguments Pair {A l Cl Cr}.
 
 (* Types for prefixes, suffixes, and nodes containing stored triples. *)
 
-Definition prefix (A : Type) (lvl : nat) := prefix' (stored_triple A lvl).
-Definition suffix (A : Type) (lvl : nat) := suffix' (stored_triple A lvl).
+Definition prefix (A : Type) (l : nat) := prefix' (stored_triple A l).
+Definition suffix (A : Type) (l : nat) := suffix' (stored_triple A l).
 
-Definition node (A : Type) (lvl : nat) := node' (stored_triple A lvl).
+Definition node (A : Type) (l : nat) := node' (stored_triple A l).
 
 (* A type for green buffers, buffers of at least eight elements. *)
-Inductive green_buffer (A : Type) (lvl : nat) : Type :=
+Inductive green_buffer (A : Type) (l : nat) : Type :=
   | Gbuf {q : nat} :
-    buffer.t (stored_triple A lvl) (8 + q) -> green_buffer A lvl.
-Arguments Gbuf {A lvl q}.
+    buffer.t (stored_triple A l) (8 + q) -> green_buffer A l.
+Arguments Gbuf {A l q}.
 
 (* A type for stored buffers, buffers of at least three elements. *)
-Inductive stored_buffer (A : Type) (lvl : nat) : Type :=
+Inductive stored_buffer (A : Type) (l : nat) : Type :=
   | Sbuf {q : nat} :
-    buffer.t (stored_triple A lvl) (3 + q) -> stored_buffer A lvl.
-Arguments Sbuf {A lvl q}.
+    buffer.t (stored_triple A l) (3 + q) -> stored_buffer A l.
+Arguments Sbuf {A l q}.
 
 (* A type for triples. *)
 Inductive triple : Type -> nat -> kind -> color -> Type :=
-  | Triple {A : Type} {lvl : nat} {ck : arity}
+  | Triple {A : Type} {l : nat} {ck : arity}
            {k : kind} {C Cl Cr Cpkt : color} :
     regularity C Cpkt ck Cl Cr ->
-    node A lvl ck k C ->
-    chain A (S lvl) ck only Cl Cr ->
-    triple A lvl k Cpkt.
+    node A l ck k C ->
+    chain A (S l) ck only Cl Cr ->
+    triple A l k Cpkt.
 
 (* A type for left or right triples. *)
 Inductive left_right_triple : Type -> nat -> kind -> color -> Type :=
-  | Not_enough {A : Type} {lvl : nat} {k : kind} :
-    vector (stored_triple A lvl) 6 ->
-    left_right_triple A lvl k green
-  | Ok_lrt {A : Type} {lvl : nat} {k : kind} {Cpkt : color} :
-    triple A lvl k Cpkt -> left_right_triple A lvl k Cpkt.
+  | Not_enough {A : Type} {l : nat} {k : kind} :
+    vector (stored_triple A l) 6 ->
+    left_right_triple A l k green
+  | Ok_lrt {A : Type} {l : nat} {k : kind} {Cpkt : color} :
+    triple A l k Cpkt -> left_right_triple A l k Cpkt.
 
 (* A type for a tuple of six stored triples. *)
-Definition six_stored_triple (A : Type) (lvl : nat) : Type :=
-  stored_triple A lvl * stored_triple A lvl * stored_triple A lvl *
-  stored_triple A lvl * stored_triple A lvl * stored_triple A lvl.
+Definition six_stored_triple (A : Type) (l : nat) : Type :=
+  stored_triple A l * stored_triple A l * stored_triple A l *
+  stored_triple A l * stored_triple A l * stored_triple A l.
 
 (* A type for partial triples. *)
 Inductive partial_triple : Type -> nat -> arity -> kind -> Type :=
-  | Zero_element {A : Type} {lvl : nat} {k : kind} :
-    partial_triple A lvl single k
-  | Six_elements {A : Type} {lvl : nat} {k : kind} :
-    six_stored_triple A lvl ->
-    partial_triple A lvl pair k
-  | Ok_pt {A : Type} {lvl : nat} {ck : arity} {k : kind} {C : color} :
-    triple A lvl k C -> partial_triple A lvl ck k.
+  | Zero_element {A : Type} {l : nat} {k : kind} :
+    partial_triple A l single k
+  | Six_elements {A : Type} {l : nat} {k : kind} :
+    six_stored_triple A l ->
+    partial_triple A l pair k
+  | Ok_pt {A : Type} {l : nat} {ck : arity} {k : kind} {C : color} :
+    triple A l k C -> partial_triple A l ck k.
 
 (* A general sandwich type. *)
 Inductive sandwich : Type -> Type -> Type :=
@@ -191,8 +191,8 @@ Inductive sandwich : Type -> Type -> Type :=
 
 (* A type for semi-regular cadeques. *)
 Inductive semi_cadeque : Type -> nat -> Type :=
-  | Semi {A : Type} {lvl : nat} {ck : arity} {Cl Cr : color} :
-    chain A lvl ck only Cl Cr -> semi_cadeque A lvl.
+  | Semi {A : Type} {l : nat} {ck : arity} {Cl Cr : color} :
+    chain A l ck only Cl Cr -> semi_cadeque A l.
 
 (* A type for cadeques. *)
 Inductive cadeque : Type -> Type :=
