@@ -1,16 +1,16 @@
 From Cadeque.color Require Import GYOR.
 From Cadeque.cadeque Require Import buffer.
 
-(* A type for node kinds. *)
-Inductive nkind : Type := only | left | right.
+(* A kind is only, left, or right. *)
+Inductive kind : Type := only | left | right.
 
-(* Chain kinds are just natural numbers. *)
-Notation arity := nat.
+(* An arity is 0, 1, or 2. *)
+Notation arity  := nat.
 Notation empty  := 0.
 Notation single := 1.
 Notation pair   := 2.
 
-Derive NoConfusion for nkind.
+Derive NoConfusion for kind.
 
 (* Types for general prefixes and suffixes, they are simply other names for
    buffer.t. In the following, prefixes and suffixes will contain stored
@@ -29,7 +29,7 @@ Inductive coloring : nat -> nat -> nat -> color -> Type :=
 
 (* A type for general nodes, in the following, they will contain stored
    triples. *)
-Inductive node' (A : Type) : nat -> nkind -> color -> Type :=
+Inductive node' (A : Type) : nat -> kind -> color -> Type :=
   | Only_end {q  : nat} : prefix' A (S q) -> node' A 0 only green
   | Only {qp qs nc : nat} {C : color} :
     coloring qp qs (S nc) C -> prefix' A (5 + qp) -> suffix' A (5 + qs) ->
@@ -72,34 +72,34 @@ Inductive stored_triple (A : Type) : nat -> Type :=
     stored_triple A (S lvl)
 
 (* A type for bodies. *)
-with body (A : Type) : nat -> nat -> nkind -> nkind -> Type :=
-  | Hole {lvl : nat} {k : nkind} : body A lvl lvl k k
-  | Single_child {hlvl tlvl : nat} {hk tk : nkind} {y o}:
+with body (A : Type) : nat -> nat -> kind -> kind -> Type :=
+  | Hole {lvl : nat} {k : kind} : body A lvl lvl k k
+  | Single_child {hlvl tlvl : nat} {hk tk : kind} {y o}:
     node' (stored_triple A hlvl) 1 hk (Mix NoGreen y o NoRed) ->
     body A (S hlvl) tlvl only tk ->
     body A hlvl tlvl hk tk
-  | Pair_yellow {hlvl tlvl : nat} {hk tk : nkind} {C : color} :
+  | Pair_yellow {hlvl tlvl : nat} {hk tk : kind} {C : color} :
     node' (stored_triple A hlvl) 2 hk yellow ->
     body A (S hlvl) tlvl left tk ->
     chain A (S hlvl) single right C C ->
     body A hlvl tlvl hk tk
-  | Pair_orange {hlvl tlvl : nat} {hk tk : nkind} :
+  | Pair_orange {hlvl tlvl : nat} {hk tk : kind} :
     node' (stored_triple A hlvl) 2 hk orange ->
     chain A (S hlvl) single left green green ->
     body A (S hlvl) tlvl right tk ->
     body A hlvl tlvl hk tk
 
 (* A type for packets. *)
-with packet (A : Type) : nat -> nat -> nat -> nkind -> color -> Type :=
-  | Packet {hlvl tlvl nc : nat} {hk tk : nkind} {g r} :
+with packet (A : Type) : nat -> nat -> nat -> kind -> color -> Type :=
+  | Packet {hlvl tlvl nc : nat} {hk tk : kind} {g r} :
     body A hlvl tlvl hk tk ->
     node' (stored_triple A tlvl) nc tk (Mix g NoYellow NoOrange r) ->
     packet A hlvl (S tlvl) nc hk (Mix g NoYellow NoOrange r)
 
 (* A type for chains. *)
-with chain (A : Type) : nat -> arity -> nkind -> color -> color -> Type :=
+with chain (A : Type) : nat -> arity -> kind -> color -> color -> Type :=
   | Empty {lvl : nat} : chain A lvl empty only green green
-  | Single {hlvl tlvl : nat} {ck : arity} {nk : nkind} {C Cl Cr : color} :
+  | Single {hlvl tlvl : nat} {ck : arity} {nk : kind} {C Cl Cr : color} :
     regularity C C ck Cl Cr ->
     packet A hlvl tlvl ck nk C ->
     chain A tlvl ck only Cl Cr ->
@@ -144,20 +144,20 @@ Inductive stored_buffer (A : Type) (lvl : nat) : Type :=
 Arguments Sbuf {A lvl q}.
 
 (* A type for triples. *)
-Inductive triple : Type -> nat -> nkind -> color -> Type :=
+Inductive triple : Type -> nat -> kind -> color -> Type :=
   | Triple {A : Type} {lvl : nat} {ck : arity}
-           {nk : nkind} {C Cl Cr Cpkt : color} :
+           {nk : kind} {C Cl Cr Cpkt : color} :
     regularity C Cpkt ck Cl Cr ->
     node A lvl ck nk C ->
     chain A (S lvl) ck only Cl Cr ->
     triple A lvl nk Cpkt.
 
 (* A type for left or right triples. *)
-Inductive left_right_triple : Type -> nat -> nkind -> color -> Type :=
-  | Not_enough {A : Type} {lvl : nat} {k : nkind} :
+Inductive left_right_triple : Type -> nat -> kind -> color -> Type :=
+  | Not_enough {A : Type} {lvl : nat} {k : kind} :
     vector (stored_triple A lvl) 6 ->
     left_right_triple A lvl k green
-  | Ok_lrt {A : Type} {lvl : nat} {k : nkind} {Cpkt : color} :
+  | Ok_lrt {A : Type} {lvl : nat} {k : kind} {Cpkt : color} :
     triple A lvl k Cpkt -> left_right_triple A lvl k Cpkt.
 
 (* A type for a tuple of six stored triples. *)
@@ -166,13 +166,13 @@ Definition six_stored_triple (A : Type) (lvl : nat) : Type :=
   stored_triple A lvl * stored_triple A lvl * stored_triple A lvl.
 
 (* A type for partial triples. *)
-Inductive partial_triple : Type -> nat -> arity -> nkind -> Type :=
-  | Zero_element {A : Type} {lvl : nat} {nk : nkind} :
+Inductive partial_triple : Type -> nat -> arity -> kind -> Type :=
+  | Zero_element {A : Type} {lvl : nat} {nk : kind} :
     partial_triple A lvl single nk
-  | Six_elements {A : Type} {lvl : nat} {nk : nkind} :
+  | Six_elements {A : Type} {lvl : nat} {nk : kind} :
     six_stored_triple A lvl ->
     partial_triple A lvl pair nk
-  | Ok_pt {A : Type} {lvl : nat} {ck : arity} {nk : nkind} {C : color} :
+  | Ok_pt {A : Type} {lvl : nat} {ck : arity} {nk : kind} {C : color} :
     triple A lvl nk C -> partial_triple A lvl ck nk.
 
 (* A general sandwich type. *)
