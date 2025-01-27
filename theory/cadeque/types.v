@@ -5,7 +5,7 @@ From Cadeque.cadeque Require Import buffer.
 Inductive nkind : Type := only | left | right.
 
 (* Chain kinds are just natural numbers. *)
-Notation ckind := nat.
+Notation arity := nat.
 Notation empty  := 0.
 Notation single := 1.
 Notation pair   := 2.
@@ -47,7 +47,7 @@ Arguments Right {A qp qs nc C}.
 
 (* A type for the regularity relation. *)
 Inductive regularity :
-  color -> color -> ckind -> color -> color -> Type :=
+  color -> color -> arity -> color -> color -> Type :=
  | G {ck Cl Cr} : regularity green  green ck     Cl    Cr
  | Y {ck Cl Cr} : regularity yellow Cl    (S ck) Cl    Cr
  | OS {C}       : regularity orange C     single C     C
@@ -65,7 +65,7 @@ Inductive stored_triple (A : Type) : nat -> Type :=
   | Small {lvl q : nat} :
     suffix' (stored_triple A lvl) (3 + q) ->
     stored_triple A (S lvl)
-  | Big {lvl qp qs : nat} {ck : ckind} {Cl Cr : color} :
+  | Big {lvl qp qs : nat} {ck : arity} {Cl Cr : color} :
     prefix' (stored_triple A lvl) (3 + qp) ->
     chain A (S lvl) ck only Cl Cr ->
     suffix' (stored_triple A lvl) (3 + qs) ->
@@ -97,9 +97,9 @@ with packet (A : Type) : nat -> nat -> nat -> nkind -> color -> Type :=
     packet A hlvl (S tlvl) nc hk (Mix g NoYellow NoOrange r)
 
 (* A type for chains. *)
-with chain (A : Type) : nat -> ckind -> nkind -> color -> color -> Type :=
+with chain (A : Type) : nat -> arity -> nkind -> color -> color -> Type :=
   | Empty {lvl : nat} : chain A lvl empty only green green
-  | Single {hlvl tlvl : nat} {ck : ckind} {nk : nkind} {C Cl Cr : color} :
+  | Single {hlvl tlvl : nat} {ck : arity} {nk : nkind} {C Cl Cr : color} :
     regularity C C ck Cl Cr ->
     packet A hlvl tlvl ck nk C ->
     chain A tlvl ck only Cl Cr ->
@@ -145,7 +145,7 @@ Arguments Sbuf {A lvl q}.
 
 (* A type for triples. *)
 Inductive triple : Type -> nat -> nkind -> color -> Type :=
-  | Triple {A : Type} {lvl : nat} {ck : ckind}
+  | Triple {A : Type} {lvl : nat} {ck : arity}
            {nk : nkind} {C Cl Cr Cpkt : color} :
     regularity C Cpkt ck Cl Cr ->
     node A lvl ck nk C ->
@@ -166,13 +166,13 @@ Definition six_stored_triple (A : Type) (lvl : nat) : Type :=
   stored_triple A lvl * stored_triple A lvl * stored_triple A lvl.
 
 (* A type for partial triples. *)
-Inductive partial_triple : Type -> nat -> ckind -> nkind -> Type :=
+Inductive partial_triple : Type -> nat -> arity -> nkind -> Type :=
   | Zero_element {A : Type} {lvl : nat} {nk : nkind} :
     partial_triple A lvl single nk
   | Six_elements {A : Type} {lvl : nat} {nk : nkind} :
     six_stored_triple A lvl ->
     partial_triple A lvl pair nk
-  | Ok_pt {A : Type} {lvl : nat} {ck : ckind} {nk : nkind} {C : color} :
+  | Ok_pt {A : Type} {lvl : nat} {ck : arity} {nk : nkind} {C : color} :
     triple A lvl nk C -> partial_triple A lvl ck nk.
 
 (* A general sandwich type. *)
@@ -182,9 +182,9 @@ Inductive sandwich : Type -> Type -> Type :=
 
 (* A type for semi-regular cadeques. *)
 Inductive semi_cadeque : Type -> nat -> Type :=
-  | Semi {A : Type} {lvl : nat} {ck : ckind} {Cl Cr : color} :
+  | Semi {A : Type} {lvl : nat} {ck : arity} {Cl Cr : color} :
     chain A lvl ck only Cl Cr -> semi_cadeque A lvl.
 
 (* A type for cadeques. *)
 Inductive cadeque : Type -> Type :=
-  | T {A : Type} {ck : ckind} : chain A 0 ck only green green -> cadeque A.
+  | T {A : Type} {ck : arity} : chain A 0 ck only green green -> cadeque A.

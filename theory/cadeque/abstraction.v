@@ -568,7 +568,7 @@ with packet : nat -> color -> Type :=
 (* Une chain représente une forêt partitionnée en packets. Les contraintes 1 et
    3 de régularité sont exprimées dans le constructeur [SingleChain].
 
-   Dans le code complet, le paramètre de type [ckind] représentant le genre de
+   Dans le code complet, le paramètre de type [arity] représentant le genre de
    la chain est exactement le même que notre paramètre entier ici.
 
    Dans le code complet, un paramètre de genre de node est ajouté. Pour une
