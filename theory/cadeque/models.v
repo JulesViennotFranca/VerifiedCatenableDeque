@@ -20,8 +20,8 @@ Definition node'_cmseq
 Set Equations Transparent.
 
 (* Returns the sequence associated to a stored triple. *)
-Equations stored_seq A lvl
-  (st : stored A lvl) : list A by struct st :=
+Equations stored_seq A lvl (st : stored A lvl) : list A
+by struct st :=
 stored_seq A lvl (Ground a) := [a];
 stored_seq A lvl (Small s) := buffer.cmseq stored_seq s;
 stored_seq A lvl (Big p child s) :=
@@ -30,8 +30,8 @@ stored_seq A lvl (Big p child s) :=
   buffer.cmseq stored_seq s
 
 (* Returns the sequence associated to a body. *)
-with body_seq {A hlvl tlvl hk tk}
-  (b : body A hlvl tlvl hk tk) : list A -> list A by struct b :=
+with body_seq {A hlvl tlvl hk tk} (b : body A hlvl tlvl hk tk) : list A -> list A
+by struct b :=
 body_seq Hole l := l;
 body_seq (Single_child hd b) l :=
   node'_cmseq stored_seq hd (body_seq b l);
@@ -41,14 +41,13 @@ body_seq (Pair_orange hd cl b) l :=
   node'_cmseq stored_seq hd (chain_seq cl ++ body_seq b l)
 
 (* Returns the sequence associated to a packet. *)
-with packet_seq {A hlvl tlvl nc nk C} :
-  packet A hlvl tlvl nc nk C -> list A -> list A :=
+with packet_seq {A hlvl tlvl nc nk C} : packet A hlvl tlvl nc nk C -> list A -> list A :=
 packet_seq (Packet b tl) l :=
   body_seq b (node'_cmseq stored_seq tl l)
 
 (* Returns the sequence associated to a chain. *)
-with chain_seq {A lvl ck nk Cl Cr}
-  (c : chain A lvl ck nk Cl Cr) : list A by struct c :=
+with chain_seq {A lvl ck nk Cl Cr} (c : chain A lvl ck nk Cl Cr) : list A
+by struct c :=
 chain_seq Empty := [];
 chain_seq (Single _ pkt rest) := packet_seq pkt (chain_seq rest);
 chain_seq (Pair cl cr) := chain_seq cl ++ chain_seq cr.
