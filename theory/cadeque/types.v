@@ -99,11 +99,11 @@ with packet (A : Type) : nat -> nat -> nat -> kind -> color -> Type :=
 (* A type for chains. *)
 with chain (A : Type) : nat -> arity -> kind -> color -> color -> Type :=
   | Empty {lvl : nat} : chain A lvl empty only green green
-  | Single {hlvl tlvl : nat} {ck : arity} {nk : kind} {C Cl Cr : color} :
+  | Single {hlvl tlvl : nat} {ck : arity} {k : kind} {C Cl Cr : color} :
     regularity C C ck Cl Cr ->
-    packet A hlvl tlvl ck nk C ->
+    packet A hlvl tlvl ck k C ->
     chain A tlvl ck only Cl Cr ->
-    chain A hlvl single nk C C
+    chain A hlvl single k C C
   | Pair {lvl : nat} {Cl Cr : color} :
     chain A lvl single left Cl Cl ->
     chain A lvl single right Cr Cr ->
@@ -121,7 +121,7 @@ Arguments Pair_orange {A hlvl tlvl hk tk}.
 Arguments Packet {A hlvl tlvl nc hk tk g r}.
 
 Arguments Empty {A lvl}.
-Arguments Single {A hlvl tlvl ck nk C Cl Cr}.
+Arguments Single {A hlvl tlvl ck k C Cl Cr}.
 Arguments Pair {A lvl Cl Cr}.
 
 (* Types for prefixes, suffixes, and nodes containing stored triples. *)
@@ -146,11 +146,11 @@ Arguments Sbuf {A lvl q}.
 (* A type for triples. *)
 Inductive triple : Type -> nat -> kind -> color -> Type :=
   | Triple {A : Type} {lvl : nat} {ck : arity}
-           {nk : kind} {C Cl Cr Cpkt : color} :
+           {k : kind} {C Cl Cr Cpkt : color} :
     regularity C Cpkt ck Cl Cr ->
-    node A lvl ck nk C ->
+    node A lvl ck k C ->
     chain A (S lvl) ck only Cl Cr ->
-    triple A lvl nk Cpkt.
+    triple A lvl k Cpkt.
 
 (* A type for left or right triples. *)
 Inductive left_right_triple : Type -> nat -> kind -> color -> Type :=
@@ -167,13 +167,13 @@ Definition six_stored_triple (A : Type) (lvl : nat) : Type :=
 
 (* A type for partial triples. *)
 Inductive partial_triple : Type -> nat -> arity -> kind -> Type :=
-  | Zero_element {A : Type} {lvl : nat} {nk : kind} :
-    partial_triple A lvl single nk
-  | Six_elements {A : Type} {lvl : nat} {nk : kind} :
+  | Zero_element {A : Type} {lvl : nat} {k : kind} :
+    partial_triple A lvl single k
+  | Six_elements {A : Type} {lvl : nat} {k : kind} :
     six_stored_triple A lvl ->
-    partial_triple A lvl pair nk
-  | Ok_pt {A : Type} {lvl : nat} {ck : arity} {nk : kind} {C : color} :
-    triple A lvl nk C -> partial_triple A lvl ck nk.
+    partial_triple A lvl pair k
+  | Ok_pt {A : Type} {lvl : nat} {ck : arity} {k : kind} {C : color} :
+    triple A lvl k C -> partial_triple A lvl ck k.
 
 (* A general sandwich type. *)
 Inductive sandwich : Type -> Type -> Type :=
