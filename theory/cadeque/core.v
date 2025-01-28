@@ -640,8 +640,9 @@ only_of_right (a1, a2, a3, a4, a5, a6) (Triple G (Right Ec p s) Empty)
     | ? (a7, a8) with buffer.push2 a7 a8 s => {
       | ? s1 with buffer.push6 a1 a2 a3 a4 a5 a6 s1 => {
         | ? s2 := ? Triple G (Only_end s2) Empty } } };
-only_of_right (a1, a2, a3, a4, a5, a6) (Triple reg (Right col p s) child)
-  with buffer.push6 a1 a2 a3 a4 a5 a6 p => {
+(* XXX: bug in Equations (name collision?) if ar1-6 are named a1-6 instead *)
+only_of_right (ar1, ar2, ar3, ar4, ar5, ar6) (Triple reg (Right col p s) child)
+  with buffer.push6 ar1 ar2 ar3 ar4 ar5 ar6 p => {
     | ? p1 := ? Triple reg (Only (adapt_to_prefix col) p1 s) child }.
 
 (* Adapts a coloring to a suffix of 8 or more elements. *)
@@ -664,8 +665,9 @@ only_of_left (Triple G (Left Ec p s) Empty) (a6, a5, a4, a3, a2, a1)
     | ? (a8, a7) with buffer.inject2 p a8 a7 => {
       | ? p1 with buffer.inject6 p1 a6 a5 a4 a3 a2 a1 => {
         | ? p2 := ? Triple G (Only_end p2) Empty } } };
-only_of_left (Triple reg (Left col p s) child) (a6, a5, a4, a3, a2, a1)
-  with buffer.inject6 s a6 a5 a4 a3 a2 a1 => {
+(* XXX: bug in Equations (name collision?) if ar1-6 are named a1-6 instead *)
+only_of_left (Triple reg (Left col p s) child) (ar6, ar5, ar4, ar3, ar2, ar1)
+  with buffer.inject6 s ar6 ar5 ar4 ar3 ar2 ar1 => {
     | ? s1 := ? Triple reg (Only (adapt_to_suffix col) p s1) child }.
 
 (* Pops from a green pair chain. *)
