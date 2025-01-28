@@ -3,6 +3,9 @@
 
 * `make` currently fails with Coq 8.20.
 
+* Remove the `Print` or `Check` or `Eval` commands
+  that produce output while compiling.
+
 * Clean up `README.md`.
 
   + Add a link to our paper.
