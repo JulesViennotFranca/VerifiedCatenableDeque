@@ -1,4 +1,4 @@
-From Cadeque.steque Require Import core.
+From Cadeque.steque Require Import steque.
 
 Definition test : option (nat * steque nat) :=
   let d := proj1_sig empty in

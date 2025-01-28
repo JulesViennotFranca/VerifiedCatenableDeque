@@ -6,15 +6,15 @@ Require Import Coq.Program.Equality.
 From Cadeque.cadeque Require Import buffer types.
 
 (* Sequence + map + concat for non-leveled nodes. *)
-Definition concat_map_node'_seq
+Definition node'_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt nc nk C} (n : node' (T A lvlt) nc nk C) (l : list A) : list A :=
   match n with
-  | Only_end p => buffer.concat_map_seq f p
-  | Only  _ p s => buffer.concat_map_seq f p ++ l ++ buffer.concat_map_seq f s
-  | Left  _ p s => buffer.concat_map_seq f p ++ l ++ buffer.concat_map_seq f s
-  | Right _ p s => buffer.concat_map_seq f p ++ l ++ buffer.concat_map_seq f s
+  | Only_end p => buffer.cmseq f p
+  | Only  _ p s => buffer.cmseq f p ++ l ++ buffer.cmseq f s
+  | Left  _ p s => buffer.cmseq f p ++ l ++ buffer.cmseq f s
+  | Right _ p s => buffer.cmseq f p ++ l ++ buffer.cmseq f s
   end.
 
 Set Equations Transparent.
@@ -23,28 +23,28 @@ Set Equations Transparent.
 Equations stored_seq A lvl
   (st : stored A lvl) : list A by struct st :=
 stored_seq A lvl (Ground a) := [a];
-stored_seq A lvl (Small s) := buffer.concat_map_seq stored_seq s;
+stored_seq A lvl (Small s) := buffer.cmseq stored_seq s;
 stored_seq A lvl (Big p child s) :=
-  buffer.concat_map_seq stored_seq p ++
+  buffer.cmseq stored_seq p ++
   chain_seq child ++
-  buffer.concat_map_seq stored_seq s
+  buffer.cmseq stored_seq s
 
 (* Returns the sequence associated to a body. *)
 with body_seq {A hlvl tlvl hk tk}
   (b : body A hlvl tlvl hk tk) : list A -> list A by struct b :=
 body_seq Hole l := l;
 body_seq (Single_child hd b) l :=
-  concat_map_node'_seq stored_seq hd (body_seq b l);
+  node'_cmseq stored_seq hd (body_seq b l);
 body_seq (Pair_yellow hd b cr) l :=
-  concat_map_node'_seq stored_seq hd (body_seq b l ++ chain_seq cr);
+  node'_cmseq stored_seq hd (body_seq b l ++ chain_seq cr);
 body_seq (Pair_orange hd cl b) l :=
-  concat_map_node'_seq stored_seq hd (chain_seq cl ++ body_seq b l)
+  node'_cmseq stored_seq hd (chain_seq cl ++ body_seq b l)
 
 (* Returns the sequence associated to a packet. *)
 with packet_seq {A hlvl tlvl nc nk C} :
   packet A hlvl tlvl nc nk C -> list A -> list A :=
 packet_seq (Packet b tl) l :=
-  body_seq b (concat_map_node'_seq stored_seq tl l)
+  body_seq b (node'_cmseq stored_seq tl l)
 
 (* Returns the sequence associated to a chain. *)
 with chain_seq {A lvl ck nk Cl Cr}
@@ -56,7 +56,7 @@ chain_seq (Pair cl cr) := chain_seq cl ++ chain_seq cr.
 Arguments stored_seq {A lvl}.
 
 (* Returns the sequence associated to a buffer containing stored triples. *)
-Notation buffer_seq b := (buffer.concat_map_seq (@stored_seq) b).
+Notation buffer_seq b := (buffer.cmseq (@stored_seq) b).
 
 (* Returns the sequence associated to a prefix containing stored triples. *)
 Notation prefix_seq p := (buffer_seq p).
@@ -65,7 +65,7 @@ Notation prefix_seq p := (buffer_seq p).
 Notation suffix_seq s := (buffer_seq s).
 
 (* Returns the sequence associated to a node containing stored triples. *)
-Notation node_seq n l := (concat_map_node'_seq (@stored_seq) n l).
+Notation node_seq n l := (node'_cmseq (@stored_seq) n l).
 
 (* Returns the sequence associated to a green buffer. *)
 Equations green_buffer_seq {A lvl} : green_buffer A lvl -> list A :=

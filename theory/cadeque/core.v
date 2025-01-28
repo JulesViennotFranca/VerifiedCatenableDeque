@@ -25,7 +25,7 @@ Opaque singleton.
 #[export] Hint Rewrite map_app : rlist.
 #[export] Hint Rewrite concat_app : rlist.
 
-#[export] Hint Rewrite buffer.correct_concat_map_seq : rlist.
+#[export] Hint Rewrite buffer.correct_cmseq : rlist.
 
 (* Notation for dependent types hiding the property on [x]. *)
 Notation "? x" := (@exist _ _ x _) (at level 100).
@@ -976,7 +976,7 @@ Qed.
 Next Obligation.
   cbn.
   intros * Hp * Hs * Hp2 * Hp1 * Hres Hs2 Hs1 Hchild.
-  do 2 rewrite buffer.correct_concat_map_seq in *.
+  do 2 rewrite buffer.correct_cmseq in *.
   rewrite Hp, Hs, Hres, Hp2, Hs2, Hchild.
   autorewrite with rlist rassoc.
   do 7 f_equal.
@@ -986,7 +986,7 @@ Qed.
 Next Obligation.
   cbn.
   intros * Hp * Hs * Hres Hchild.
-  do 2 rewrite buffer.correct_concat_map_seq in *.
+  do 2 rewrite buffer.correct_cmseq in *.
   rewrite Hres, Hs.
   aac_rewrite <-Hchild.
   hauto db:rlist, rassoc.

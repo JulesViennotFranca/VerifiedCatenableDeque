@@ -7,7 +7,7 @@ From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
 From Cadeque.color Require Import GYR.
-From Cadeque.cadeque Require Import equtil.
+From Cadeque.utils Require Import comp_eq.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
@@ -20,14 +20,18 @@ Inductive prodN (A : Type) : nat -> Type :=
 Arguments prodZ {A}.
 Arguments prodS {A n}.
 
-(* A type for options. *)
+(* A type for sized options. *)
 Inductive optionN (A : Type) (lvl : nat) : nat -> Type :=
   | NoneN : optionN A lvl 0
   | SomeN : prodN A lvl -> optionN A lvl 1.
 Arguments NoneN {A lvl}.
 Arguments SomeN {A lvl}.
 
-(* A type for buffers. *)
+(* In the following types, an natural number parameter is introduced : the
+   [size] of the type. The size is simply the number of [prodN A lvl] that are
+   stored in the structure encoded. *)
+
+(* A type for sized buffers. *)
 Inductive buffer (A : Type) (lvl : nat) : nat -> color -> Type :=
   | B0         : buffer A lvl 0 red
   | B1 {y r}   : prodN A lvl -> buffer A lvl 1 (Mix NoGreen y r)
@@ -45,7 +49,7 @@ Arguments B3 {A lvl g y r}.
 Arguments B4 {A lvl y r}.
 Arguments B5 {A lvl}.
 
-(* A type for packets. *)
+(* A type for sized packets. *)
 Inductive packet (A : Type) (lvl : nat) : nat -> nat -> nat -> color -> Type :=
   | Hole {size : nat} : packet A lvl lvl size size uncolored
   | Packet {hlvl psize pktsize ssize hsize C y} :
@@ -62,7 +66,7 @@ Inductive regularity : color -> color -> Type :=
   | Y       : regularity yellow green
   | R       : regularity red    green.
 
-(* A type for chains. *)
+(* A type for sized chains. *)
 Inductive chain (A : Type) (lvl : nat) : nat -> color -> Type :=
   | Ending {size : nat} {C : color} :
       buffer A lvl size C ->
@@ -98,13 +102,14 @@ Inductive sandwich (A : Type) (lvl : nat) : nat -> Type :=
 Arguments Alone {A lvl s}.
 Arguments Sandwich {A lvl s C}.
 
-(* A type for deque. *)
+(* A type for sized deque. *)
 Inductive deque (A : Type) (size : nat) : Type :=
   | T {g y} : chain A 0 size (Mix g y NoRed) -> deque A size.
 Arguments T {A size g y}.
 
 (* +------------------------------------------------------------------------+ *)
-(* |                                 Models                                 | *)
+(* |                          Models functions                              | *)
+(* |   Most flexible definition, as instances of "concat-map" functions     | *)
 (* +------------------------------------------------------------------------+ *)
 
 (* Model functions are transparent. *)
@@ -122,9 +127,9 @@ Opaque singleton.
 #[export] Hint Rewrite map_app : rlist.
 #[export] Hint Rewrite concat_app : rlist.
 
-(* In the following, [concat_map_***_seq] functions assume the structure [***]
-   contains elements of type [T A lvl] where [T : Type -> nat -> Type],
-   [A : Type] and [lvl : nat].
+(* In the following, functions [***_cmseq] assume the structure [***] contains
+   elements of type [T A lvl] where [T : Type -> nat -> Type], [A : Type] and
+   [lvl : nat].
 
    These functions are needed for the implementation of catenable deques. In
    this implementation, non-catenable deques contain elements of type
@@ -135,14 +140,14 @@ Opaque singleton.
    finally concatenate the resulting sequence to obtain a term of type [list A].
 
    The model function for the [***] structure is just a special case of the
-   [concat_map_***_seq] function, where [T] is instanciated with [fun A _ => A]
-   and [f] is the singleton function.
+   [***_cmseq] function, where [T] is instanciated with [fun A _ => A] and [f]
+   is the singleton function.
 
    The correct behavior of [concat_map_***_seq] functions is verified with
-   [correct_concat_map_***_seq] lemmas. *)
+   [***_cmseq] lemmas. *)
 
 (* Sequence + map + concat for products. *)
-Definition concat_map_prodN_seq
+Definition prodN_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl} : prodN (T A lvlt) lvl -> list A :=
@@ -155,14 +160,14 @@ Definition concat_map_prodN_seq
 
 (* Returns the sequence associated to a product. *)
 Notation prodN_seq :=
-  (concat_map_prodN_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (prodN_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of products model functions. *)
-Lemma correct_concat_map_prodN_seq
+Lemma correct_prodN_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl} (p : prodN (T A lvlt) lvl) :
-  concat_map_prodN_seq f p = concat (map (f A lvlt) (prodN_seq p)).
+  prodN_cmseq f p = concat (map (f A lvlt) (prodN_seq p)).
 Proof.
   induction p; hauto db:rlist.
 Qed.
@@ -173,62 +178,62 @@ optionN_seq NoneN := [];
 optionN_seq (SomeN x) := prodN_seq x.
 
 (* Sequence + map + concat for buffers. *)
-Definition concat_map_buffer_seq
+Definition buffer_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} (b : buffer (T A lvlt) lvl size C) : list A :=
   match b with
   | B0 => []
-  | (B1 a) => concat_map_prodN_seq f a
-  | (B2 a b) => concat_map_prodN_seq f a ++ concat_map_prodN_seq f b
-  | (B3 a b c) => concat_map_prodN_seq f a ++ concat_map_prodN_seq f b ++
-                  concat_map_prodN_seq f c
-  | (B4 a b c d) => concat_map_prodN_seq f a ++ concat_map_prodN_seq f b ++
-                    concat_map_prodN_seq f c ++ concat_map_prodN_seq f d
-  | (B5 a b c d e) => concat_map_prodN_seq f a ++ concat_map_prodN_seq f b ++
-                      concat_map_prodN_seq f c ++ concat_map_prodN_seq f d ++
-                      concat_map_prodN_seq f e
+  | (B1 a) => prodN_cmseq f a
+  | (B2 a b) => prodN_cmseq f a ++ prodN_cmseq f b
+  | (B3 a b c) => prodN_cmseq f a ++ prodN_cmseq f b ++
+                  prodN_cmseq f c
+  | (B4 a b c d) => prodN_cmseq f a ++ prodN_cmseq f b ++
+                    prodN_cmseq f c ++ prodN_cmseq f d
+  | (B5 a b c d e) => prodN_cmseq f a ++ prodN_cmseq f b ++
+                      prodN_cmseq f c ++ prodN_cmseq f d ++
+                      prodN_cmseq f e
   end.
 
 (* Returns the sequence associated to a buffer. *)
 Notation buffer_seq :=
-  (concat_map_buffer_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (buffer_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of buffers model functions. *)
-Lemma correct_concat_map_buffer_seq
+Lemma correct_buffer_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} (b : buffer (T A lvlt) lvl size C) :
-  concat_map_buffer_seq f b = concat (map (f A lvlt) (buffer_seq b)).
+  buffer_cmseq f b = concat (map (f A lvlt) (buffer_seq b)).
 Proof.
   destruct b as [ | ?? a | ??? a b |  ??? a b c | ?? a b c d | a b c d e ];
   simpl;
   autorewrite with rlist.
   - reflexivity.
-  - rewrite (correct_concat_map_prodN_seq _ a).
+  - rewrite (correct_prodN_cmseq _ a).
     reflexivity.
-  - rewrite (correct_concat_map_prodN_seq _ a).
-    rewrite (correct_concat_map_prodN_seq _ b).
+  - rewrite (correct_prodN_cmseq _ a).
+    rewrite (correct_prodN_cmseq _ b).
     reflexivity.
-  - rewrite (correct_concat_map_prodN_seq _ a).
-    rewrite (correct_concat_map_prodN_seq _ b).
-    rewrite (correct_concat_map_prodN_seq _ c).
+  - rewrite (correct_prodN_cmseq _ a).
+    rewrite (correct_prodN_cmseq _ b).
+    rewrite (correct_prodN_cmseq _ c).
     reflexivity.
-  - rewrite (correct_concat_map_prodN_seq _ a).
-    rewrite (correct_concat_map_prodN_seq _ b).
-    rewrite (correct_concat_map_prodN_seq _ c).
-    rewrite (correct_concat_map_prodN_seq _ d).
+  - rewrite (correct_prodN_cmseq _ a).
+    rewrite (correct_prodN_cmseq _ b).
+    rewrite (correct_prodN_cmseq _ c).
+    rewrite (correct_prodN_cmseq _ d).
     reflexivity.
-  - rewrite (correct_concat_map_prodN_seq _ a).
-    rewrite (correct_concat_map_prodN_seq _ b).
-    rewrite (correct_concat_map_prodN_seq _ c).
-    rewrite (correct_concat_map_prodN_seq _ d).
-    rewrite (correct_concat_map_prodN_seq _ e).
+  - rewrite (correct_prodN_cmseq _ a).
+    rewrite (correct_prodN_cmseq _ b).
+    rewrite (correct_prodN_cmseq _ c).
+    rewrite (correct_prodN_cmseq _ d).
+    rewrite (correct_prodN_cmseq _ e).
     reflexivity.
 Qed.
 
 (* Sequence + map + concat for packets. *)
-Definition concat_map_packet_seq
+Definition packet_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl hlvl pktsize hsize C} :
@@ -237,61 +242,61 @@ Definition concat_map_packet_seq
     (pkt : packet (T A lvlt) lvl hlvl pktsize hsize C) (l : list A) : list A :=
     match pkt with
     | Hole => l
-    | Packet p pkt s => concat_map_buffer_seq f p ++
+    | Packet p pkt s => buffer_cmseq f p ++
                         local pkt l ++
-                        concat_map_buffer_seq f s
+                        buffer_cmseq f s
     end
   in local.
 
 (* Returns the sequence associated to a packet. *)
 Notation packet_seq :=
-  (concat_map_packet_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (packet_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of packets model functions. *)
-Lemma correct_concat_map_packet_seq
+Lemma correct_packet_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl hlvl pktsize hsize C}
   (pkt : packet (T A lvlt) lvl hlvl pktsize hsize C) (l : list (T A lvlt)) :
-  concat_map_packet_seq f pkt (concat (map (f A lvlt) l)) =
+  packet_cmseq f pkt (concat (map (f A lvlt) l)) =
     concat (map (f A lvlt) (packet_seq pkt l)).
 Proof.
   induction pkt as [ | ???????? p pkt IHpkt s ]; simpl.
   - reflexivity.
   - autorewrite with rlist.
-    rewrite (correct_concat_map_buffer_seq _ p).
+    rewrite (correct_buffer_cmseq _ p).
     rewrite IHpkt.
-    rewrite (correct_concat_map_buffer_seq _ s).
+    rewrite (correct_buffer_cmseq _ s).
     reflexivity.
 Qed.
 
 (* Sequence + map + concat for chains. *)
-Definition concat_map_chain_seq
+Definition chain_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} : chain (T A lvlt) lvl size C -> list A :=
   let fix local {lvl size C} (c : chain (T A lvlt) lvl size C) : list A :=
     match c with
-    | Ending b => concat_map_buffer_seq f b
-    | Chain _ pkt c => concat_map_packet_seq f pkt (local c)
+    | Ending b => buffer_cmseq f b
+    | Chain _ pkt c => packet_cmseq f pkt (local c)
     end
   in local.
 
 (* Returns the sequence associated to a chain. *)
 Notation chain_seq :=
-  (concat_map_chain_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (chain_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of chains model functions. *)
-Lemma correct_concat_map_chain_seq
+Lemma correct_chain_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} (c : chain (T A lvlt) lvl size C) :
-  concat_map_chain_seq f c = concat (map (f A lvlt) (chain_seq c)).
+  chain_cmseq f c = concat (map (f A lvlt) (chain_seq c)).
 Proof.
   induction c as [ b | ?????? reg pkt c ]; simpl.
-  - apply correct_concat_map_buffer_seq.
+  - apply correct_buffer_cmseq.
   - rewrite IHc.
-    apply correct_concat_map_packet_seq.
+    apply correct_packet_cmseq.
 Qed.
 
 (* Returns the first 4 elements of the sequence associated to a decomposed
@@ -314,30 +319,169 @@ sandwich_seq (Alone opt) := optionN_seq opt;
 sandwich_seq (Sandwich x b y) := prodN_seq x ++ buffer_seq b ++ prodN_seq y.
 
 (* Sequence + map + concat for deques. *)
-Definition concat_map_deque_seq
+Definition deque_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt size} (d : deque (T A lvlt) size) : list A :=
   match d with
-  | T c => concat_map_chain_seq f c
+  | T c => chain_cmseq f c
   end.
 
 (* Returns the sequence associated to a deque. *)
 Notation deque_seq :=
-  (concat_map_deque_seq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (deque_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
 
 (* Ensures the correct behavior of deques model functions. *)
-Lemma correct_concat_map_deque_seq
+Lemma correct_deque_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt size} (d : deque (T A lvlt) size) :
-  concat_map_deque_seq f d = concat (map (f A lvlt) (deque_seq d)).
+  deque_cmseq f d = concat (map (f A lvlt) (deque_seq d)).
 Proof.
   destruct d.
-  apply correct_concat_map_chain_seq.
+  apply correct_chain_cmseq.
 Qed.
 
 Unset Equations Transparent.
+
+(* +------------------------------------------------------------------------+ *)
+(* |                          Models functions                              | *)
+(* |            Alternative definition, by direct recursion                 | *)
+(* +------------------------------------------------------------------------+ *)
+
+(* Model functions are transparent. *)
+Set Equations Transparent.
+
+(* Returns the sequence associated to a product. *)
+Equations prodN_seq' {A n} : prodN A n -> list A :=
+prodN_seq' (prodZ a) := [a];
+prodN_seq' (prodS p1 p2) := prodN_seq' p1 ++ prodN_seq' p2.
+
+(* Returns the sequence associated to a buffer. *)
+Equations buffer_seq' {A lvl size C} : buffer A lvl size C -> list A :=
+buffer_seq' B0 := [];
+buffer_seq' (B1 a) := prodN_seq' a;
+buffer_seq' (B2 a b) := prodN_seq' a ++ prodN_seq' b;
+buffer_seq' (B3 a b c) := prodN_seq' a ++ prodN_seq' b ++ prodN_seq' c;
+buffer_seq' (B4 a b c d) := prodN_seq' a ++ prodN_seq' b ++ prodN_seq' c ++
+                              prodN_seq' d;
+buffer_seq' (B5 a b c d e) := prodN_seq' a ++ prodN_seq' b ++ prodN_seq' c ++
+                                prodN_seq' d ++ prodN_seq' e.
+
+(* Returns the sequence associated to a packet, provided the sequence
+   associated to its hole. *)
+Equations packet_seq' {A lvl hlvl pktsize hsize C} :
+  packet A lvl hlvl pktsize hsize C -> list A -> list A :=
+packet_seq' Hole l := l;
+packet_seq' (Packet p pkt s) l :=
+  buffer_seq' p ++ packet_seq' pkt l ++ buffer_seq' s.
+
+(* Returns the sequence associated to a chain. *)
+Equations chain_seq' {A lvl size C} : chain A lvl size C -> list A :=
+chain_seq' (Ending b) := buffer_seq' b;
+chain_seq' (Chain _ pkt c) := packet_seq' pkt (chain_seq' c).
+
+(* Returns the first 4 elements of the sequence associated to a decomposed
+   buffer.*)
+Equations decompose_main_seq' {A lvl size} : decompose A lvl size -> list A :=
+decompose_main_seq' (Underflow opt) := optionN_seq opt;
+decompose_main_seq' (Ok b) := buffer_seq' b;
+decompose_main_seq' (Overflow b _) := buffer_seq' b.
+
+(* Returns the sequence associated to a decomposed buffer from the 5th element
+   to the end  *)
+Equations decompose_rest_seq' {A lvl size} : decompose A lvl size -> list A :=
+decompose_rest_seq' (Underflow _) := [];
+decompose_rest_seq' (Ok _) := [];
+decompose_rest_seq' (Overflow _ p) := prodN_seq' p.
+
+(* Returns the sequence associated to a sandwiched buffer. *)
+Equations sandwich_seq' {A lvl size} : sandwich A lvl size -> list A :=
+sandwich_seq' (Alone opt) := optionN_seq opt;
+sandwich_seq' (Sandwich x b y) := prodN_seq' x ++ buffer_seq' b ++ prodN_seq' y.
+
+(* Returns the sequence associated to a deque. *)
+Equations deque_seq' {A size} : deque A size -> list A :=
+deque_seq' (T dq) := chain_seq' dq.
+
+Unset Equations Transparent.
+
+(* +------------------------------------------------------------------------+ *)
+(* |        These two definitions of model functions are equivalent         | *)
+(* +------------------------------------------------------------------------+ *)
+
+(* [prodN_seq'] is equivalent to [prodN_seq] *)
+Lemma prodN_seq'_equiv {A n} (p : prodN A n) :
+  prodN_seq' p = prodN_seq p.
+Proof.
+  funelim (prodN_seq' p); hauto.
+Qed.
+
+#[export] Hint Rewrite @prodN_seq'_equiv : models.
+
+(* [buffer_seq'] is equivalent to [buffer_seq] *)
+Lemma buffer_seq'_equiv {A lvl size C} (b : buffer A lvl size C) :
+  buffer_seq' b = buffer_seq b.
+Proof.
+  funelim (buffer_seq' b); hauto db:models.
+Qed.
+
+#[export] Hint Rewrite @buffer_seq'_equiv : models.
+
+(* [packet_seq'] is equivalent to [packet_seq] *)
+Lemma packet_seq'_equiv {A lvl hlvl pktsize hsize C}
+  (pkt : packet A lvl hlvl pktsize hsize C) (l : list A) :
+  packet_seq' pkt l = packet_seq pkt l.
+Proof.
+  funelim (packet_seq' pkt l); hauto db:models.
+Qed.
+
+#[export] Hint Rewrite @packet_seq'_equiv : models.
+
+(* [chain_seq'] is equivalent to [chain_seq] *)
+Lemma chain_seq'_equiv {A lvl size C} (c : chain A lvl size C) :
+  chain_seq' c = chain_seq c.
+Proof.
+  funelim (chain_seq' c); hauto db:models.
+Qed.
+
+#[export] Hint Rewrite @chain_seq'_equiv : models.
+
+(* [decompose_main_seq'] is equivalent to [decompose_main_seq] *)
+Lemma decompose_main_seq'_equiv {A lvl size} (d : decompose A lvl size) :
+  decompose_main_seq' d = decompose_main_seq d.
+Proof.
+  funelim (decompose_main_seq' d); hauto db:models.
+Qed.
+
+#[export] Hint Rewrite @decompose_main_seq'_equiv : models.
+
+(* [decompose_rest_seq'] is equivalent to [decompose_rest_seq] *)
+Lemma decompose_rest_seq'_equiv {A lvl size} (d : decompose A lvl size) :
+  decompose_rest_seq' d = decompose_rest_seq d.
+Proof.
+  funelim (decompose_rest_seq' d); hauto db:models.
+Qed.
+
+#[export] Hint Rewrite @decompose_rest_seq'_equiv : models.
+
+(* [sandwich_seq'] is equivalent to [sandwich_seq] *)
+Lemma sandwich_seq'_equiv {A lvl size} (s : sandwich A lvl size) :
+  sandwich_seq' s = sandwich_seq s.
+Proof.
+  funelim (sandwich_seq' s); hauto db:models.
+Qed.
+
+#[export] Hint Rewrite @sandwich_seq'_equiv : models.
+
+(* [deque_seq'] is equivalent to [deque_seq] *)
+Lemma deque_seq'_equiv {A size} (d : deque A size) :
+  deque_seq' d = deque_seq d.
+Proof.
+  funelim (deque_seq' d); hauto db:models.
+Qed.
+
+#[export] Hint Rewrite @deque_seq'_equiv : models.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                  Core                                  | *)
@@ -345,6 +489,13 @@ Unset Equations Transparent.
 
 (* Notation for dependent types hiding the property on [x]. *)
 Notation "? x" := (@exist _ _ x _) (at level 100).
+
+(* A hint database of rewrites to be used when trying to automatically resolve
+   obligations on lists generated by [Equations]. *)
+#[export] Hint Rewrite <-app_assoc : rlist.
+#[export] Hint Rewrite app_nil_r : rlist.
+#[export] Hint Rewrite map_app : rlist.
+#[export] Hint Rewrite concat_app : rlist.
 
 (* Setting the default tactics for obligations to be [hauto] using the [rlist]
    hint database. *)
@@ -724,11 +875,9 @@ chain_of_opt3 (SomeN a) (SomeN (prodS b c)) NoneN := ? Ending (B3 a b c);
 chain_of_opt3 NoneN (SomeN (prodS a b)) (SomeN c) := ? Ending (B3 a b c);
 chain_of_opt3 (SomeN a) (SomeN (prodS b c)) (SomeN d) := ? Ending (B4 a b c d).
 
-(* Provided the equality of two natural numbers, translates a chain of size the
-   first into a chain of size the second. *)
-Equations translate {A lvl size1 size2 C}
-  (c : chain A lvl size1 C) (eq : size1 = size2) :
-  { c' : chain A lvl size2 C | chain_seq c' = chain_seq c } :=
+(* Provided the equality of two natural numbers, translates a chain of size the first into a chain of size the second. *)
+Equations translate {A lvl size1 size2 C} (c : chain A lvl size1 C) :
+  size1 = size2 -> { c' : chain A lvl size2 C | chain_seq c' = chain_seq c } :=
 translate c eq with comp_eq eq => { | eq_refl := ? c }.
 
 (* Proves that all natural numbers [n] can be writen as [n mod 2] plus 2 times
@@ -863,13 +1012,14 @@ green_of_red (Chain R (Packet p1 (Packet p2 child s2) s1) c)
   let '? c' := translate c _ in ? c' }.
 Next Obligation.
   intros * Hp * Hs * c.
-  yellow_size p2 as Hpsize0. yellow_size s2 as Hssize0.
+  yellow_size p2 as Hpsize0.
+  yellow_size s2 as Hssize0.
   pose (dec_by_2 psize) as Hpsize. rewrite <-Hpsize at 3.
   pose (dec_by_2 ssize) as Hssize. rewrite <-Hssize at 3.
   hauto.
 Qed.
 Next Obligation.
-  simpl. intros * Hp * Hs * Hc'.
+  cbn. intros * Hp * Hs * Hc'.
   rewrite Hc'.
   remember (buffer_seq p1) as p1_seq.
   remember (buffer_seq p2) as p2_seq.
@@ -880,13 +1030,14 @@ Next Obligation.
 Qed.
 Next Obligation.
   intros * Hp * Hs * c.
-  yellow_size p2 as Hpsize0. yellow_size s2 as Hssize0.
+  yellow_size p2 as Hpsize0.
+  yellow_size s2 as Hssize0.
   pose (dec_by_2 psize) as Hpsize. rewrite <-Hpsize at 3.
   pose (dec_by_2 ssize) as Hssize. rewrite <-Hssize at 3.
   hauto.
 Qed.
 Next Obligation.
-  simpl. intros * Hp * Hs * Hc'.
+  cbn. intros * Hp * Hs * Hc'.
   rewrite Hc'.
   remember (buffer_seq p1) as p1_seq.
   remember (buffer_seq (to_yellow p2)) as p2_seq.

@@ -3,7 +3,9 @@ Import ListNotations.
 From Equations Require Import Equations.
 From Hammer Require Import Tactics.
 
-From Cadeque.cadeque Require Import deque equtil.
+From Cadeque.utils Require Import comp_eq.
+From Cadeque.deque Require Import deque_size.
+Module deque := deque_size.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                Vectors                                 | *)
@@ -79,27 +81,27 @@ Definition singleton {A : Type} (a1 : A) : list A := [a1].
 Opaque singleton.
 
 (* Sequence + map + concat for buffers. *)
-Definition concat_map_seq
+Definition cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt q} (b : t (T A lvlt) q) : list A :=
   match b with
-  | Buffer d => concat_map_deque_seq f d
+  | Buffer d => deque_cmseq f d
   end.
 
 (* Returns the sequence associated to a buffer. *)
 Definition seq {A q} (b : t A q) :=
-  concat_map_seq (T := fun A _ => A) (fun _ _ a => [a]) (lvlt := 0) b.
+  cmseq (T := fun A _ => A) (fun _ _ a => [a]) (lvlt := 0) b.
 
 (* Ensures the correct behavior of buffers model functions. *)
-Lemma correct_concat_map_seq
+Lemma correct_cmseq
   [T : Type -> nat -> Type]
   (f : forall A lvl, T A lvl -> list A)
   [A lvlt q] (b : t (T A lvlt) q) :
-  concat_map_seq f b = concat (map (f A lvlt) (seq b)).
+  cmseq f b = concat (map (f A lvlt) (seq b)).
 Proof.
   destruct b. simpl.
-  apply correct_concat_map_deque_seq.
+  apply correct_deque_cmseq.
 Qed.
 
 (* +------------------------------------------------------------------------+ *)

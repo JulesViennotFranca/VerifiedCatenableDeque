@@ -7,7 +7,8 @@ From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
 From Cadeque.color Require Import GYR.
-From Cadeque.steque Require Import deque.
+From Cadeque.deque Require Import deque_lvl.
+Module deque := deque_lvl.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
@@ -123,7 +124,7 @@ Definition concat_map_prefix'_seq
   | P3 a1 a2 a3 => f A lvlt a1 ++ f A lvlt a2 ++ f A lvlt a3
   | P4 a1 a2 a3 a4 d =>
       f A lvlt a1 ++ f A lvlt a2 ++ f A lvlt a3 ++ f A lvlt a4 ++
-      concat_map_deque_seq f d
+      deque_cmseq f d
   end.
 
 (* Returns the sequence associated to a pair. *)
@@ -138,11 +139,11 @@ packet_seq Hole l := l;
 packet_seq (Packet p pkt s) l :=
   concat_map_prefix'_seq pair_seq p ++
   packet_seq pkt l ++
-  concat_map_deque_seq pair_seq s
+  deque_cmseq pair_seq s
 
 (* Returns the sequence associated to a chain. *)
 with chain_seq {A lvl C} (c : chain A lvl C) : list A by struct c :=
-chain_seq (Ending d) := concat_map_deque_seq pair_seq d;
+chain_seq (Ending d) := deque_cmseq pair_seq d;
 chain_seq (Chain _ pkt c) := packet_seq pkt (chain_seq c).
 
 Arguments pair_seq {A lvl}.
@@ -151,7 +152,7 @@ Arguments pair_seq {A lvl}.
 Notation prefix_seq p := (concat_map_prefix'_seq (@pair_seq) p).
 
 (* Returns the sequence associated to a leveled suffix. *)
-Notation suffix_seq := (concat_map_deque_seq (@pair_seq)).
+Notation suffix_seq := (deque_cmseq (@pair_seq)).
 
 (* Returns the sequence associated to a green or yellow prefix. *)
 Equations gy_prefix_seq {A lvl} : gy_prefix A lvl -> list A :=
@@ -192,7 +193,7 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 #[export] Hint Rewrite map_app : rlist.
 #[export] Hint Rewrite concat_app : rlist.
 
-#[export] Hint Rewrite correct_concat_map_deque_seq : rlist.
+#[export] Hint Rewrite correct_deque_cmseq : rlist.
 
 (* Setting the default tactics for obligations to be [hauto] using the [rlist]
    hint database. *)
