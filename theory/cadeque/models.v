@@ -9,7 +9,7 @@ From Cadeque.cadeque Require Import buffer types.
 Definition node'_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
-  {A lvlt nc nk C} (n : node' (T A lvlt) nc nk C) (l : list A) : list A :=
+  {A lvlt nc k C} (n : node' (T A lvlt) nc k C) (l : list A) : list A :=
   match n with
   | Only_end p => buffer.cmseq f p
   | Only  _ p s => buffer.cmseq f p ++ l ++ buffer.cmseq f s
@@ -41,12 +41,12 @@ body_seq (Pair_orange hd cl b) l :=
   node'_cmseq stored_seq hd (chain_seq cl ++ body_seq b l)
 
 (* Returns the sequence associated to a packet. *)
-with packet_seq {A hlvl tlvl nc nk C} : packet A hlvl tlvl nc nk C -> list A -> list A :=
+with packet_seq {A hlvl tlvl nc k C} : packet A hlvl tlvl nc k C -> list A -> list A :=
 packet_seq (Packet b tl) l :=
   body_seq b (node'_cmseq stored_seq tl l)
 
 (* Returns the sequence associated to a chain. *)
-with chain_seq {A lvl ck nk Cl Cr} (c : chain A lvl ck nk Cl Cr) : list A
+with chain_seq {A lvl ck k Cl Cr} (c : chain A lvl ck k Cl Cr) : list A
 by struct c :=
 chain_seq Empty := [];
 chain_seq (Single _ pkt rest) := packet_seq pkt (chain_seq rest);
