@@ -1,0 +1,7 @@
+
+(alias
+  (name default)
+  (deps
+   (alias_rec theory/all)
+   (alias_rec src/all)
+   (alias_rec lib/all)))
