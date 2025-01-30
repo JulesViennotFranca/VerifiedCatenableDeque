@@ -1,7 +1,0 @@
-(library
-  (name cadeque)
-  (public_name Cadeque)
-  (libraries lib))
-
-(documentation
-  (package Cadeque))
