@@ -44,3 +44,5 @@
   document it.
   Make sure that `dune` can compile it
   (disable certain errors).
+
+* Perform Monolith tests.
