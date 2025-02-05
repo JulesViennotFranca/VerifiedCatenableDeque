@@ -3,6 +3,14 @@
 
 * `make` currently fails with Coq 8.20.
 
+* In `theory/cadeque`, merge `buffer.v` into `deque.v`.
+  Or keep `buffer.v` but make the type `buffer` a synonym for `deque` (no constructor).
+
+* In `theory/deque`, rename `deque_size.v` into `deque.v`. (Thus the module alias can be removed.)
+  `deque.v` (unindexed) should be `deque_plain.v` or something similar.
+  Each of the three files `deque*.v` should begin with a comment
+  explaining its role (and pointing to the other two).
+
 * Clean up `README.md`.
 
   + Add a link to our paper.
@@ -13,7 +21,8 @@
   + Clarify how much time `make test` is expected to require.
     It seems to take a long time.
 
-* Add `AUTHORS.md`.
+* Add a `README.md` in each subdirectory of `theory`
+  so as to describe the role of each file.
 
 * Extend the `Makefile` with more entries (if useful).
 
@@ -30,8 +39,8 @@
 
 * Clean up `theory/cadeque/abstraction.v`.
 
-* Why does the code in `theory/extraction` contain manual modifications?
-  This cannot be trusted / maintained.
-  -> the code didn't type checked because some importation of modules were not used,
-     so I only commented out the modules that weren't used,
-     maybe there exist a dune flag to not raise errors for unused modules.
+* Remove `theory/extraction`,
+  add `make extract` to produce the extracted code,
+  document it.
+  Make sure that `dune` can compile it
+  (disable certain errors).
