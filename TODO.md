@@ -46,3 +46,4 @@
   (disable certain errors).
 
 * Perform Monolith tests.
+  Apply them to all of the libraries that we benchmark.
