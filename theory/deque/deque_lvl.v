@@ -13,18 +13,21 @@ From Cadeque.color Require Import GYR.
 (* |                                 Types                                  | *)
 (* +------------------------------------------------------------------------+ *)
 
-(* A type for leveled products. *)
-Inductive prodN (A : Type) : nat -> Type :=
-  | prodZ : A -> prodN A 0
-  | prodS {n : nat} : prodN A n -> prodN A n -> prodN A (S n).
-Arguments prodZ {A} a.
-Arguments prodS {A n} p1 p2.
+(* A level is a natural integer. *)
+Definition level := nat.
+
+(* A type for products. *)
+Inductive prodN (A : Type) : level -> Type :=
+  | prodZ     : A -> prodN A 0
+  | prodS {l} : prodN A l -> prodN A l -> prodN A (S l).
+Arguments prodZ {A}.
+Arguments prodS {A l}.
 
 (* A type for leveled options. *)
-Definition optionN (A : Type) (lvl : nat) := option (prodN A lvl).
+Definition optionN (A : Type) (lvl : level) := option (prodN A lvl).
 
 (* A type for leveled buffers. *)
-Inductive buffer (A : Type) (lvl : nat) : color -> Type :=
+Inductive buffer (A : Type) (lvl : level) : color -> Type :=
   | B0         : buffer A lvl red
   | B1 {y r}   : prodN A lvl -> buffer A lvl (Mix NoGreen y r)
   | B2 {g y r} : prodN A lvl -> prodN A lvl -> buffer A lvl (Mix g y r)
@@ -42,7 +45,7 @@ Arguments B4 {A lvl y r}.
 Arguments B5 {A lvl}.
 
 (* A type for leveled packets. *)
-Inductive packet (A : Type) (lvl : nat) : nat -> color -> Type :=
+Inductive packet (A : Type) (lvl : level) : level -> color -> Type :=
   | Hole : packet A lvl lvl uncolored
   | Packet {hlvl C y} : buffer A lvl C ->
                         packet A (S lvl) hlvl (Mix NoGreen y NoRed) ->
@@ -58,7 +61,7 @@ Inductive regularity : color -> color -> Type :=
   | R       : regularity red    green.
 
 (* A type for leveled chains. *)
-Inductive chain (A : Type) : nat -> color -> Type :=
+Inductive chain (A : Type) : level -> color -> Type :=
   | Ending {lvl} : buffer A lvl red -> chain A lvl green
   | Chain {lvl hlvl C1 C2} :
       regularity C1 C2 -> packet A lvl hlvl C1 -> chain A hlvl C2 ->
@@ -70,7 +73,7 @@ Arguments Chain {A lvl hlvl C1 C2}.
    Buffers with 0 or 1 element are decomposed into [Underflow];
    buffers with 2 or 3 elements are decomposed into [Ok];
    buffers with 4 or 5 elements are decomposed into [Overflow]. *)
-Inductive decompose (A : Type) (lvl : nat) : Type :=
+Inductive decompose (A : Type) (lvl : level) : Type :=
   | Underflow : optionN A lvl -> decompose A lvl
   | Ok : buffer A lvl green -> decompose A lvl
   | Overflow : buffer A lvl green -> prodN A (S lvl) -> decompose A lvl.
@@ -81,7 +84,7 @@ Arguments Overflow {A lvl}.
 (* A type decomposing a buffer into its first element, a central buffer, and
    its last element. If such a decomposition is not possible, an option
    representing the buffer is returned with [Alone]. *)
-Inductive sandwich (A : Type) (lvl : nat) : Type :=
+Inductive sandwich (A : Type) (lvl : level) : Type :=
   | Alone : optionN A lvl -> sandwich A lvl
   | Sandwich : prodN A lvl -> buffer A lvl red -> prodN A lvl -> sandwich A lvl.
 Arguments Alone {A lvl}.
@@ -113,8 +116,8 @@ Opaque singleton.
 #[export] Hint Rewrite concat_app : rlist.
 
 (* In the following, functions [***_cmseq] assume the structure [***] contains
-   elements of type [T A lvl] where [T : Type -> nat -> Type], [A : Type] and
-   [lvl : nat].
+   elements of type [T A lvl] where [T : Type -> level -> Type], [A : Type] and
+   [lvl : level].
 
    These functions are needed for the implementation of steques. In this
    implementation, non-catenable deques contain elements of type [T A lvl]
@@ -133,7 +136,7 @@ Opaque singleton.
 
 (* Sequence + map + concat for products. *)
 Definition prodN_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl} : prodN (T A lvlt) lvl -> list A :=
   let fix local {lvl} (p : prodN (T A lvlt) lvl) : list A :=
@@ -149,7 +152,7 @@ Notation prodN_seq :=
 
 (* Ensures the correct behavior of products model functions. *)
 Lemma correct_prodN_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl} (p : prodN (T A lvlt) lvl) :
   prodN_cmseq f p = concat (map (f A lvlt) (prodN_seq p)).
@@ -164,7 +167,7 @@ optionN_seq (Some x) := prodN_seq x.
 
 (* Sequence + map + concat for buffers. *)
 Definition buffer_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl C} (b : buffer (T A lvlt) lvl C) : list A :=
   match b with
@@ -186,7 +189,7 @@ Notation buffer_seq :=
 
 (* Ensures the correct behavior of buffers model functions. *)
 Lemma correct_buffer_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl C} (b : buffer (T A lvlt) lvl C) :
   buffer_cmseq f b = concat (map (f A lvlt) (buffer_seq b)).
@@ -219,7 +222,7 @@ Qed.
 
 (* Sequence + map + concat for packets. *)
 Definition packet_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl hlvl C} : packet (T A lvlt) lvl hlvl C -> list A -> list A :=
   let fix local {lvl hlvl C}
@@ -238,7 +241,7 @@ Notation packet_seq :=
 
 (* Ensures the correct behavior of packets model functions. *)
 Lemma correct_packet_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl hlvl C}
   (pkt : packet (T A lvlt) lvl hlvl C) (l : list (T A lvlt)) :
@@ -256,7 +259,7 @@ Qed.
 
 (* Sequence + map + concat for chains. *)
 Definition chain_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl C} : chain (T A lvlt) lvl C -> list A :=
   let fix local {lvl C} (c : chain (T A lvlt) lvl C) : list A :=
@@ -272,7 +275,7 @@ Notation chain_seq :=
 
 (* Ensures the correct behavior of chains model functions. *)
 Lemma correct_chain_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl C} (c : chain (T A lvlt) lvl C) :
   chain_cmseq f c = concat (map (f A lvlt) (chain_seq c)).
@@ -304,7 +307,7 @@ sandwich_seq (Sandwich x b y) := prodN_seq x ++ buffer_seq b ++ prodN_seq y.
 
 (* Sequence + map + concat for deques. *)
 Definition deque_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt} (d : deque (T A lvlt)) : list A :=
   match d with
@@ -317,7 +320,7 @@ Definition deque_seq {A} (d : deque A) :=
 
 (* Ensures the correct behavior of deques model functions. *)
 Lemma correct_deque_cmseq
-  [T : Type -> nat -> Type]
+  [T : Type -> level -> Type]
   (f : forall A lvl, T A lvl -> list A)
   [A lvlt] (d : deque (T A lvlt)) :
   deque_cmseq f d = concat (map (f A lvlt) (deque_seq d)).
