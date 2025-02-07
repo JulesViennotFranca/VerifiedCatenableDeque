@@ -40,14 +40,16 @@ Arguments SomeN {A l}.
 (* A type for sized buffers. *)
 Inductive buffer (A : Type) (l : level) : size -> color -> Type :=
   | B0         : buffer A l 0 red
-  | B1 {y r}   : prodN A l -> buffer A l 1 (Mix NoGreen y r)
-  | B2 {g y r} : prodN A l -> prodN A l -> buffer A l 2 (Mix g y r)
+  | B1 {y r}   : prodN A l ->
+                 buffer A l 1 (Mix NoGreen y r)
+  | B2 {g y r} : prodN A l -> prodN A l ->
+                 buffer A l 2 (Mix g y r)
   | B3 {g y r} : prodN A l -> prodN A l -> prodN A l ->
                  buffer A l 3 (Mix g y r)
-  | B4 {y r}   : prodN A l -> prodN A l -> prodN A l ->
-                 prodN A l -> buffer A l 4 (Mix NoGreen y r)
-  | B5         : prodN A l -> prodN A l -> prodN A l ->
-                 prodN A l -> prodN A l -> buffer A l 5 red.
+  | B4 {y r}   : prodN A l -> prodN A l -> prodN A l -> prodN A l ->
+                 buffer A l 4 (Mix NoGreen y r)
+  | B5         : prodN A l -> prodN A l -> prodN A l -> prodN A l -> prodN A l ->
+                 buffer A l 5 red.
 Arguments B0 {A l}.
 Arguments B1 {A l y r}.
 Arguments B2 {A l g y r}.
@@ -78,10 +80,8 @@ Inductive chain (A : Type) (l : level) : size -> color -> Type :=
   | Ending {n} :
       buffer A l n red ->
       chain A l n green
-  | Chain {hl n hn} {C1 C2 : color} :
-      regularity C1 C2 ->
-      packet A l hl n hn C1 ->
-      chain A hl hn C2 ->
+  | Chain {hl n hn} {C1 C2} :
+      regularity C1 C2 -> packet A l hl n hn C1 -> chain A hl hn C2 ->
       chain A l n C1.
 Arguments Ending {A l n}.
 Arguments Chain {A l hl n hn C1 C2}.
