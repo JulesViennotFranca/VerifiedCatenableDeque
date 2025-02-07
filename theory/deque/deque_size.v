@@ -27,45 +27,45 @@ Arguments prodZ {A}.
 Arguments prodS {A n}.
 
 (* A type for sized options. *)
-Inductive optionN (A : Type) (lvl : level) : size -> Type :=
-  | NoneN : optionN A lvl 0
-  | SomeN : prodN A lvl -> optionN A lvl 1.
-Arguments NoneN {A lvl}.
-Arguments SomeN {A lvl}.
+Inductive optionN (A : Type) (l : level) : size -> Type :=
+  | NoneN : optionN A l 0
+  | SomeN : prodN A l -> optionN A l 1.
+Arguments NoneN {A l}.
+Arguments SomeN {A l}.
 
 (* In the following types, a natural number parameter is introduced : the
-   [size] of the type. The size is simply the number of [prodN A lvl] that are
+   [size] of the type. The size is simply the number of [prodN A l] that are
    stored in the structure. *)
 
 (* A type for sized buffers. *)
-Inductive buffer (A : Type) (lvl : level) : size -> color -> Type :=
-  | B0         : buffer A lvl 0 red
-  | B1 {y r}   : prodN A lvl -> buffer A lvl 1 (Mix NoGreen y r)
-  | B2 {g y r} : prodN A lvl -> prodN A lvl -> buffer A lvl 2 (Mix g y r)
-  | B3 {g y r} : prodN A lvl -> prodN A lvl -> prodN A lvl ->
-                 buffer A lvl 3 (Mix g y r)
-  | B4 {y r}   : prodN A lvl -> prodN A lvl -> prodN A lvl ->
-                 prodN A lvl -> buffer A lvl 4 (Mix NoGreen y r)
-  | B5         : prodN A lvl -> prodN A lvl -> prodN A lvl ->
-                 prodN A lvl -> prodN A lvl -> buffer A lvl 5 red.
-Arguments B0 {A lvl}.
-Arguments B1 {A lvl y r}.
-Arguments B2 {A lvl g y r}.
-Arguments B3 {A lvl g y r}.
-Arguments B4 {A lvl y r}.
-Arguments B5 {A lvl}.
+Inductive buffer (A : Type) (l : level) : size -> color -> Type :=
+  | B0         : buffer A l 0 red
+  | B1 {y r}   : prodN A l -> buffer A l 1 (Mix NoGreen y r)
+  | B2 {g y r} : prodN A l -> prodN A l -> buffer A l 2 (Mix g y r)
+  | B3 {g y r} : prodN A l -> prodN A l -> prodN A l ->
+                 buffer A l 3 (Mix g y r)
+  | B4 {y r}   : prodN A l -> prodN A l -> prodN A l ->
+                 prodN A l -> buffer A l 4 (Mix NoGreen y r)
+  | B5         : prodN A l -> prodN A l -> prodN A l ->
+                 prodN A l -> prodN A l -> buffer A l 5 red.
+Arguments B0 {A l}.
+Arguments B1 {A l y r}.
+Arguments B2 {A l g y r}.
+Arguments B3 {A l g y r}.
+Arguments B4 {A l y r}.
+Arguments B5 {A l}.
 
 (* A type for sized packets. *)
-Inductive packet (A : Type) (lvl : level) : level -> size -> size -> color -> Type :=
+Inductive packet (A : Type) (l : level) : level -> size -> size -> color -> Type :=
   | Hole {n} :
-      packet A lvl lvl n n uncolored
-  | Packet {hlvl pn pktn sn hn C y} :
-      buffer A lvl pn C ->
-      packet A (S lvl) hlvl pktn hn (Mix NoGreen y NoRed) ->
-      buffer A lvl sn C ->
-      packet A lvl hlvl (pn + 2 * pktn + sn) hn C.
-Arguments Hole {A lvl n}.
-Arguments Packet {A lvl hlvl pn pktn sn hn C y}.
+      packet A l l n n uncolored
+  | Packet {hl pn pktn sn hn C y} :
+      buffer A l pn C ->
+      packet A (S l) hl pktn hn (Mix NoGreen y NoRed) ->
+      buffer A l sn C ->
+      packet A l hl (pn + 2 * pktn + sn) hn C.
+Arguments Hole {A l n}.
+Arguments Packet {A l hl pn pktn sn hn C y}.
 
 (* A type for the regularity relation. *)
 Inductive regularity : color -> color -> Type :=
@@ -74,51 +74,51 @@ Inductive regularity : color -> color -> Type :=
   | R       : regularity red    green.
 
 (* A type for sized chains. *)
-Inductive chain (A : Type) (lvl : level) : size -> color -> Type :=
+Inductive chain (A : Type) (l : level) : size -> color -> Type :=
   | Ending {n} :
-      buffer A lvl n red ->
-      chain A lvl n green
-  | Chain {hlvl n hn} {C1 C2 : color} :
+      buffer A l n red ->
+      chain A l n green
+  | Chain {hl n hn} {C1 C2 : color} :
       regularity C1 C2 ->
-      packet A lvl hlvl n hn C1 ->
-      chain A hlvl hn C2 ->
-      chain A lvl n C1.
-Arguments Ending {A lvl n}.
-Arguments Chain {A lvl hlvl n hn C1 C2}.
+      packet A l hl n hn C1 ->
+      chain A hl hn C2 ->
+      chain A l n C1.
+Arguments Ending {A l n}.
+Arguments Chain {A l hl n hn C1 C2}.
 
 (* A type decomposing buffers according to their number of elements.
    Buffers with 0 or 1 element are decomposed into [Underflow];
    buffers with 2 or 3 elements are decomposed into [Ok];
    buffers with 4 or 5 elements are decomposed into [Overflow]. *)
-Inductive decompose (A : Type) (lvl : level) : size -> Type :=
+Inductive decompose (A : Type) (l : level) : size -> Type :=
   | Underflow {n} :
-      optionN A lvl n ->
-      decompose A lvl n
+      optionN A l n ->
+      decompose A l n
   | Ok {n} :
-      buffer A lvl n green ->
-      decompose A lvl n
+      buffer A l n green ->
+      decompose A l n
   | Overflow {n} :
-      buffer A lvl n green ->
-      prodN A (S lvl) ->
-      decompose A lvl (S (S n)).
-Arguments Underflow {A lvl n}.
-Arguments Ok {A lvl n}.
-Arguments Overflow {A lvl n}.
+      buffer A l n green ->
+      prodN A (S l) ->
+      decompose A l (S (S n)).
+Arguments Underflow {A l n}.
+Arguments Ok {A l n}.
+Arguments Overflow {A l n}.
 
 (* A type decomposing a buffer into its first element, a central buffer, and
    its last element. If such a decomposition is not possible, an option
    representing the buffer is returned with [Alone]. *)
-Inductive sandwich (A : Type) (lvl : level) : size -> Type :=
+Inductive sandwich (A : Type) (l : level) : size -> Type :=
   | Alone {s} :
-      optionN A lvl s ->
-      sandwich A lvl s
+      optionN A l s ->
+      sandwich A l s
   | Sandwich {s} :
-      prodN A lvl ->
-      buffer A lvl s red ->
-      prodN A lvl ->
-      sandwich A lvl (2 + s).
-Arguments Alone {A lvl s}.
-Arguments Sandwich {A lvl s}.
+      prodN A l ->
+      buffer A l s red ->
+      prodN A l ->
+      sandwich A l (2 + s).
+Arguments Alone {A l s}.
+Arguments Sandwich {A l s}.
 
 (* A type for sized deque. *)
 Inductive deque (A : Type) (n : size) : Type :=
@@ -146,12 +146,12 @@ Opaque singleton.
 #[export] Hint Rewrite concat_app : rlist.
 
 (* In the following, functions [***_cmseq] assume the structure [***] contains
-   elements of type [T A lvl] where [T : Type -> level -> Type], [A : Type] and
-   [lvl : level].
+   elements of type [T A l] where [T : Type -> level -> Type], [A : Type] and
+   [l : level].
 
    These functions are needed for the implementation of catenable deques. In
    this implementation, non-catenable deques contain elements of type
-   [T A lvl] where [T] is instanciated with [stored].
+   [T A l] where [T] is instanciated with [stored].
 
    Such functions compute the sequence associated to the [***] structure, then
    perform a map on them using the model functions [f] of the type [T], and
@@ -167,39 +167,39 @@ Opaque singleton.
 (* Sequence + map + concat for products. *)
 Definition prodN_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl} : prodN (T A lvlt) lvl -> list A :=
-  let fix local {lvl} (p : prodN (T A lvlt) lvl) : list A :=
+  (f : forall A l, T A l -> list A)
+  {A lt l} : prodN (T A lt) l -> list A :=
+  let fix local {l} (p : prodN (T A lt) l) : list A :=
     match p with
-    | prodZ ta => f A lvlt ta
+    | prodZ ta => f A lt ta
     | prodS p1 p2 => local p1 ++ local p2
     end
   in local.
 
 (* Returns the sequence associated to a product. *)
 Notation prodN_seq :=
-  (prodN_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (prodN_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lt := 0)).
 
 (* Ensures the correct behavior of products model functions. *)
 Lemma correct_prodN_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl} (p : prodN (T A lvlt) lvl) :
-  prodN_cmseq f p = concat (map (f A lvlt) (prodN_seq p)).
+  (f : forall A l, T A l -> list A)
+  {A lt l} (p : prodN (T A lt) l) :
+  prodN_cmseq f p = concat (map (f A lt) (prodN_seq p)).
 Proof.
   induction p; hauto db:rlist.
 Qed.
 
 (* Returns the sequence associated to an option. *)
-Equations optionN_seq {A lvl s} : optionN A lvl s -> list A :=
+Equations optionN_seq {A l s} : optionN A l s -> list A :=
 optionN_seq NoneN := [];
 optionN_seq (SomeN x) := prodN_seq x.
 
 (* Sequence + map + concat for buffers. *)
 Definition buffer_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl n C} (b : buffer (T A lvlt) lvl n C) : list A :=
+  (f : forall A l, T A l -> list A)
+  {A lt l n C} (b : buffer (T A lt) l n C) : list A :=
   match b with
   | B0 => []
   | (B1 a) => prodN_cmseq f a
@@ -215,14 +215,14 @@ Definition buffer_cmseq
 
 (* Returns the sequence associated to a buffer. *)
 Notation buffer_seq :=
-  (buffer_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (buffer_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lt := 0)).
 
 (* Ensures the correct behavior of buffers model functions. *)
 Lemma correct_buffer_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl n C} (b : buffer (T A lvlt) lvl n C) :
-  buffer_cmseq f b = concat (map (f A lvlt) (buffer_seq b)).
+  (f : forall A l, T A l -> list A)
+  {A lt l n C} (b : buffer (T A lt) l n C) :
+  buffer_cmseq f b = concat (map (f A lt) (buffer_seq b)).
 Proof.
   destruct b as [ | ?? a | ??? a b |  ??? a b c | ?? a b c d | a b c d e ];
   simpl;
@@ -253,11 +253,11 @@ Qed.
 (* Sequence + map + concat for packets. *)
 Definition packet_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl hlvl pktn hn C} :
-  packet (T A lvlt) lvl hlvl pktn hn C -> list A -> list A :=
-  let fix local {lvl hlvl pktn hn C}
-    (pkt : packet (T A lvlt) lvl hlvl pktn hn C) (l : list A) : list A :=
+  (f : forall A l, T A l -> list A)
+  {A lt l hl pktn hn C} :
+  packet (T A lt) l hl pktn hn C -> list A -> list A :=
+  let fix local {l hl pktn hn C}
+    (pkt : packet (T A lt) l hl pktn hn C) (l : list A) : list A :=
     match pkt with
     | Hole => l
     | Packet p pkt s => buffer_cmseq f p ++
@@ -268,16 +268,16 @@ Definition packet_cmseq
 
 (* Returns the sequence associated to a packet. *)
 Notation packet_seq :=
-  (packet_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (packet_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lt := 0)).
 
 (* Ensures the correct behavior of packets model functions. *)
 Lemma correct_packet_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl hlvl pktn hn C}
-  (pkt : packet (T A lvlt) lvl hlvl pktn hn C) (l : list (T A lvlt)) :
-  packet_cmseq f pkt (concat (map (f A lvlt) l)) =
-    concat (map (f A lvlt) (packet_seq pkt l)).
+  (f : forall A l, T A l -> list A)
+  {A lt l hl pktn hn C}
+  (pkt : packet (T A lt) l hl pktn hn C) (ts : list (T A lt)) :
+  packet_cmseq f pkt (concat (map (f A lt) ts)) =
+    concat (map (f A lt) (packet_seq pkt ts)).
 Proof.
   induction pkt as [ | ???????? p pkt IHpkt s ]; simpl.
   - reflexivity.
@@ -291,9 +291,9 @@ Qed.
 (* Sequence + map + concat for chains. *)
 Definition chain_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl n C} : chain (T A lvlt) lvl n C -> list A :=
-  let fix local {lvl n C} (c : chain (T A lvlt) lvl n C) : list A :=
+  (f : forall A l, T A l -> list A)
+  {A lt l n C} : chain (T A lt) l n C -> list A :=
+  let fix local {l n C} (c : chain (T A lt) l n C) : list A :=
     match c with
     | Ending b => buffer_cmseq f b
     | Chain _ pkt c => packet_cmseq f pkt (local c)
@@ -302,14 +302,14 @@ Definition chain_cmseq
 
 (* Returns the sequence associated to a chain. *)
 Notation chain_seq :=
-  (chain_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (chain_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lt := 0)).
 
 (* Ensures the correct behavior of chains model functions. *)
 Lemma correct_chain_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl n C} (c : chain (T A lvlt) lvl n C) :
-  chain_cmseq f c = concat (map (f A lvlt) (chain_seq c)).
+  (f : forall A l, T A l -> list A)
+  {A lt l n C} (c : chain (T A lt) l n C) :
+  chain_cmseq f c = concat (map (f A lt) (chain_seq c)).
 Proof.
   induction c as [ b | ?????? reg pkt c ]; simpl.
   - apply correct_buffer_cmseq.
@@ -319,42 +319,42 @@ Qed.
 
 (* Returns the first 4 elements of the sequence associated to a decomposed
    buffer.*)
-Equations decompose_main_seq {A lvl s} : decompose A lvl s -> list A :=
+Equations decompose_main_seq {A l s} : decompose A l s -> list A :=
 decompose_main_seq (Underflow opt) := optionN_seq opt;
 decompose_main_seq (Ok b) := buffer_seq b;
 decompose_main_seq (Overflow b _) := buffer_seq b.
 
 (* Returns the sequence associated to a decomposed buffer from the 5th element
    to the end  *)
-Equations decompose_rest_seq {A lvl s} : decompose A lvl s -> list A :=
+Equations decompose_rest_seq {A l s} : decompose A l s -> list A :=
 decompose_rest_seq (Underflow _) := [];
 decompose_rest_seq (Ok _) := [];
 decompose_rest_seq (Overflow _ p) := prodN_seq p.
 
 (* Returns the sequence associated to a sandwiched buffer. *)
-Equations sandwich_seq {A lvl n} : sandwich A lvl n -> list A :=
+Equations sandwich_seq {A l n} : sandwich A l n -> list A :=
 sandwich_seq (Alone opt) := optionN_seq opt;
 sandwich_seq (Sandwich x b y) := prodN_seq x ++ buffer_seq b ++ prodN_seq y.
 
 (* Sequence + map + concat for deques. *)
 Definition deque_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt n} (d : deque (T A lvlt) n) : list A :=
+  (f : forall A l, T A l -> list A)
+  {A lt n} (d : deque (T A lt) n) : list A :=
   match d with
   | T c => chain_cmseq f c
   end.
 
 (* Returns the sequence associated to a deque. *)
 Notation deque_seq :=
-  (deque_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lvlt := 0)).
+  (deque_cmseq (T := fun A _ => A) (fun A _ a => [a]) (lt := 0)).
 
 (* Ensures the correct behavior of deques model functions. *)
 Lemma correct_deque_cmseq
   {T : Type -> level -> Type}
-  (f : forall A lvl, T A lvl -> list A)
-  {A lvlt n} (d : deque (T A lvlt) n) :
-  deque_cmseq f d = concat (map (f A lvlt) (deque_seq d)).
+  (f : forall A l, T A l -> list A)
+  {A lt n} (d : deque (T A lt) n) :
+  deque_cmseq f d = concat (map (f A lt) (deque_seq d)).
 Proof.
   destruct d.
   apply correct_chain_cmseq.
@@ -376,7 +376,7 @@ prodN_seq' (prodZ a) := [a];
 prodN_seq' (prodS p1 p2) := prodN_seq' p1 ++ prodN_seq' p2.
 
 (* Returns the sequence associated to a buffer. *)
-Equations buffer_seq' {A lvl n C} : buffer A lvl n C -> list A :=
+Equations buffer_seq' {A l n C} : buffer A l n C -> list A :=
 buffer_seq' B0 := [];
 buffer_seq' (B1 a) := prodN_seq' a;
 buffer_seq' (B2 a b) := prodN_seq' a ++ prodN_seq' b;
@@ -386,35 +386,35 @@ buffer_seq' (B4 a b c d) := prodN_seq' a ++ prodN_seq' b ++ prodN_seq' c ++
 buffer_seq' (B5 a b c d e) := prodN_seq' a ++ prodN_seq' b ++ prodN_seq' c ++
                                 prodN_seq' d ++ prodN_seq' e.
 
-(* Returns the sequence associated to a packet, provided the sequence
-   associated to its hole. *)
-Equations packet_seq' {A lvl hlvl pktn hn C} :
-  packet A lvl hlvl pktn hn C -> list A -> list A :=
-packet_seq' Hole l := l;
-packet_seq' (Packet p pkt s) l :=
-  buffer_seq' p ++ packet_seq' pkt l ++ buffer_seq' s.
+(* Returns the sequence associated to a packet,
+   given the sequence [accu] associated to its hole. *)
+Equations packet_seq' {A l hl pktn hn C} :
+  packet A l hl pktn hn C -> list A -> list A :=
+packet_seq' Hole accu := accu;
+packet_seq' (Packet p pkt s) accu :=
+  buffer_seq' p ++ packet_seq' pkt accu ++ buffer_seq' s.
 
 (* Returns the sequence associated to a chain. *)
-Equations chain_seq' {A lvl n C} : chain A lvl n C -> list A :=
+Equations chain_seq' {A l n C} : chain A l n C -> list A :=
 chain_seq' (Ending b) := buffer_seq' b;
 chain_seq' (Chain _ pkt c) := packet_seq' pkt (chain_seq' c).
 
 (* Returns the first 4 elements of the sequence associated to a decomposed
    buffer.*)
-Equations decompose_main_seq' {A lvl n} : decompose A lvl n -> list A :=
+Equations decompose_main_seq' {A l n} : decompose A l n -> list A :=
 decompose_main_seq' (Underflow opt) := optionN_seq opt;
 decompose_main_seq' (Ok b) := buffer_seq' b;
 decompose_main_seq' (Overflow b _) := buffer_seq' b.
 
 (* Returns the sequence associated to a decomposed buffer from the 5th element
    to the end  *)
-Equations decompose_rest_seq' {A lvl n} : decompose A lvl n -> list A :=
+Equations decompose_rest_seq' {A l n} : decompose A l n -> list A :=
 decompose_rest_seq' (Underflow _) := [];
 decompose_rest_seq' (Ok _) := [];
 decompose_rest_seq' (Overflow _ p) := prodN_seq' p.
 
 (* Returns the sequence associated to a sandwiched buffer. *)
-Equations sandwich_seq' {A lvl n} : sandwich A lvl n -> list A :=
+Equations sandwich_seq' {A l n} : sandwich A l n -> list A :=
 sandwich_seq' (Alone opt) := optionN_seq opt;
 sandwich_seq' (Sandwich x b y) := prodN_seq' x ++ buffer_seq' b ++ prodN_seq' y.
 
@@ -438,7 +438,7 @@ Qed.
 #[export] Hint Rewrite @prodN_seq'_equiv : models.
 
 (* [buffer_seq'] is equivalent to [buffer_seq] *)
-Lemma buffer_seq'_equiv {A lvl n C} (b : buffer A lvl n C) :
+Lemma buffer_seq'_equiv {A l n C} (b : buffer A l n C) :
   buffer_seq' b = buffer_seq b.
 Proof.
   funelim (buffer_seq' b); hauto db:models.
@@ -447,17 +447,17 @@ Qed.
 #[export] Hint Rewrite @buffer_seq'_equiv : models.
 
 (* [packet_seq'] is equivalent to [packet_seq] *)
-Lemma packet_seq'_equiv {A lvl hlvl pktn hn C}
-  (pkt : packet A lvl hlvl pktn hn C) (l : list A) :
-  packet_seq' pkt l = packet_seq pkt l.
+Lemma packet_seq'_equiv {A l hl pktn hn C}
+  (pkt : packet A l hl pktn hn C) (accu : list A) :
+  packet_seq' pkt accu = packet_seq pkt accu.
 Proof.
-  funelim (packet_seq' pkt l); hauto db:models.
+  funelim (packet_seq' pkt accu); hauto db:models.
 Qed.
 
 #[export] Hint Rewrite @packet_seq'_equiv : models.
 
 (* [chain_seq'] is equivalent to [chain_seq] *)
-Lemma chain_seq'_equiv {A lvl n C} (c : chain A lvl n C) :
+Lemma chain_seq'_equiv {A l n C} (c : chain A l n C) :
   chain_seq' c = chain_seq c.
 Proof.
   funelim (chain_seq' c); hauto db:models.
@@ -466,7 +466,7 @@ Qed.
 #[export] Hint Rewrite @chain_seq'_equiv : models.
 
 (* [decompose_main_seq'] is equivalent to [decompose_main_seq] *)
-Lemma decompose_main_seq'_equiv {A lvl n} (d : decompose A lvl n) :
+Lemma decompose_main_seq'_equiv {A l n} (d : decompose A l n) :
   decompose_main_seq' d = decompose_main_seq d.
 Proof.
   funelim (decompose_main_seq' d); hauto db:models.
@@ -475,7 +475,7 @@ Qed.
 #[export] Hint Rewrite @decompose_main_seq'_equiv : models.
 
 (* [decompose_rest_seq'] is equivalent to [decompose_rest_seq] *)
-Lemma decompose_rest_seq'_equiv {A lvl n} (d : decompose A lvl n) :
+Lemma decompose_rest_seq'_equiv {A l n} (d : decompose A l n) :
   decompose_rest_seq' d = decompose_rest_seq d.
 Proof.
   funelim (decompose_rest_seq' d); hauto db:models.
@@ -484,7 +484,7 @@ Qed.
 #[export] Hint Rewrite @decompose_rest_seq'_equiv : models.
 
 (* [sandwich_seq'] is equivalent to [sandwich_seq] *)
-Lemma sandwich_seq'_equiv {A lvl n} (s : sandwich A lvl n) :
+Lemma sandwich_seq'_equiv {A l n} (s : sandwich A l n) :
   sandwich_seq' s = sandwich_seq s.
 Proof.
   funelim (sandwich_seq' s); hauto db:models.
@@ -520,39 +520,39 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 #[local] Obligation Tactic := try (cbn; hauto db:rlist).
 
 (* Pushes on a green buffer. *)
-Equations green_push {A lvl n}
-  (x : prodN A lvl) (b : buffer A lvl n green) :
-  { b' : buffer A lvl (S n) yellow |
+Equations green_push {A l n}
+  (x : prodN A l) (b : buffer A l n green) :
+  { b' : buffer A l (S n) yellow |
     buffer_seq b' = prodN_seq x ++ buffer_seq b } :=
 green_push x (B2 a b)   := ? B3 x a b;
 green_push x (B3 a b c) := ? B4 x a b c.
 
 (* Injects on a green buffer. *)
-Equations green_inject {A lvl n}
-  (b : buffer A lvl n green) (x : prodN A lvl) :
-  { b' : buffer A lvl (S n) yellow |
+Equations green_inject {A l n}
+  (b : buffer A l n green) (x : prodN A l) :
+  { b' : buffer A l (S n) yellow |
     buffer_seq b' = buffer_seq b ++ prodN_seq x } :=
 green_inject (B2 a b)   x := ? B3 a b x;
 green_inject (B3 a b c) x := ? B4 a b c x.
 
 (* Pops off a green buffer. *)
-Equations green_pop {A lvl n} (b : buffer A lvl n green) :
-  { '(x, b') : prodN A lvl * buffer A lvl (Nat.pred n) yellow |
+Equations green_pop {A l n} (b : buffer A l n green) :
+  { '(x, b') : prodN A l * buffer A l (Nat.pred n) yellow |
     buffer_seq b = prodN_seq x ++ buffer_seq b' } :=
 green_pop (B2 a b)   := ? (a, B1 b);
 green_pop (B3 a b c) := ? (a, B2 b c).
 
 (* Ejects off a green buffer. *)
-Equations green_eject {A lvl n} (b : buffer A lvl n green) :
-  { '(b', x) : buffer A lvl (Nat.pred n) yellow * prodN A lvl |
+Equations green_eject {A l n} (b : buffer A l n green) :
+  { '(b', x) : buffer A l (Nat.pred n) yellow * prodN A l |
     buffer_seq b = buffer_seq b' ++ prodN_seq x } :=
 green_eject (B2 a b)   := ? (B1 a, b);
 green_eject (B3 a b c) := ? (B2 a b, c).
 
 (* Pushes on a yellow buffer. *)
-Equations yellow_push {A lvl n}
-  (x : prodN A lvl) (b : buffer A lvl n yellow) :
-  { b' : buffer A lvl (S n) red |
+Equations yellow_push {A l n}
+  (x : prodN A l) (b : buffer A l n yellow) :
+  { b' : buffer A l (S n) red |
     buffer_seq b' = prodN_seq x ++ buffer_seq b } :=
 yellow_push x (B1 a)       := ? B2 x a;
 yellow_push x (B2 a b)     := ? B3 x a b;
@@ -560,9 +560,9 @@ yellow_push x (B3 a b c)   := ? B4 x a b c;
 yellow_push x (B4 a b c d) := ? B5 x a b c d.
 
 (* Injects on a yellow buffer. *)
-Equations yellow_inject {A lvl n}
-  (b : buffer A lvl n yellow) (x : prodN A lvl) :
-  { b' : buffer A lvl (S n) red |
+Equations yellow_inject {A l n}
+  (b : buffer A l n yellow) (x : prodN A l) :
+  { b' : buffer A l (S n) red |
     buffer_seq b' = buffer_seq b ++ prodN_seq x } :=
 yellow_inject (B1 a)       x := ? B2 a x;
 yellow_inject (B2 a b)     x := ? B3 a b x;
@@ -570,8 +570,8 @@ yellow_inject (B3 a b c)   x := ? B4 a b c x;
 yellow_inject (B4 a b c d) x := ? B5 a b c d x.
 
 (* Pops off a yellow buffer. *)
-Equations yellow_pop {A lvl n} (b : buffer A lvl n yellow) :
-  { '(x, b') : prodN A lvl * buffer A lvl (Nat.pred n) red |
+Equations yellow_pop {A l n} (b : buffer A l n yellow) :
+  { '(x, b') : prodN A l * buffer A l (Nat.pred n) red |
     buffer_seq b = prodN_seq x ++ buffer_seq b' } :=
 yellow_pop (B1 a)       := ? (a, B0);
 yellow_pop (B2 a b)     := ? (a, B1 b);
@@ -579,8 +579,8 @@ yellow_pop (B3 a b c)   := ? (a, B2 b c);
 yellow_pop (B4 a b c d) := ? (a, B3 b c d).
 
 (* Ejects off a yellow buffer. *)
-Equations yellow_eject {A lvl n} (b : buffer A lvl n yellow) :
-  { '(b', x) : buffer A lvl (Nat.pred n) red * prodN A lvl |
+Equations yellow_eject {A l n} (b : buffer A l n yellow) :
+  { '(b', x) : buffer A l (Nat.pred n) red * prodN A l |
     buffer_seq b = buffer_seq b' ++ prodN_seq x } :=
 yellow_eject (B1 a)       := ? (B0, a);
 yellow_eject (B2 a b)     := ? (B1 a, b);
@@ -588,9 +588,9 @@ yellow_eject (B3 a b c)   := ? (B2 a b, c);
 yellow_eject (B4 a b c d) := ? (B3 a b c, d).
 
 (* Pushes on a buffer, and returns a green chain. *)
-Equations buffer_push {A lvl n C}
-  (x : prodN A lvl) (b : buffer A lvl n C) :
-  { c : chain A lvl (S n) green |
+Equations buffer_push {A l n C}
+  (x : prodN A l) (b : buffer A l n C) :
+  { c : chain A l (S n) green |
     chain_seq c = prodN_seq x ++ buffer_seq b } :=
 buffer_push x B0 := ? Ending (B1 x);
 buffer_push x (B1 a) := ? Ending (B2 x a);
@@ -601,9 +601,9 @@ buffer_push x (B5 a b c d e) :=
   ? Chain G (Packet (B3 x a b) Hole (B3 c d e)) (Ending B0).
 
 (* Injects on a buffer, and returns a green chain. *)
-Equations buffer_inject {A lvl n C}
-  (b : buffer A lvl n C) (x : prodN A lvl) :
-  { c : chain A lvl (S n) green |
+Equations buffer_inject {A l n C}
+  (b : buffer A l n C) (x : prodN A l) :
+  { c : chain A l (S n) green |
     chain_seq c = buffer_seq b ++ prodN_seq x } :=
 buffer_inject B0 x := ? Ending (B1 x);
 buffer_inject (B1 a) x := ? Ending (B2 a x);
@@ -615,8 +615,8 @@ buffer_inject (B5 a b c d e) x :=
 
 (* Pops off a buffer, and returns an option.
    Extra properties about the size of the buffer are returned. *)
-Equations buffer_pop {A lvl n C} (b : buffer A lvl n C) :
-  { o : option (prodN A lvl * buffer A lvl (Nat.pred n) red) |
+Equations buffer_pop {A l n C} (b : buffer A l n C) :
+  { o : option (prodN A l * buffer A l (Nat.pred n) red) |
     match o with
     | None => buffer_seq b = [] /\ n = 0
     | Some (x, b') => buffer_seq b = prodN_seq x ++ buffer_seq b' /\
@@ -631,8 +631,8 @@ buffer_pop (B5 a b c d e) := ? Some (a, B4 b c d e).
 
 (* Ejects off a buffer, and returns an option.
    Extra properties about the n of the buffer are returned. *)
-Equations buffer_eject {A lvl n C} (b : buffer A lvl n C) :
-  { o : option (buffer A lvl (Nat.pred n) red * prodN A lvl) |
+Equations buffer_eject {A l n C} (b : buffer A l n C) :
+  { o : option (buffer A l (Nat.pred n) red * prodN A l) |
     match o with
     | None => buffer_seq b = [] /\ n = 0
     | Some (b', x) => buffer_seq b = buffer_seq b' ++ prodN_seq x /\
@@ -646,8 +646,8 @@ buffer_eject (B4 a b c d) := ? Some (B3 a b c, d);
 buffer_eject (B5 a b c d e) := ? Some (B4 a b c d, e).
 
 (* Pushes then ejects. *)
-Equations prefix_rot {A lvl n C} (x : prodN A lvl) (b : buffer A lvl n C) :
-  { '(b', y) : buffer A lvl n C * prodN A lvl |
+Equations prefix_rot {A l n C} (x : prodN A l) (b : buffer A l n C) :
+  { '(b', y) : buffer A l n C * prodN A l |
     prodN_seq x ++ buffer_seq b = buffer_seq b' ++ prodN_seq y } :=
 prefix_rot x B0 := ? (B0, x);
 prefix_rot x (B1 a) := ? (B1 x, a);
@@ -657,8 +657,8 @@ prefix_rot x (B4 a b c d) := ? (B4 x a b c, d);
 prefix_rot x (B5 a b c d e) := ? (B5 x a b c d, e).
 
 (* Injects then pops. *)
-Equations suffix_rot {A lvl n C} (b : buffer A lvl n C) (y : prodN A lvl) :
-  { '(x, b') : prodN A lvl * buffer A lvl n C |
+Equations suffix_rot {A l n C} (b : buffer A l n C) (y : prodN A l) :
+  { '(x, b') : prodN A l * buffer A l n C |
     buffer_seq b ++ prodN_seq y = prodN_seq x ++ buffer_seq b' } :=
 suffix_rot B0 x := ? (x, B0);
 suffix_rot (B1 a) x := ? (a, B1 x);
@@ -668,22 +668,22 @@ suffix_rot (B4 a b c d) x := ? (a, B4 b c d x);
 suffix_rot (B5 a b c d e) x := ? (a, B5 b c d e x).
 
 (* Merges an option and a pair to create a green buffer. *)
-Equations prefix23 {A lvl s} (o : optionN A lvl s) (p: prodN A (S lvl)) :
-  { b : buffer A lvl (2 + s) green |
+Equations prefix23 {A l s} (o : optionN A l s) (p: prodN A (S l)) :
+  { b : buffer A l (2 + s) green |
     buffer_seq b = optionN_seq o ++ prodN_seq p } :=
 prefix23  NoneN    (prodS b c) := ? B2 b c;
 prefix23 (SomeN a) (prodS b c) := ? B3 a b c.
 
 (* Merges a pair and an option to create a green buffer. *)
-Equations suffix23 {A lvl s} (p : prodN A (S lvl)) (o : optionN A lvl s) :
-  { b : buffer A lvl (2 + s) green |
+Equations suffix23 {A l s} (p : prodN A (S l)) (o : optionN A l s) :
+  { b : buffer A l (2 + s) green |
     buffer_seq b = prodN_seq p ++ optionN_seq o } :=
 suffix23 (prodS a b)  NoneN    := ? B2 a b;
 suffix23 (prodS a b) (SomeN c) := ? B3 a b c.
 
 (* Merges an element and an option to create a yellow buffer. *)
-Equations suffix12 {A lvl s} (x : prodN A lvl) (o : optionN A lvl s) :
-  { b : buffer A lvl (S s) yellow |
+Equations suffix12 {A l s} (x : prodN A l) (o : optionN A l s) :
+  { b : buffer A l (S s) yellow |
     buffer_seq b = prodN_seq x ++ optionN_seq o } :=
 suffix12 x  NoneN    := ? B1 x;
 suffix12 x (SomeN y) := ? B2 x y.
@@ -691,8 +691,8 @@ suffix12 x (SomeN y) := ? B2 x y.
 (* Returns the decomposed version of a buffer. Here, it is a prefix
    decomposition: when the buffer has 4 or 5 elements, those at the end are
    set appart. *)
-Equations prefix_decompose {A lvl n C} (b : buffer A lvl n C) :
-  { dec : decompose A lvl n |
+Equations prefix_decompose {A l n C} (b : buffer A l n C) :
+  { dec : decompose A l n |
     buffer_seq b = decompose_main_seq dec ++ decompose_rest_seq dec } :=
 prefix_decompose B0 := ? Underflow NoneN;
 prefix_decompose (B1 a) := ? Underflow (SomeN a);
@@ -704,8 +704,8 @@ prefix_decompose (B5 a b c d e) := ? Overflow (B3 a b c) (prodS d e).
 (* Returns the decomposed version of a buffer. Here, it is a suffix
    decomposition: when the buffer has 4 or 5 elements, those at the start are
    set appart. *)
-Equations suffix_decompose {A lvl n C} (b : buffer A lvl n C) :
-  { dec : decompose A lvl n |
+Equations suffix_decompose {A l n C} (b : buffer A l n C) :
+  { dec : decompose A l n |
     buffer_seq b = decompose_rest_seq dec ++ decompose_main_seq dec } :=
 suffix_decompose B0 := ? Underflow NoneN;
 suffix_decompose (B1 a) := ? Underflow (SomeN a);
@@ -715,8 +715,8 @@ suffix_decompose (B4 a b c d) := ? Overflow (B2 c d) (prodS a b);
 suffix_decompose (B5 a b c d e) := ? Overflow (B3 c d e) (prodS a b).
 
 (* Returns the sandwiched version of a buffer. *)
-Equations buffer_unsandwich {A lvl n C} (b : buffer A lvl n C) :
-  { sw : sandwich A lvl n | buffer_seq b = sandwich_seq sw } :=
+Equations buffer_unsandwich {A l n C} (b : buffer A l n C) :
+  { sw : sandwich A l n | buffer_seq b = sandwich_seq sw } :=
 buffer_unsandwich B0 := ? Alone NoneN;
 buffer_unsandwich (B1 a) := ? Alone (SomeN a);
 buffer_unsandwich (B2 a b) := ? Sandwich a B0 b;
@@ -728,8 +728,8 @@ buffer_unsandwich (B5 a b c d e) := ? Sandwich a (B3 b c d) e.
 
 (* Converts a n-buffer to a (n+1)-buffer. If the buffer has an odd number of
    elements, the first is returned via an option. *)
-Equations buffer_halve {A lvl n C} (b : buffer A lvl n C) :
-  { '(o, b') : optionN A lvl (n mod 2) * buffer A (S lvl) (n / 2) red |
+Equations buffer_halve {A l n C} (b : buffer A l n C) :
+  { '(o, b') : optionN A l (n mod 2) * buffer A (S l) (n / 2) red |
     buffer_seq b = optionN_seq o ++ buffer_seq b' } :=
 buffer_halve B0 := ? (NoneN, B0);
 buffer_halve (B1 a) := ? (SomeN a, B0);
@@ -739,22 +739,22 @@ buffer_halve (B4 a b c d) := ? (NoneN, B2 (prodS a b) (prodS c d));
 buffer_halve (B5 a b c d e) := ? (SomeN a, B2 (prodS b c) (prodS d e)).
 
 (* Makes a non-red buffer yellow. *)
-Equations to_yellow {A lvl s g y} :
-  buffer A lvl s (Mix g y NoRed) -> buffer A lvl s yellow :=
+Equations to_yellow {A l s g y} :
+  buffer A l s (Mix g y NoRed) -> buffer A l s yellow :=
 to_yellow (B1 a) := B1 a;
 to_yellow (B2 a b) := B2 a b;
 to_yellow (B3 a b c) := B3 a b c;
 to_yellow (B4 a b c d) := B4 a b c d.
 
 (* Proves the sequence of a buffer remains the same when it is made yellow. *)
-Lemma to_yellow_seq [A lvl n g y] (b : buffer A lvl n (Mix g y NoRed)) :
+Lemma to_yellow_seq [A l n g y] (b : buffer A l n (Mix g y NoRed)) :
   buffer_seq (to_yellow b) = buffer_seq b.
 Proof.
   dependent elimination b; reflexivity.
 Qed.
 
 (* Makes a buffer of any color red. *)
-Equations to_red {A lvl s C} : buffer A lvl s C -> buffer A lvl s red :=
+Equations to_red {A l s C} : buffer A l s C -> buffer A l s red :=
 to_red B0 := B0;
 to_red (B1 a) := B1 a;
 to_red (B2 a b) := B2 a b;
@@ -763,7 +763,7 @@ to_red (B4 a b c d) := B4 a b c d;
 to_red (B5 a b c d e) := B5 a b c d e.
 
 (* Proves the sequence of a buffer remains the same when it is made red. *)
-Lemma to_red_seq [A lvl n C] (b : buffer A lvl n C) :
+Lemma to_red_seq [A l n C] (b : buffer A l n C) :
   buffer_seq (to_red b) = buffer_seq b.
 Proof.
   destruct b; reflexivity.
@@ -776,11 +776,11 @@ Qed.
 (* Takes a n-buffer of any color and a green (n+1)-buffer, rearranges elements
    contained in them, and returns a green buffer and a yellow buffer of pairs.
    The order of elements is preserved. *)
-Equations green_prefix_concat {A lvl n1 n2 C}
-  (b1 : buffer A lvl n1 C)
-  (b2 : buffer A (S lvl) n2 green) :
-  { '(b1', b2') : buffer A lvl (2 + n1 mod 2) green *
-                  buffer A (S lvl) (Nat.pred (n1 / 2 + n2)) yellow |
+Equations green_prefix_concat {A l n1 n2 C}
+  (b1 : buffer A l n1 C)
+  (b2 : buffer A (S l) n2 green) :
+  { '(b1', b2') : buffer A l (2 + n1 mod 2) green *
+                  buffer A (S l) (Nat.pred (n1 / 2 + n2)) yellow |
     buffer_seq b1 ++ buffer_seq b2 =
     buffer_seq b1' ++ buffer_seq b2' } :=
 green_prefix_concat B0 b2 with green_pop b2 => {
@@ -797,11 +797,11 @@ green_prefix_concat (B5 a b c d e) b2 with green_push (prodS d e) b2 => {
 (* Takes a green (n+1)-buffer and a n-buffer of any color, rearranges elements
    contained in them, and returns a yellow buffer of pairs and a green buffer.
    The order of elements is preserved. *)
-Equations green_suffix_concat {A lvl n1 n2 C}
-  (b1 : buffer A (S lvl) n1 green)
-  (b2 : buffer A lvl n2 C) :
-  { '(b1', b2') : buffer A (S lvl) (Nat.pred (n2 / 2 + n1)) yellow *
-                  buffer A lvl (2 + n2 mod 2) green |
+Equations green_suffix_concat {A l n1 n2 C}
+  (b1 : buffer A (S l) n1 green)
+  (b2 : buffer A l n2 C) :
+  { '(b1', b2') : buffer A (S l) (Nat.pred (n2 / 2 + n1)) yellow *
+                  buffer A l (2 + n2 mod 2) green |
     buffer_seq b1 ++ buffer_seq b2 =
     buffer_seq b1' ++ buffer_seq b2' } :=
 green_suffix_concat b1 B0 with green_eject b1 => {
@@ -819,11 +819,11 @@ green_suffix_concat b1 (B5 a b c d e) with green_inject b1 (prodS a b) => {
    contained in them, and returns a green buffer and a buffer of pairs of any
    color.
    The order of elements is preserved. *)
-Equations yellow_prefix_concat {A lvl n1 n2 C}
-  (b1 : buffer A lvl n1 C)
-  (b2 : buffer A (S lvl) n2 yellow) :
-  { '(b1', b2') : buffer A lvl (2 + n1 mod 2) green *
-                  buffer A (S lvl) (Nat.pred (n1 / 2 + n2)) red |
+Equations yellow_prefix_concat {A l n1 n2 C}
+  (b1 : buffer A l n1 C)
+  (b2 : buffer A (S l) n2 yellow) :
+  { '(b1', b2') : buffer A l (2 + n1 mod 2) green *
+                  buffer A (S l) (Nat.pred (n1 / 2 + n2)) red |
     buffer_seq b1 ++ buffer_seq b2 =
     buffer_seq b1' ++ buffer_seq b2' } :=
 yellow_prefix_concat B0 b2 with yellow_pop b2 => {
@@ -841,11 +841,11 @@ yellow_prefix_concat (B5 a b c d e) b2 with yellow_push (prodS d e) b2 => {
    contained in them, and returns a buffer of pairs of any color and a green
    buffer.
    The order of elements is preserved. *)
-Equations yellow_suffix_concat {A lvl n1 n2 C}
-  (b1 : buffer A (S lvl) n1 yellow)
-  (b2 : buffer A lvl n2 C) :
-  { '(b1', b2') : buffer A (S lvl) (Nat.pred (n2 / 2 + n1)) red *
-                  buffer A lvl (2 + n2 mod 2) green |
+Equations yellow_suffix_concat {A l n1 n2 C}
+  (b1 : buffer A (S l) n1 yellow)
+  (b2 : buffer A l n2 C) :
+  { '(b1', b2') : buffer A (S l) (Nat.pred (n2 / 2 + n1)) red *
+                  buffer A l (2 + n2 mod 2) green |
     buffer_seq b1 ++ buffer_seq b2 =
     buffer_seq b1' ++ buffer_seq b2' } :=
 yellow_suffix_concat b1 B0 with yellow_eject b1 => {
@@ -860,29 +860,29 @@ yellow_suffix_concat b1 (B5 a b c d e) with yellow_inject b1 (prodS a b) => {
   | ? b3 := ? (b3, B3 c d e) }.
 
 (* Pushes an option on a buffer, and returns a green chain. *)
-Equations green_opt_push {A lvl nb no}
-    (o : optionN A lvl no) (b : buffer A lvl nb green) :
-  { c : chain A lvl (no + nb) green |
+Equations green_opt_push {A l nb no}
+    (o : optionN A l no) (b : buffer A l nb green) :
+  { c : chain A l (no + nb) green |
     chain_seq c = optionN_seq o ++ buffer_seq b } :=
 green_opt_push NoneN b := ? Ending (to_red b);
 green_opt_push (SomeN a) (B2 b c) := ? Ending (B3 a b c);
 green_opt_push (SomeN a) (B3 b c d) := ? Ending (B4 a b c d).
 
 (* Injects an option on a buffer, and returns a green chain. *)
-Equations green_opt_inject {A lvl nb no}
-    (b : buffer A lvl nb green) (o : optionN A lvl no) :
-  { c : chain A lvl (no + nb) green |
+Equations green_opt_inject {A l nb no}
+    (b : buffer A l nb green) (o : optionN A l no) :
+  { c : chain A l (no + nb) green |
     chain_seq c = buffer_seq b ++ optionN_seq o } :=
 green_opt_inject b NoneN := ? Ending (to_red b);
 green_opt_inject (B2 a b) (SomeN c) := ? Ending (B3 a b c);
 green_opt_inject (B3 a b c) (SomeN d) := ? Ending (B4 a b c d).
 
 (* Creates a green chain from 3 options. *)
-Equations chain_of_opt3 {A lvl s1 s2 s3}
-  (o1 : optionN A lvl s1)
-  (o2 : optionN A (S lvl) s2)
-  (o3 : optionN A lvl s3) :
-  { c : chain A lvl (s1 + 2 * s2 + s3) green |
+Equations chain_of_opt3 {A l s1 s2 s3}
+  (o1 : optionN A l s1)
+  (o2 : optionN A (S l) s2)
+  (o3 : optionN A l s3) :
+  { c : chain A l (s1 + 2 * s2 + s3) green |
     chain_seq c = optionN_seq o1 ++ optionN_seq o2 ++ optionN_seq o3 } :=
 chain_of_opt3 NoneN NoneN NoneN := ? Ending B0;
 chain_of_opt3 (SomeN a) NoneN NoneN := ? Ending (B1 a);
@@ -894,8 +894,8 @@ chain_of_opt3 NoneN (SomeN (prodS a b)) (SomeN c) := ? Ending (B3 a b c);
 chain_of_opt3 (SomeN a) (SomeN (prodS b c)) (SomeN d) := ? Ending (B4 a b c d).
 
 (* Provided the equality of two natural numbers, translates a chain of size the first into a chain of size the second. *)
-Equations translate {A lvl n1 n2 C} (c : chain A lvl n1 C) :
-  n1 = n2 -> { c' : chain A lvl n2 C | chain_seq c' = chain_seq c } :=
+Equations translate {A l n1 n2 C} (c : chain A l n1 C) :
+  n1 = n2 -> { c' : chain A l n2 C | chain_seq c' = chain_seq c } :=
 translate c eq with comp_eq eq => { | eq_refl := ? c }.
 
 (* Proves that all natural numbers [n] can be writen as [n mod 2] plus 2 times
@@ -920,11 +920,11 @@ Qed.
 (* Takes a prefix buffer, a child buffer, and a suffix buffer, and rearranges
    all elements contained in these buffers to form a green chain.
    The order of elements is preserved. *)
-Equations make_small {A lvl n1 n2 n3 C1 C2 C3}
-  (b1 : buffer A lvl n1 C1)
-  (b2 : buffer A (S lvl) n2 C2)
-  (b3 : buffer A lvl n3 C3) :
-  { c : chain A lvl (n1 + 2 * n2 + n3) green |
+Equations make_small {A l n1 n2 n3 C1 C2 C3}
+  (b1 : buffer A l n1 C1)
+  (b2 : buffer A (S l) n2 C2)
+  (b3 : buffer A l n3 C3) :
+  { c : chain A l (n1 + 2 * n2 + n3) green |
     chain_seq c = buffer_seq b1 ++ buffer_seq b2 ++ buffer_seq b3 } :=
 make_small b1 b2 b3 with prefix_decompose b1, suffix_decompose b3 => {
   | ? Underflow p1, ? Underflow s1 with buffer_unsandwich b2 => {
@@ -996,7 +996,7 @@ Qed.
 
 (* Proves that if a natural number represents the size of a non-red buffer,
    then it's the successor of another natural number. *)
-Lemma yellow_size {A lvl n g y} (b : buffer A lvl n (Mix g y NoRed)) :
+Lemma yellow_size {A l n g y} (b : buffer A l n (Mix g y NoRed)) :
   exists p, n = S p.
 Proof.
   dependent elimination b.
@@ -1013,8 +1013,8 @@ Tactic Notation "yellow_size" hyp(b) "as" ident(H) :=
   rewrite H.
 
 (* Makes a red chain green. *)
-Equations green_of_red {A lvl n} (c : chain A lvl n red) :
-  { c' : chain A lvl n green | chain_seq c' = chain_seq c } :=
+Equations green_of_red {A l n} (c : chain A l n red) :
+  { c' : chain A l n green | chain_seq c' = chain_seq c } :=
 green_of_red (Chain R (Packet p1 Hole s1) (Ending b))
   with make_small p1 b s1 => { | ? c' := ? c' };
 green_of_red (Chain R (Packet p1 Hole s1) (Chain G (Packet p2 child s2) c))
@@ -1066,20 +1066,20 @@ Next Obligation.
 Qed.
 
 (* Makes a green or red chain green. *)
-Equations ensure_green {A lvl n g r}
-  (cd : chain A lvl n (Mix g NoYellow r)) :
-  { cd' : chain A lvl n green | chain_seq cd' = chain_seq cd } :=
+Equations ensure_green {A l n g r}
+  (cd : chain A l n (Mix g NoYellow r)) :
+  { cd' : chain A l n green | chain_seq cd' = chain_seq cd } :=
 ensure_green (Ending b)      := ? Ending b;
 ensure_green (Chain G pkt c) := ? Chain G pkt c;
 ensure_green (Chain R pkt c) := green_of_red (Chain R pkt c).
 
 (* Takes a prefix non-red buffer, a child packet and a suffix non-red buffer,
    and a following green or red chain, and makes a deque out of them. *)
-Equations make_yellow {A lvl ps pkts ss cs n} {gp yp ypkt gs ys gc rc}
+Equations make_yellow {A l ps pkts ss cs n} {gp yp ypkt gs ys gc rc}
   (p : buffer A 0 ps (Mix gp yp NoRed))
-  (pkt : packet A 1 lvl pkts cs (Mix NoGreen ypkt NoRed))
+  (pkt : packet A 1 l pkts cs (Mix NoGreen ypkt NoRed))
   (s : buffer A 0 ss (Mix gs ys NoRed))
-  (c : chain A lvl cs (Mix gc NoYellow rc)) :
+  (c : chain A l cs (Mix gc NoYellow rc)) :
   n = ps + 2 * pkts + ss ->
   { d : deque A n | deque_seq d =
     buffer_seq p ++ packet_seq pkt (chain_seq c) ++ buffer_seq s } :=
@@ -1090,11 +1090,11 @@ make_yellow p1 child s1 c eq
 
 (* Takes a prefix buffer of any color, a child packet and a suffix buffer of
    any color, and a following green chain, and makes a deque out of them. *)
-Equations make_red {A lvl ps pkts ss cs n} {Cp ypkt Cs}
+Equations make_red {A l ps pkts ss cs n} {Cp ypkt Cs}
   (p : buffer A 0 ps Cp)
-  (pkt : packet A 1 lvl pkts cs (Mix NoGreen ypkt NoRed))
+  (pkt : packet A 1 l pkts cs (Mix NoGreen ypkt NoRed))
   (s : buffer A 0 ss Cs)
-  (c : chain A lvl cs green) :
+  (c : chain A l cs green) :
   n = ps + 2 * pkts + ss ->
   { d : deque A n | deque_seq d =
     buffer_seq p ++ packet_seq pkt (chain_seq c) ++ buffer_seq s } :=
