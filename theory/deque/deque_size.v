@@ -13,26 +13,32 @@ From Cadeque.utils Require Import comp_eq.
 (* |                                 Types                                  | *)
 (* +------------------------------------------------------------------------+ *)
 
+(* A level is a natural integer. *)
+Definition level := nat.
+
+(* A size is a natural integer. *)
+Definition size := nat.
+
 (* A type for products. *)
-Inductive prodN (A : Type) : nat -> Type :=
+Inductive prodN (A : Type) : level -> Type :=
   | prodZ : A -> prodN A 0
-  | prodS {n : nat} : prodN A n -> prodN A n -> prodN A (S n).
+  | prodS {n} : prodN A n -> prodN A n -> prodN A (S n).
 Arguments prodZ {A}.
 Arguments prodS {A n}.
 
 (* A type for sized options. *)
-Inductive optionN (A : Type) (lvl : nat) : nat -> Type :=
+Inductive optionN (A : Type) (lvl : level) : size -> Type :=
   | NoneN : optionN A lvl 0
   | SomeN : prodN A lvl -> optionN A lvl 1.
 Arguments NoneN {A lvl}.
 Arguments SomeN {A lvl}.
 
-(* In the following types, an natural number parameter is introduced : the
+(* In the following types, a natural number parameter is introduced : the
    [size] of the type. The size is simply the number of [prodN A lvl] that are
-   stored in the structure encoded. *)
+   stored in the structure. *)
 
 (* A type for sized buffers. *)
-Inductive buffer (A : Type) (lvl : nat) : nat -> color -> Type :=
+Inductive buffer (A : Type) (lvl : level) : size -> color -> Type :=
   | B0         : buffer A lvl 0 red
   | B1 {y r}   : prodN A lvl -> buffer A lvl 1 (Mix NoGreen y r)
   | B2 {g y r} : prodN A lvl -> prodN A lvl -> buffer A lvl 2 (Mix g y r)
@@ -50,14 +56,15 @@ Arguments B4 {A lvl y r}.
 Arguments B5 {A lvl}.
 
 (* A type for sized packets. *)
-Inductive packet (A : Type) (lvl : nat) : nat -> nat -> nat -> color -> Type :=
-  | Hole {size : nat} : packet A lvl lvl size size uncolored
+Inductive packet (A : Type) (lvl : level) : level -> size -> size -> color -> Type :=
+  | Hole {n} :
+      packet A lvl lvl n n uncolored
   | Packet {hlvl psize pktsize ssize hsize C y} :
       buffer A lvl psize C ->
       packet A (S lvl) hlvl pktsize hsize (Mix NoGreen y NoRed) ->
       buffer A lvl ssize C ->
       packet A lvl hlvl (psize + 2 * pktsize + ssize) hsize C.
-Arguments Hole {A lvl size}.
+Arguments Hole {A lvl n}.
 Arguments Packet {A lvl hlvl psize pktsize ssize hsize C y}.
 
 (* A type for the regularity relation. *)
@@ -67,46 +74,59 @@ Inductive regularity : color -> color -> Type :=
   | R       : regularity red    green.
 
 (* A type for sized chains. *)
-Inductive chain (A : Type) (lvl : nat) : nat -> color -> Type :=
-  | Ending {size : nat} : buffer A lvl size red -> chain A lvl size green
-  | Chain {hlvl size hsize : nat} {C1 C2 : color} :
+Inductive chain (A : Type) (lvl : level) : size -> color -> Type :=
+  | Ending {n} :
+      buffer A lvl n red ->
+      chain A lvl n green
+  | Chain {hlvl size hsize} {C1 C2 : color} :
       regularity C1 C2 ->
       packet A lvl hlvl size hsize C1 ->
       chain A hlvl hsize C2 ->
       chain A lvl size C1.
-Arguments Ending {A lvl size}.
+Arguments Ending {A lvl n}.
 Arguments Chain {A lvl hlvl size hsize C1 C2}.
 
 (* A type decomposing buffers according to their number of elements.
    Buffers with 0 or 1 element are decomposed into [Underflow];
    buffers with 2 or 3 elements are decomposed into [Ok];
    buffers with 4 or 5 elements are decomposed into [Overflow]. *)
-Inductive decompose (A : Type) (lvl : nat) : nat -> Type :=
-  | Underflow {size : nat} : optionN A lvl size -> decompose A lvl size
-  | Ok {size : nat} : buffer A lvl size green -> decompose A lvl size
-  | Overflow {size : nat} :
-    buffer A lvl size green -> prodN A (S lvl) -> decompose A lvl (S (S size)).
-Arguments Underflow {A lvl size}.
-Arguments Ok {A lvl size}.
-Arguments Overflow {A lvl size}.
+Inductive decompose (A : Type) (lvl : level) : size -> Type :=
+  | Underflow {n} :
+      optionN A lvl n ->
+      decompose A lvl n
+  | Ok {n} :
+      buffer A lvl n green ->
+      decompose A lvl n
+  | Overflow {n} :
+      buffer A lvl n green ->
+      prodN A (S lvl) ->
+      decompose A lvl (S (S n)).
+Arguments Underflow {A lvl n}.
+Arguments Ok {A lvl n}.
+Arguments Overflow {A lvl n}.
 
 (* A type decomposing a buffer into its first element, a central buffer, and
    its last element. If such a decomposition is not possible, an option
    representing the buffer is returned with [Alone]. *)
-Inductive sandwich (A : Type) (lvl : nat) : nat -> Type :=
-  | Alone {s : nat} : optionN A lvl s -> sandwich A lvl s
-  | Sandwich {s : nat} :
-    prodN A lvl -> buffer A lvl s red -> prodN A lvl -> sandwich A lvl (2 + s).
+Inductive sandwich (A : Type) (lvl : level) : size -> Type :=
+  | Alone {s} :
+      optionN A lvl s ->
+      sandwich A lvl s
+  | Sandwich {s} :
+      prodN A lvl ->
+      buffer A lvl s red ->
+      prodN A lvl ->
+      sandwich A lvl (2 + s).
 Arguments Alone {A lvl s}.
 Arguments Sandwich {A lvl s}.
 
 (* A type for sized deque. *)
-Inductive deque (A : Type) (size : nat) : Type :=
-  | T {g y} : chain A 0 size (Mix g y NoRed) -> deque A size.
-Arguments T {A size g y}.
+Inductive deque (A : Type) (n : size) : Type :=
+  | T {g y} : chain A 0 n (Mix g y NoRed) -> deque A n.
+Arguments T {A n g y}.
 
 (* +------------------------------------------------------------------------+ *)
-(* |                          Models functions                              | *)
+(* |                           Model functions                              | *)
 (* |   Most flexible definition, as instances of "concat-map" functions     | *)
 (* +------------------------------------------------------------------------+ *)
 
@@ -126,8 +146,8 @@ Opaque singleton.
 #[export] Hint Rewrite concat_app : rlist.
 
 (* In the following, functions [***_cmseq] assume the structure [***] contains
-   elements of type [T A lvl] where [T : Type -> nat -> Type], [A : Type] and
-   [lvl : nat].
+   elements of type [T A lvl] where [T : Type -> level -> Type], [A : Type] and
+   [lvl : level].
 
    These functions are needed for the implementation of catenable deques. In
    this implementation, non-catenable deques contain elements of type
@@ -146,7 +166,7 @@ Opaque singleton.
 
 (* Sequence + map + concat for products. *)
 Definition prodN_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl} : prodN (T A lvlt) lvl -> list A :=
   let fix local {lvl} (p : prodN (T A lvlt) lvl) : list A :=
@@ -162,7 +182,7 @@ Notation prodN_seq :=
 
 (* Ensures the correct behavior of products model functions. *)
 Lemma correct_prodN_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl} (p : prodN (T A lvlt) lvl) :
   prodN_cmseq f p = concat (map (f A lvlt) (prodN_seq p)).
@@ -177,7 +197,7 @@ optionN_seq (SomeN x) := prodN_seq x.
 
 (* Sequence + map + concat for buffers. *)
 Definition buffer_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} (b : buffer (T A lvlt) lvl size C) : list A :=
   match b with
@@ -199,7 +219,7 @@ Notation buffer_seq :=
 
 (* Ensures the correct behavior of buffers model functions. *)
 Lemma correct_buffer_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} (b : buffer (T A lvlt) lvl size C) :
   buffer_cmseq f b = concat (map (f A lvlt) (buffer_seq b)).
@@ -232,7 +252,7 @@ Qed.
 
 (* Sequence + map + concat for packets. *)
 Definition packet_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl hlvl pktsize hsize C} :
   packet (T A lvlt) lvl hlvl pktsize hsize C -> list A -> list A :=
@@ -252,7 +272,7 @@ Notation packet_seq :=
 
 (* Ensures the correct behavior of packets model functions. *)
 Lemma correct_packet_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl hlvl pktsize hsize C}
   (pkt : packet (T A lvlt) lvl hlvl pktsize hsize C) (l : list (T A lvlt)) :
@@ -270,7 +290,7 @@ Qed.
 
 (* Sequence + map + concat for chains. *)
 Definition chain_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} : chain (T A lvlt) lvl size C -> list A :=
   let fix local {lvl size C} (c : chain (T A lvlt) lvl size C) : list A :=
@@ -286,7 +306,7 @@ Notation chain_seq :=
 
 (* Ensures the correct behavior of chains model functions. *)
 Lemma correct_chain_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} (c : chain (T A lvlt) lvl size C) :
   chain_cmseq f c = concat (map (f A lvlt) (chain_seq c)).
@@ -318,7 +338,7 @@ sandwich_seq (Sandwich x b y) := prodN_seq x ++ buffer_seq b ++ prodN_seq y.
 
 (* Sequence + map + concat for deques. *)
 Definition deque_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt size} (d : deque (T A lvlt) size) : list A :=
   match d with
@@ -331,7 +351,7 @@ Notation deque_seq :=
 
 (* Ensures the correct behavior of deques model functions. *)
 Lemma correct_deque_cmseq
-  {T : Type -> nat -> Type}
+  {T : Type -> level -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt size} (d : deque (T A lvlt) size) :
   deque_cmseq f d = concat (map (f A lvlt) (deque_seq d)).
@@ -1092,8 +1112,8 @@ Equations empty {A} : { d : deque A 0 | deque_seq d = [] } :=
 empty := ? T (Ending B0).
 
 (* Pushes on a deque. *)
-Equations push {A : Type} {size : nat} (x : A) (d : deque A size) :
-  { d' : deque A (S size) | deque_seq d' = [x] ++ deque_seq d } :=
+Equations push {A : Type} {n : size} (x : A) (d : deque A n) :
+  { d' : deque A (S n) | deque_seq d' = [x] ++ deque_seq d } :=
 push x (T (Ending b)) with buffer_push (prodZ x) b => { | ? b' => ? T b' };
 push x (T (Chain G (Packet p1 child s1) c))
   with green_push (prodZ x) p1 => {
@@ -1103,8 +1123,8 @@ push x (T (Chain Y (Packet p1 child s1) c))
     | ? p1' with make_red p1' child s1 c eq_refl => { | ? d' => ? d' } }.
 
 (* Injects on a deque. *)
-Equations inject {A : Type} {size : nat} (d : deque A size) (x : A) :
-  { d' : deque A (S size) | deque_seq d' = deque_seq d ++ [x] } :=
+Equations inject {A : Type} {n : size} (d : deque A n) (x : A) :
+  { d' : deque A (S n) | deque_seq d' = deque_seq d ++ [x] } :=
 inject (T (Ending b)) x with buffer_inject b (prodZ x) => { | ? b' => ? T b' };
 inject (T (Chain G (Packet p1 child s1) c)) x
   with green_inject s1 (prodZ x) => {
@@ -1114,10 +1134,10 @@ inject (T (Chain Y (Packet p1 child s1) c)) x
     | ? s1' with make_red p1 child s1' c _ => { | ? d' => ? d' } }.
 
 (* Pops off a deque. *)
-Equations option_pop {A : Type} {size : nat} (d : deque A size) :
-  { o : option (A * deque A (Nat.pred size)) |
+Equations option_pop {A : Type} {n : size} (d : deque A n) :
+  { o : option (A * deque A (Nat.pred n)) |
     match o with
-    | None => deque_seq d = [] /\ size = 0
+    | None => deque_seq d = [] /\ n = 0
     | Some (x, d') => deque_seq d = [x] ++ deque_seq d'
     end } :=
 option_pop (T (Ending b)) with buffer_pop b => {
@@ -1141,17 +1161,17 @@ Next Obligation.
 Qed.
 
 (* Pops off a non-empty deque. *)
-Equations pop {A : Type} {size : nat} (d : deque A (S size)) :
-  { '(x, d') : A * deque A size | deque_seq d = [x] ++ deque_seq d' } :=
+Equations pop {A : Type} {n : size} (d : deque A (S n)) :
+  { '(x, d') : A * deque A n | deque_seq d = [x] ++ deque_seq d' } :=
 pop d with option_pop d => {
   | ? None := _;
   | ? Some (x, d') := ? (x, d') }.
 
 (* Ejects off a deque. *)
-Equations option_eject {A : Type} {size : nat} (d : deque A size) :
-  { o : option (deque A (Nat.pred size) * A) |
+Equations option_eject {A : Type} {n : size} (d : deque A n) :
+  { o : option (deque A (Nat.pred n) * A) |
     match o with
-    | None => deque_seq d = [] /\ size = 0
+    | None => deque_seq d = [] /\ n = 0
     | Some (d', x) => deque_seq d = deque_seq d' ++ [x]
     end } :=
 option_eject (T (Ending b)) with buffer_eject b => {
@@ -1175,8 +1195,8 @@ Next Obligation.
 Qed.
 
 (* Ejects off a non-empty deque. *)
-Equations eject {A : Type} {size : nat} (d : deque A (S size)) :
-  { '(d', x) : deque A size * A | deque_seq d = deque_seq d' ++ [x] } :=
+Equations eject {A : Type} {n : size} (d : deque A (S n)) :
+  { '(d', x) : deque A n * A | deque_seq d = deque_seq d' ++ [x] } :=
 eject d with option_eject d => {
   | ? None := _;
   | ? Some (d', x) := ? (d', x) }.
