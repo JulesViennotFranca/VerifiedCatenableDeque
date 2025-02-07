@@ -21,10 +21,10 @@ Definition size := nat.
 
 (* A type for products. *)
 Inductive prodN (A : Type) : level -> Type :=
-  | prodZ : A -> prodN A 0
-  | prodS {n} : prodN A n -> prodN A n -> prodN A (S n).
+  | prodZ     : A -> prodN A 0
+  | prodS {l} : prodN A l -> prodN A l -> prodN A (S l).
 Arguments prodZ {A}.
-Arguments prodS {A n}.
+Arguments prodS {A l}.
 
 (* A type for sized options. *)
 Inductive optionN (A : Type) (l : level) : size -> Type :=
