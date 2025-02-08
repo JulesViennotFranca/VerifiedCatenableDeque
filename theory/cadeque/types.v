@@ -36,8 +36,8 @@ Inductive node_coloring : size -> size -> arity -> color -> Type :=
 (* A type for general nodes, in the following, they will contain stored
    triples. *)
 Inductive node' (A : Type) : arity -> kind -> color -> Type :=
-  | Only_end {n} :
-      prefix' A (S n) ->
+  | Only_end {q} :
+      prefix' A (S q) ->
       node' A 0 only green
   | Only {qp qs a C} :
       node_coloring qp qs (S a) C ->
@@ -54,7 +54,7 @@ Inductive node' (A : Type) : arity -> kind -> color -> Type :=
       A * A ->
       suffix' A (5 + qs) ->
       node' A a right C.
-Arguments Only_end {A n}.
+Arguments Only_end {A q}.
 Arguments Only {A qp qs a C}.
 Arguments Left {A qp qs a C}.
 Arguments Right {A qp qs a C}.
