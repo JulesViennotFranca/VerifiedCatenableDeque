@@ -11,6 +11,10 @@
   Each of the three files `deque*.v` should begin with a comment
   explaining its role (and pointing to the other two).
 
+* Let every file name begin with a capital letter,
+  so that module names begin with a capital letter,
+  as in OCaml? (The paper assumes `Deque` is a module name.)
+
 * Clean up `README.md`.
 
   + Add a link to our paper.
