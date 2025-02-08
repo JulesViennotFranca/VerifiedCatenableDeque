@@ -206,4 +206,4 @@ Inductive semi_cadeque : Type -> level -> Type :=
 
 (* A type for cadeques. *)
 Inductive cadeque : Type -> Type :=
-  | T {A : Type} {a : arity} : chain A 0 a only green green -> cadeque A.
+  | T {A a} : chain A 0 a only green green -> cadeque A.

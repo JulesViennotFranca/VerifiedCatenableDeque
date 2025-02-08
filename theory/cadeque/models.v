@@ -20,10 +20,12 @@ Definition node'_cmseq
 Set Equations Transparent.
 
 (* Returns the sequence associated to a stored triple. *)
-Equations stored_seq A l
-  (st : stored A l) : list A by struct st :=
-stored_seq A l (Ground a) := [a];
-stored_seq A l (Small s) := buffer.cmseq stored_seq s;
+Equations stored_seq A l (st : stored A l) : list A
+by struct st :=
+stored_seq A l (Ground a) :=
+  [a];
+stored_seq A l (Small s) :=
+  buffer.cmseq stored_seq s;
 stored_seq A l (Big p child s) :=
   buffer.cmseq stored_seq p ++
   chain_seq child ++
@@ -32,25 +34,26 @@ stored_seq A l (Big p child s) :=
 (* Returns the sequence associated to a body. *)
 with body_seq {A hl tl hk tk} (b : body A hl tl hk tk) : list A -> list A
 by struct b :=
-body_seq Hole l := l;
-body_seq (Single_child hd b) l :=
-  node'_cmseq stored_seq hd (body_seq b l);
-body_seq (Pair_yellow hd b cr) l :=
-  node'_cmseq stored_seq hd (body_seq b l ++ chain_seq cr);
-body_seq (Pair_orange hd cl b) l :=
-  node'_cmseq stored_seq hd (chain_seq cl ++ body_seq b l)
+body_seq Hole accu :=
+  accu;
+body_seq (Single_child hd b) accu :=
+  node'_cmseq stored_seq hd (body_seq b accu);
+body_seq (Pair_yellow hd b cr) accu :=
+  node'_cmseq stored_seq hd (body_seq b accu ++ chain_seq cr);
+body_seq (Pair_orange hd cl b) accu :=
+  node'_cmseq stored_seq hd (chain_seq cl ++ body_seq b accu)
 
 (* Returns the sequence associated to a packet. *)
-with packet_seq {A hl tl ar k C} :
-  packet A hl tl ar k C -> list A -> list A :=
-packet_seq (Packet b tl) l := body_seq b (node'_cmseq stored_seq tl l)
+with packet_seq {A hl tl ar k C} : packet A hl tl ar k C -> list A -> list A :=
+packet_seq (Packet b tl) accu :=
+  body_seq b (node'_cmseq stored_seq tl accu)
 
 (* Returns the sequence associated to a chain. *)
-with chain_seq {A l ar k Cl Cr}
-  (c : chain A l ar k Cl Cr) : list A by struct c :=
+with chain_seq {A l ar k lC rC} (c : chain A l ar k lC rC) : list A
+by struct c :=
 chain_seq Empty := [];
 chain_seq (Single _ pkt rest) := packet_seq pkt (chain_seq rest);
-chain_seq (Pair cl cr) := chain_seq cl ++ chain_seq cr.
+chain_seq (Pair lc rc) := chain_seq lc ++ chain_seq rc.
 
 Arguments stored_seq {A l}.
 Arguments stored_seq {A l}.
@@ -108,7 +111,7 @@ Equations semi_cadeque_seq {A l} : semi_cadeque A l -> list A :=
 semi_cadeque_seq (Semi c) := chain_seq c.
 
 (* Returns the sequence associated to a cadeque. *)
-Equations cadeque_seq {A : Type} : cadeque A -> list A :=
+Equations cadeque_seq {A} : cadeque A -> list A :=
 cadeque_seq (T c) := chain_seq c.
 
 Unset Equations Transparent.
