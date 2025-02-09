@@ -398,8 +398,8 @@ Equations stored_of_right {A l ql C}
     stored A (S l) * (stored A l * stored A l) |
     stored_seq stored ++ stored_seq z2 ++ stored_seq z1 =
     suffix_seq sl ++ triple_seq tr } :=
-stored_of_right sl (Triple tc (Right nc (a1, a2) sr) child)
-  with buffer.inject2 sl a1 a2 => {
+stored_of_right sl (Triple tc (Right nc (st1, st2) sr) child)
+  with buffer.inject2 sl st1 st2 => {
     | ? p1 with buffer.eject2 sr => {
       | ? (s1, z2, z1) := ? (Big p1 child s1, (z2, z1)) } }.
 
@@ -415,7 +415,7 @@ Equations stored_of_left {A l qr C}
 stored_of_left (Triple tc (Left nc pl (z2, z1)) child) pr
   with buffer.push2 z2 z1 pr => {
     | ? s1 with buffer.pop2 pl => {
-      | ? (a1, a2, p1) := ? ((a1, a2), Big p1 child s1) } }.
+      | ? (st1, st2, p1) := ? ((st1, st2), Big p1 child s1) } }.
 
 (* Makes a left triple out of a pair of left and right triples. *)
 Equations left_of_pair {A l lC rC}
@@ -529,66 +529,66 @@ eject_right_green (Triple OPT (Right ON p s) child)
   with buffer.eject s => { | ? (s1, z1) :=
     ? (Ok_pt (Triple RT (Right RN p s1) child), z1) }.
 
-(* Pops from an green only triple. *)
+(* Pops from a green only triple. *)
 Equations pop_only_green {A l} (t : triple A l only green) :
-  { '(a1, pt) : stored A l * partial_triple A l single only |
-    triple_seq t = stored_seq a1 ++ pt_triple_seq pt } :=
+  { '(st1, pt) : stored A l * partial_triple A l single only |
+    triple_seq t = stored_seq st1 ++ pt_triple_seq pt } :=
 pop_only_green (Triple GT (Only_end p) Empty) with buffer.pop p => {
-  | ? (a1, p1) with buffer.has1 p1 => {
-    | ? None := ? (a1, Zero_element);
-    | ? Some p2 := ? (a1, Ok_pt (Triple GT (Only_end p2) Empty)) } };
+  | ? (st1, p1) with buffer.has1 p1 => {
+    | ? None := ? (st1, Zero_element);
+    | ? Some p2 := ? (st1, Ok_pt (Triple GT (Only_end p2) Empty)) } };
 pop_only_green (Triple GT (Only GN p s) child) with buffer.pop p => {
-  | ? (a1, p1) := ? (a1, Ok_pt (Triple YT (Only YN p1 s) child)) };
+  | ? (st1, p1) := ? (st1, Ok_pt (Triple YT (Only YN p1 s) child)) };
 pop_only_green (Triple YT (Only YN p s) child) with buffer.pop p => {
-  | ? (a1, p1) :=
-    ? (a1, Ok_pt (Triple (orange_tc child) (Only ON p1 s) child)) };
+  | ? (st1, p1) :=
+    ? (st1, Ok_pt (Triple (orange_tc child) (Only ON p1 s) child)) };
 pop_only_green (Triple OST (Only ON p s) child) with buffer.pop p => {
-  | ? (a1, p1) := ? (a1, Ok_pt (Triple RT (Only RN p1 s) child)) };
+  | ? (st1, p1) := ? (st1, Ok_pt (Triple RT (Only RN p1 s) child)) };
 pop_only_green (Triple OPT (Only ON p s) child) with buffer.pop p => {
-  | ? (a1, p1) := ? (a1, Ok_pt (Triple RT (Only RN p1 s) child)) }.
+  | ? (st1, p1) := ? (st1, Ok_pt (Triple RT (Only RN p1 s) child)) }.
 
-(* Ejects from an green only triple. *)
+(* Ejects from a green only triple. *)
 Equations eject_only_green {A l} (t : triple A l only green) :
   { '(pt, z1) : partial_triple A l single only * stored A l |
     triple_seq t = pt_triple_seq pt ++ stored_seq z1 } :=
 eject_only_green (Triple GT (Only_end s) Empty) with buffer.eject s => {
-  | ? (s1, z1) with buffer.has1 s1 => {
+  | ? (st1, z1) with buffer.has1 st1 => {
     | ? None := ? (Zero_element, z1);
     | ? Some s2 := ? (Ok_pt (Triple GT (Only_end s2) Empty), z1) } };
 eject_only_green (Triple GT (Only GN p s) child) with buffer.eject s => {
-  | ? (s1, z1) := ? (Ok_pt (Triple YT (Only YN p s1) child), z1) };
+  | ? (st1, z1) := ? (Ok_pt (Triple YT (Only YN p st1) child), z1) };
 eject_only_green (Triple YT (Only YN p s) child) with buffer.eject s => {
-  | ? (s1, z1) :=
-    ? (Ok_pt (Triple (orange_tc child) (Only ON p s1) child), z1) };
+  | ? (st1, z1) :=
+    ? (Ok_pt (Triple (orange_tc child) (Only ON p st1) child), z1) };
 eject_only_green (Triple OST (Only ON p s) child) with buffer.eject s => {
-  | ? (s1, z1) := ? (Ok_pt (Triple RT (Only RN p s1) child), z1) };
+  | ? (st1, z1) := ? (Ok_pt (Triple RT (Only RN p st1) child), z1) };
 eject_only_green (Triple OPT (Only ON p s) child) with buffer.eject s => {
-  | ? (s1, z1) := ? (Ok_pt (Triple RT (Only RN p s1) child), z1) }.
+  | ? (st1, z1) := ? (Ok_pt (Triple RT (Only RN p st1) child), z1) }.
 
 (* Takes an green only triple and represent it as a sandwich. *)
 Equations sandwich_only_green {A l} (t : triple A l only green) :
   { s : sandwich (stored A l) (partial_triple A l single only) |
     triple_seq t = sandwich_seq stored_seq pt_triple_seq s } :=
 sandwich_only_green (Triple GT (Only_end p) Empty) with buffer.pop p => {
-  | ? (a1, p1) with buffer.has1 p1 => {
-    | ? None := ? Alone a1;
+  | ? (st1, p1) with buffer.has1 p1 => {
+    | ? None := ? Alone st1;
     | ? Some s with buffer.eject s => {
       | ? (s1, z1) with buffer.has1 s1 => {
-        | ? None := ? Sandwich a1 Zero_element z1;
+        | ? None := ? Sandwich st1 Zero_element z1;
         | ? Some b :=
-          ? Sandwich a1 (Ok_pt (Triple GT (Only_end b) Empty)) z1 } } } };
+          ? Sandwich st1 (Ok_pt (Triple GT (Only_end b) Empty)) z1 } } } };
 sandwich_only_green (Triple GT (Only GN p s) child)
-  with buffer.pop p, buffer.eject s => { | ? (a1, p1), ? (s1, z1) :=
-    ? Sandwich a1 (Ok_pt (Triple YT (Only YN p1 s1) child)) z1 };
+  with buffer.pop p, buffer.eject s => { | ? (st1, p1), ? (s1, z1) :=
+    ? Sandwich st1 (Ok_pt (Triple YT (Only YN p1 s1) child)) z1 };
 sandwich_only_green (Triple YT (Only YN p s) child)
-  with buffer.pop p, buffer.eject s => { | ? (a1, p1), ? (s1, z1) :=
-    ? Sandwich a1 (Ok_pt (Triple (orange_tc child) (Only ON p1 s1) child)) z1 };
+  with buffer.pop p, buffer.eject s => { | ? (st1, p1), ? (s1, z1) :=
+    ? Sandwich st1 (Ok_pt (Triple (orange_tc child) (Only ON p1 s1) child)) z1 };
 sandwich_only_green (Triple OST (Only ON p s) child)
-  with buffer.pop p, buffer.eject s => { | ? (a1, p1), ? (s1, z1) :=
-    ? Sandwich a1 (Ok_pt (Triple RT (Only RN p1 s1) child)) z1 };
+  with buffer.pop p, buffer.eject s => { | ? (st1, p1), ? (s1, z1) :=
+    ? Sandwich st1 (Ok_pt (Triple RT (Only RN p1 s1) child)) z1 };
 sandwich_only_green (Triple OPT (Only ON p s) child)
-  with buffer.pop p, buffer.eject s => { | ? (a1, p1), ? (s1, z1) :=
-    ? Sandwich a1 (Ok_pt (Triple RT (Only RN p1 s1) child)) z1 }.
+  with buffer.pop p, buffer.eject s => { | ? (st1, p1), ? (s1, z1) :=
+    ? Sandwich st1 (Ok_pt (Triple RT (Only RN p1 s1) child)) z1 }.
 
 (* Adapts a node coloring to a prefix of 8 or more elements. *)
 Equations adapt_to_prefix {qp qs q ar C} :
