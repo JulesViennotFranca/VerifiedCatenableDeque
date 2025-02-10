@@ -47,10 +47,11 @@ Arguments B5 {A l}.
 (* A type for leveled packets. *)
 Inductive packet (A : Type) (l : level) : level -> color -> Type :=
   | Hole : packet A l l uncolored
-  | Packet {hl C y} : buffer A l C ->
-                        packet A (S l) hl (Mix NoGreen y NoRed) ->
-                        buffer A l C ->
-                        packet A l hl C.
+  | Packet {hl C y} :
+      buffer A l C ->
+      packet A (S l) hl (Mix NoGreen y NoRed) ->
+      buffer A l C ->
+      packet A l hl C.
 Arguments Hole {A l}.
 Arguments Packet {A l hl C y}.
 
@@ -61,12 +62,12 @@ Inductive regularity : color -> color -> Type :=
   | R       : regularity red    green.
 
 (* A type for leveled chains. *)
-Inductive chain (A : Type) : level -> color -> Type :=
-  | Ending {l} : buffer A l red -> chain A l green
-  | Chain {l hl C1 C2} :
+Inductive chain (A : Type) (l : level) : color -> Type :=
+  | Ending {C} : buffer A l C -> chain A l green
+  | Chain {hl C1 C2} :
       regularity C1 C2 -> packet A l hl C1 -> chain A hl C2 ->
       chain A l C1.
-Arguments Ending {A l}.
+Arguments Ending {A l C}.
 Arguments Chain {A l hl C1 C2}.
 
 (* A type decomposing buffers according to their number of elements.
@@ -340,7 +341,7 @@ Unset Equations Transparent.
 Set Equations Transparent.
 
 (* Returns the sequence associated to a product. *)
-Equations prodN_seq' {A n} : prodN A n -> list A :=
+Equations prodN_seq' {A l} : prodN A l -> list A :=
 prodN_seq' (prodZ a) := [a];
 prodN_seq' (prodS p1 p2) := prodN_seq' p1 ++ prodN_seq' p2.
 
@@ -397,7 +398,7 @@ Unset Equations Transparent.
 (* +------------------------------------------------------------------------+ *)
 
 (* [prodN_seq'] is equivalent to [prodN_seq] *)
-Lemma prodN_seq'_equiv {A n} (p : prodN A n) :
+Lemma prodN_seq'_equiv {A l} (p : prodN A l) :
   prodN_seq' p = prodN_seq p.
 Proof.
   funelim (prodN_seq' p); hauto.

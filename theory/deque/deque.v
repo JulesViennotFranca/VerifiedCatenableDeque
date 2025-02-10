@@ -38,7 +38,7 @@ Inductive regularity : color -> color -> Type :=
 
 (* A type for chains. *)
 Inductive chain : Type -> color -> Type :=
-  | Ending {A} : buffer A red -> chain A green
+  | Ending {A} {C : color} : buffer A C -> chain A green
   | Chain {A B C1 C2} :
       regularity C1 C2 -> packet A B C1 -> chain B C2 -> chain A C1.
 
@@ -212,10 +212,10 @@ yellow_eject (B4 a b c d) := ? (B3 a b c, d).
 (* Pushes on a buffer, and returns a green chain. *)
 Equations buffer_push {A C} (x : A) (b : buffer A C) :
   { c : chain A green | chain_seq c = [x] ++ buffer_seq b } :=
-buffer_push x B0 := ? Ending (B1 x);
-buffer_push x (B1 a) := ? Ending (B2 x a);
-buffer_push x (B2 a b) := ? Ending (B3 x a b);
-buffer_push x (B3 a b c) := ? Ending (B4 x a b c);
+buffer_push x B0 := ? Ending (C := yellow) (B1 x);
+buffer_push x (B1 a) := ? Ending (C := green) (B2 x a);
+buffer_push x (B2 a b) := ? Ending (C := green) (B3 x a b);
+buffer_push x (B3 a b c) := ? Ending (C := yellow) (B4 x a b c);
 buffer_push x (B4 a b c d) := ? Ending (B5 x a b c d);
 buffer_push x (B5 a b c d e) :=
     ? Chain G (Packet (B3 x a b) Hole (B3 c d e)) (Ending B0).
@@ -223,10 +223,10 @@ buffer_push x (B5 a b c d e) :=
 (* Injects on a buffer, and returns a green chain. *)
 Equations buffer_inject {A C} (b : buffer A C) (x : A) :
   { c : chain A green | chain_seq c = buffer_seq b ++ [x] } :=
-buffer_inject B0 x := ? Ending (B1 x);
-buffer_inject (B1 a) x := ? Ending (B2 a x);
-buffer_inject (B2 a b) x := ? Ending (B3 a b x);
-buffer_inject (B3 a b c) x := ? Ending (B4 a b c x);
+buffer_inject B0 x := ? Ending (C := yellow) (B1 x);
+buffer_inject (B1 a) x := ? Ending (C := green) (B2 a x);
+buffer_inject (B2 a b) x := ? Ending (C := green) (B3 a b x);
+buffer_inject (B3 a b c) x := ? Ending (C := yellow) (B4 a b c x);
 buffer_inject (B4 a b c d) x := ? Ending (B5 a b c d x);
 buffer_inject (B5 a b c d e) x :=
     ? Chain G (Packet (B3 a b c) Hole (B3 d e x)) (Ending B0).

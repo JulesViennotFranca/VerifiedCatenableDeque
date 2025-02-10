@@ -5,21 +5,21 @@ module Deque = Deque.Package
 (* Support for natural number types. *)
 
 type    z
-type 'a s
+type 'n s
 
-type 'a ge1 = 'a s
-type 'a ge2 = 'a s s
-type 'a ge3 = 'a s s s
-type 'a ge4 = 'a s s s s
-type 'a ge5 = 'a s s s s s
-type 'a ge6 = 'a s s s s s s
-type 'a ge7 = 'a s s s s s s s
-type 'a ge8 = 'a s s s s s s s s
+type      eq0 = z
+type      eq1 = z s
+type      eq2 = z s s
+type      eq6 = z s s s s s s
 
-type eq0 = z
-type eq1 = z s
-type eq2 = z ge2
-type eq6 = z ge6
+type 'n plus1 = 'n s
+type 'n plus2 = 'n s plus1
+type 'n plus3 = 'n s plus2
+type 'n plus4 = 'n s plus3
+type 'n plus5 = 'n s plus4
+type 'n plus6 = 'n s plus5
+type 'n plus7 = 'n s plus6
+type 'n plus8 = 'n s plus7
 
 (* Some tupple renaming. *)
 
@@ -37,12 +37,12 @@ type 'a eight = 'a * 'a * 'a * 'a * 'a * 'a * 'a * 'a
     contain. *)
 type ('a, 'upperbound) vector =
   | V0 : ('a, 'n) vector
-  | V1 : 'a -> ('a, 'n ge1) vector
-  | V2 : 'a * 'a -> ('a, 'n ge2) vector
-  | V3 : 'a * 'a * 'a -> ('a, 'n ge3) vector
-  | V4 : 'a * 'a * 'a * 'a -> ('a, 'n ge4) vector
-  | V5 : 'a * 'a * 'a * 'a * 'a -> ('a, 'n ge5) vector
-  | V6 : 'a * 'a * 'a * 'a * 'a * 'a -> ('a, 'n ge6) vector
+  | V1 : 'a -> ('a, 'n plus1) vector
+  | V2 : 'a * 'a -> ('a, 'n plus2) vector
+  | V3 : 'a * 'a * 'a -> ('a, 'n plus3) vector
+  | V4 : 'a * 'a * 'a * 'a -> ('a, 'n plus4) vector
+  | V5 : 'a * 'a * 'a * 'a * 'a -> ('a, 'n plus5) vector
+  | V6 : 'a * 'a * 'a * 'a * 'a * 'a -> ('a, 'n plus6) vector
 
 (** Folds right on vectors. *)
 let vector_fold_right
@@ -101,13 +101,13 @@ module Buffer : sig
   val push3 : 'a * 'a * 'a -> ('a, 'n) t -> ('a, 'n s s s) t
   val inject3 : ('a, 'n) t -> 'a * 'a * 'a -> ('a, 'n s s s) t
 
-  val push_5vector : 'a five * ('a, _) vector -> ('a, 'n) t -> ('a, 'n ge5) t
-  val inject_5vector : ('a, 'n) t -> 'a five * ('a, _) vector -> ('a, 'n ge5) t
+  val push_5vector : 'a five * ('a, _) vector -> ('a, 'n) t -> ('a, 'n plus5) t
+  val inject_5vector : ('a, 'n) t -> 'a five * ('a, _) vector -> ('a, 'n plus5) t
 
-  val push6 : 'a six -> ('a, 'n) t -> ('a, 'n ge6) t
-  val inject6 : ('a, 'n) t -> 'a six -> ('a, 'n ge6) t
+  val push6 : 'a six -> ('a, 'n) t -> ('a, 'n plus6) t
+  val inject6 : ('a, 'n) t -> 'a six -> ('a, 'n plus6) t
 
-  val inject8 : ('a, 'n) t -> 'a eight -> ('a, 'n ge8) t
+  val inject8 : ('a, 'n) t -> 'a eight -> ('a, 'n plus8) t
 
   val push_vector : ('a, _) vector -> ('a, 'n) t -> ('a, 'n) t
   val inject_vector : ('a, 'n) t -> ('a, _) vector -> ('a, 'n) t
@@ -115,7 +115,7 @@ module Buffer : sig
   (** A type storing either 0 element or a buffer with at least 1 element. *)
   type _ has1 =
     | Exact_0 : 'a has1
-    | At_least_1 : ('a, _ ge1) t -> 'a has1
+    | At_least_1 : ('a, _ plus1) t -> 'a has1
 
   (** Tells if a given buffer is empty or not. *)
   val has1 : ('a, 'n) t -> 'a has1
@@ -124,65 +124,65 @@ module Buffer : sig
       elements. *)
   type 'a has3 =
     | Less_than_3 : ('a, eq2) vector -> 'a has3
-    | At_least_3 : ('a, _ ge3) t -> 'a has3
+    | At_least_3 : ('a, _ plus3) t -> 'a has3
 
   (** Tells if a given buffer of at least 3 elements has 3, 4, 5 elements or
       more than 6. *)
-  val has3p : ('a, _ ge3) t -> ('a * 'a * 'a) * 'a has3
+  val has3p : ('a, _ plus3) t -> ('a * 'a * 'a) * 'a has3
 
   (** Tells if a given buffer of at least 3 elements has 3, 4, 5 elements or
       more than 6. *)
-  val has3s : ('a, _ ge3) t -> 'a has3 * ('a * 'a * 'a)
+  val has3s : ('a, _ plus3) t -> 'a has3 * ('a * 'a * 'a)
 
   (** A type storing either 4 elements or a buffer with at least 5 elements. *)
   type 'a has5 =
     | Exact_4 : 'a four -> 'a has5
-    | At_least_5 : ('a, _ ge5) t -> 'a has5
+    | At_least_5 : ('a, _ plus5) t -> 'a has5
 
   (** Tells if a given buffer of at least 4 elements has just 4 elements or
       more. *)
-  val has5   : ('a, _ ge4) t -> 'a has5
+  val has5   : ('a, _ plus4) t -> 'a has5
 
   (** A type storing 6 elements or less or a buffer of at least 5 elements and
       2 more elements. *)
   type 'a has7s =
     | Less_than_7 : ('a, eq6) vector -> 'a has7s
-    | At_least_7 : ('a, _ ge5) t * ('a * 'a) -> 'a has7s
+    | At_least_7 : ('a, _ plus5) t * ('a * 'a) -> 'a has7s
 
   (** Tells if a given buffer has at least 7 elements or not. If it has more
       than 7 elements, the last 2 elements are extracted. *)
-  val has7s : ('a, _ ge1) t -> 'a has7s
+  val has7s : ('a, _ plus1) t -> 'a has7s
 
   (** A type storing 6 elements or less or a 2 elements and a buffer of at
       least 5 elements. *)
   type 'a has7p =
     | Less_than_7 : ('a, eq6) vector -> 'a has7p
-    | At_least_7 : ('a * 'a) * ('a, _ ge5) t -> 'a has7p
+    | At_least_7 : ('a * 'a) * ('a, _ plus5) t -> 'a has7p
 
   (** Tells if a given buffer has at least 7 elements or not. If it has more
       than 7 elements, the first 2 elements are extracted. *)
-  val has7p : ('a, _ ge1) t -> 'a has7p
+  val has7p : ('a, _ plus1) t -> 'a has7p
 
   (** A type storing either 5, 6 or 7 elements, or a buffer with at least 8
       elements. *)
   type 'a has8 =
     | Less_than_8 : ('a five * ('a, eq2) vector) -> 'a has8
-    | At_least_8 : ('a, _ ge8) t -> 'a has8
+    | At_least_8 : ('a, _ plus8) t -> 'a has8
 
   (** Tells if a given buffer of at least 5 elements has 5, 6, 7 elements or
       more than 8. *)
-  val has8   : ('a, _ ge5) t -> 'a has8
+  val has8   : ('a, _ plus5) t -> 'a has8
 
   (** A type storing 8, 9 or 10 elements, or a buffer of 3 elements and a
       buffer of at least 8 elements. *)
   type 'a has3p8 =
     | Less_than_11 : 'a eight * ('a, eq2) vector -> 'a has3p8
-    | At_least_11 : ('a, z ge3) t * ('a, _ ge8) t -> 'a has3p8
+    | At_least_11 : ('a, z plus3) t * ('a, _ plus8) t -> 'a has3p8
 
   (** Tells if a given buffer of at least 8 elements has 8, 9 or 10 elements,
       or if it has at least 11 elements. If the case latest case, it returns a
       buffer of 3 elements and a buffer of at least 8 elements. *)
-  val has3p8 : ('a, _ ge8) t -> 'a has3p8
+  val has3p8 : ('a, _ plus8) t -> 'a has3p8
 
   (* Different operations needed for the cadeque package. *)
 
@@ -227,7 +227,7 @@ end = struct
 
   type _ has1 =
     | Exact_0 : 'a has1
-    | At_least_1 : ('a, _ ge1) t -> 'a has1
+    | At_least_1 : ('a, _ plus1) t -> 'a has1
 
   let has1 t =
     if Deque.is_empty t
@@ -249,7 +249,7 @@ end = struct
 
   type 'a has3 =
     | Less_than_3 : ('a, eq2) vector -> 'a has3
-    | At_least_3 : ('a, _ ge3) t -> 'a has3
+    | At_least_3 : ('a, _ plus3) t -> 'a has3
 
   let has3 t = match Deque.length t with
     | 0 -> Less_than_3 V0
@@ -267,7 +267,7 @@ end = struct
 
   type 'a has5 =
     | Exact_4 : 'a four -> 'a has5
-    | At_least_5 : ('a, _ ge5) t -> 'a has5
+    | At_least_5 : ('a, _ plus5) t -> 'a has5
 
   let has5 buffer =
     let a, b, t = pop2 buffer in
@@ -278,7 +278,7 @@ end = struct
 
   type 'a has7s =
     | Less_than_7 : ('a, eq6) vector -> 'a has7s
-    | At_least_7 : ('a, _ ge5) t * ('a * 'a) -> 'a has7s
+    | At_least_7 : ('a, _ plus5) t * ('a * 'a) -> 'a has7s
 
   let has7s t =
     let t, z = eject t in
@@ -295,7 +295,7 @@ end = struct
 
   type 'a has7p =
     | Less_than_7 : ('a, eq6) vector -> 'a has7p
-    | At_least_7 : ('a * 'a) * ('a, _ ge5) t -> 'a has7p
+    | At_least_7 : ('a * 'a) * ('a, _ plus5) t -> 'a has7p
 
   let has7p t =
     let a, t = pop t in
@@ -312,7 +312,7 @@ end = struct
 
   type 'a has8 =
     | Less_than_8 : ('a five * ('a, eq2) vector) -> 'a has8
-    | At_least_8 : ('a, _ ge8) t -> 'a has8
+    | At_least_8 : ('a, _ plus8) t -> 'a has8
 
   let pop5 t =
     let (a, b, c), t = pop3 t in
@@ -333,7 +333,7 @@ end = struct
 
   type 'a has3p8 =
     | Less_than_11 : 'a eight * ('a, eq2) vector -> 'a has3p8
-    | At_least_11 : ('a, z ge3) t * ('a, _ ge8) t -> 'a has3p8
+    | At_least_11 : ('a, z plus3) t * ('a, _ plus8) t -> 'a has3p8
 
   let has3p8 t =
     let (a, b, c), t' = pop3 t in
@@ -386,28 +386,27 @@ type pair   = eq2
 (** The node_coloring relation links the sizes of the prefix and the suffix and
     the arity of a node to its color.  *)
 type ('prefix_delta, 'suffix_delta, 'arity, 'c) node_coloring =
-  | EN : (    _,     _,   eq0, green ) node_coloring
-  | GN : (_ ge3, _ ge3, _ ge1, green ) node_coloring
-  | YN : (_ ge2, _ ge2, _ ge1, yellow) node_coloring
-  | ON : (_ ge1, _ ge1, _ ge1, orange) node_coloring
-  | RN : (    _,     _, _ ge1, red   ) node_coloring
+  | EN : (      _,       _,     eq0, green ) node_coloring
+  | GN : (_ plus3, _ plus3, _ plus1, green ) node_coloring
+  | YN : (_ plus2, _ plus2, _ plus1, yellow) node_coloring
+  | ON : (_ plus1, _ plus1, _ plus1, orange) node_coloring
+  | RN : (      _,       _, _ plus1, red   ) node_coloring
 
 (** A type for nodes. *)
 type ('a, 'arity, 'kind, 'c) node =
-  | Only      : ('pdelta, 'sdelta, 'n ge1, 'c) node_coloring
-              * ('a, 'pdelta ge5) prefix
-              * ('a, 'sdelta ge5) suffix
-             -> ('a, 'n ge1, only, 'c) node
-  | Only_end  :
-                ('a, _ ge1) Buffer.t
+  | Only      : ('pdelta, 'sdelta, 'n plus1, 'c) node_coloring
+              * ('a, 'pdelta plus5) prefix
+              * ('a, 'sdelta plus5) suffix
+             -> ('a, 'n plus1, only, 'c) node
+  | Only_end  : ('a, _ plus1) Buffer.t
              -> ('a, eq0, only, green) node
   | Left      : ('pdelta, _, 'arity, 'c) node_coloring
-              * ('a, 'pdelta ge5) prefix
+              * ('a, 'pdelta plus5) prefix
               * ('a * 'a)
              -> ('a, 'arity, left, 'c) node
   | Right     : (_, 'sdelta, 'arity, 'c) node_coloring
               * ('a * 'a)
-              * ('a, 'sdelta ge5) suffix
+              * ('a, 'sdelta plus5) suffix
              -> ('a, 'arity, right, 'c) node
 
 (** A type for the regularity relation. *)
@@ -417,10 +416,10 @@ type ('pkt_color, 'chain_left_color, 'chain_right_color) regularity =
 
 (** A type for stored triples. *)
 type 'a stored =
-  | Small : ('a, _ ge3) prefix -> 'a stored
-  | Big : ('a, _ ge3) prefix
+  | Small : ('a, _ plus3) prefix -> 'a stored
+  | Big : ('a, _ plus3) prefix
         * ('a stored, _, only, _, _) chain
-        * ('a, _ ge3) suffix
+        * ('a, _ plus3) suffix
        -> 'a stored
 
 (** A type for bodies of packets. *)
@@ -461,16 +460,16 @@ and ('a, 'arity, 'kind, 'left_color, 'right_color) chain =
 
 (** A type representing prefix and suffix of at least 3 elements. *)
 type _ stored_buffer =
-  | Stored_buffer : ('a, _ ge3) Buffer.t -> 'a stored_buffer
+  | Stored_buffer : ('a, _ plus3) Buffer.t -> 'a stored_buffer
 
 (** The triple_coloring relation links the color and the arity of the root and
     the left and right color of the child chain of a triple to its color. *)
 type ('root_color, 'arity, 'left_color, 'right_color, 'color) triple_coloring =
-  | GT  : ( green,      _,     _,     _, green) triple_coloring
-  | YT  : (yellow,  _ ge1,   'lc,     _,   'lc) triple_coloring
-  | OST : (orange, single,    'c,    'c,    'c) triple_coloring
+  | GT  : ( green,        _,     _,     _, green) triple_coloring
+  | YT  : (yellow,  _ plus1,   'lc,     _,   'lc) triple_coloring
+  | OST : (orange,   single,    'c,    'c,    'c) triple_coloring
   | OPT : (orange,   pair, green,   'rc,   'rc) triple_coloring
-  | RT  : (   red,  _ ge1, green, green,   red) triple_coloring
+  | RT  : (   red,  _ plus1, green, green,   red) triple_coloring
 
 (** A type for the triple representation of a non-empty cadeque. First comes the
     triple coloring, then the prefix and suffix as a node, then the child
@@ -636,8 +635,8 @@ let inject_right_chain c x = match c with
 
 (** Pushes on a non-empty only chain. *)
 let push_ne_chain
-: type a n lc rc. a -> (a, n ge1, only, lc, rc) chain
-                    -> (a, n ge1, only, lc, rc) chain
+: type a n lc rc. a -> (a, n plus1, only, lc, rc) chain
+                    -> (a, n plus1, only, lc, rc) chain
 = fun x c ->
   match c with
   | Single (reg, pkt, c) -> Single (reg, push_only_packet x pkt, c)
@@ -645,8 +644,8 @@ let push_ne_chain
 
 (** Injects on a non-empty only chain. *)
 let inject_ne_chain
-: type a n lc rc. (a, n ge1, only, lc, rc) chain -> a
-               -> (a, n ge1, only, lc, rc) chain
+: type a n lc rc. (a, n plus1, only, lc, rc) chain -> a
+               -> (a, n plus1, only, lc, rc) chain
 = fun c x ->
   match c with
   | Single (reg, pkt, c) -> Single (reg, inject_only_packet pkt x, c)
@@ -655,7 +654,7 @@ let inject_ne_chain
 (** Discerns when its type parameter is empty or not. *)
 type _ is_empty =
   | Is_empty  :  empty  is_empty
-  | Not_empty : (_ ge1) is_empty
+  | Not_empty : (_ plus1) is_empty
 
 (** Tells if a chain is empty or not. *)
 let is_empty_chain
@@ -748,7 +747,7 @@ let right_of_only
 (** Takes a suffix of at least one element and a right triple and returns a
     stored triple and a left suffix. *)
 let stored_of_right
-: type a rc. (a, _ ge1) suffix -> (a, right, rc) triple
+: type a rc. (a, _ plus1) suffix -> (a, right, rc) triple
           -> a stored * (a * a)
 = fun sl (Triple (_, Right (_, p, sr), child)) ->
   let p = Buffer.inject2 sl p in
@@ -758,7 +757,7 @@ let stored_of_right
 (** Takes a left triple and a prefix of at least one element and returns a
     right prefix and a stored triple. *)
 let stored_of_left
-: type a lc. (a, left, lc) triple -> (a, _ ge1) prefix
+: type a lc. (a, left, lc) triple -> (a, _ plus1) prefix
           -> (a * a) * a stored
 = fun (Triple (_, Left (_, pl, s), child)) pr ->
   let s = Buffer.push2 s pr in
@@ -841,8 +840,8 @@ let semi_concat (S c1) (S c2) = match make_left c1 with
 (** Returns the orange triple coloring corresponding to the child chain. *)
 let orange_tc
 : type a n rc.
-     (a, n ge1, only, green, rc) chain
-  -> (orange, n ge1, green, rc, rc) triple_coloring
+     (a, n plus1, only, green, rc) chain
+  -> (orange, n plus1, green, rc, rc) triple_coloring
 = function
   | Single _ -> OST
   | Pair   _ -> OPT
@@ -946,7 +945,7 @@ let sandwich_only_green
 (** Adapts a node coloring to a prefix of 8 or more elements. *)
 let adapt_to_prefix
 : type sp sp1 ss1 arity c.
-     (sp1, ss1, arity, c) node_coloring -> (sp ge3, ss1, arity, c) node_coloring
+     (sp1, ss1, arity, c) node_coloring -> (sp plus3, ss1, arity, c) node_coloring
 = function GN -> GN | YN -> YN | ON -> ON | RN -> RN | EN -> EN
 
 (** Makes an only triple out of six elements and a right triple. *)
@@ -969,7 +968,7 @@ let only_of_right
 (** Adapts a node coloring to a suffix of 8 or more elements. *)
 let adapt_to_suffix
 : type ss sp1 ss1 arity c.
-     (sp1, ss1, arity, c) node_coloring -> (sp1, ss ge3, arity, c) node_coloring
+     (sp1, ss1, arity, c) node_coloring -> (sp1, ss plus3, arity, c) node_coloring
 = function GN -> GN | YN -> YN | ON -> ON | RN -> RN | EN -> EN
 
 (** Makes an only triple out of a left triple and six elements. *)
@@ -1035,7 +1034,7 @@ let sandwich_pair_green (Pair (lc, rc)) =
 (** Pops from a non-empty green chain. *)
 let pop_green
 : type a n.
-     (a, n ge1, only, green, green) chain
+     (a, n plus1, only, green, green) chain
   -> a * a semi_cadeque
 = function
   | Pair _ as c -> pop_pair_green c
@@ -1049,7 +1048,7 @@ let pop_green
 (** Ejects from a non-empty green chain. *)
 let eject_green
 : type a n.
-     (a, n ge1, only, green, green) chain
+     (a, n plus1, only, green, green) chain
   -> a semi_cadeque * a
 = function
   | Pair _ as c -> eject_pair_green c
@@ -1063,7 +1062,7 @@ let eject_green
 (** Takes a non-empty green chain and represent it as a sandwich. *)
 let sandwich_green
 : type a n.
-     (a, n ge1, only, green, green) chain
+     (a, n plus1, only, green, green) chain
   -> (a, a semi_cadeque) sandwich
 = function
   | Pair _ as c -> sandwich_pair_green c

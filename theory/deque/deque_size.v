@@ -33,23 +33,21 @@ Inductive optionN (A : Type) (l : level) : size -> Type :=
 Arguments NoneN {A l}.
 Arguments SomeN {A l}.
 
-(* In the following types, a natural number parameter is introduced : the
+(* In the following types, an natural number parameter is introduced : the
    [size] of the type. The size is simply the number of [prodN A l] that are
-   stored in the structure. *)
+   stored in the structure encoded. *)
 
 (* A type for sized buffers. *)
 Inductive buffer (A : Type) (l : level) : size -> color -> Type :=
   | B0         : buffer A l 0 red
-  | B1 {y r}   : prodN A l ->
-                 buffer A l 1 (Mix NoGreen y r)
-  | B2 {g y r} : prodN A l -> prodN A l ->
-                 buffer A l 2 (Mix g y r)
+  | B1 {y r}   : prodN A l -> buffer A l 1 (Mix NoGreen y r)
+  | B2 {g y r} : prodN A l -> prodN A l -> buffer A l 2 (Mix g y r)
   | B3 {g y r} : prodN A l -> prodN A l -> prodN A l ->
                  buffer A l 3 (Mix g y r)
-  | B4 {y r}   : prodN A l -> prodN A l -> prodN A l -> prodN A l ->
-                 buffer A l 4 (Mix NoGreen y r)
-  | B5         : prodN A l -> prodN A l -> prodN A l -> prodN A l -> prodN A l ->
-                 buffer A l 5 red.
+  | B4 {y r}   : prodN A l -> prodN A l -> prodN A l ->
+                 prodN A l -> buffer A l 4 (Mix NoGreen y r)
+  | B5         : prodN A l -> prodN A l -> prodN A l ->
+                 prodN A l -> prodN A l -> buffer A l 5 red.
 Arguments B0 {A l}.
 Arguments B1 {A l y r}.
 Arguments B2 {A l g y r}.
@@ -77,13 +75,15 @@ Inductive regularity : color -> color -> Type :=
 
 (* A type for sized chains. *)
 Inductive chain (A : Type) (l : level) : size -> color -> Type :=
-  | Ending {n} :
-      buffer A l n red ->
+  | Ending {n C} :
+      buffer A l n C ->
       chain A l n green
-  | Chain {hl n hn} {C1 C2} :
-      regularity C1 C2 -> packet A l hl n hn C1 -> chain A hl hn C2 ->
+  | Chain {hl n hn C1 C2} :
+      regularity C1 C2 ->
+      packet A l hl n hn C1 ->
+      chain A hl hn C2 ->
       chain A l n C1.
-Arguments Ending {A l n}.
+Arguments Ending {A l n C}.
 Arguments Chain {A l hl n hn C1 C2}.
 
 (* A type decomposing buffers according to their number of elements.
@@ -109,16 +109,16 @@ Arguments Overflow {A l n}.
    its last element. If such a decomposition is not possible, an option
    representing the buffer is returned with [Alone]. *)
 Inductive sandwich (A : Type) (l : level) : size -> Type :=
-  | Alone {s} :
-      optionN A l s ->
-      sandwich A l s
-  | Sandwich {s} :
+  | Alone {n} :
+      optionN A l n ->
+      sandwich A l n
+  | Sandwich {n} :
       prodN A l ->
-      buffer A l s red ->
+      buffer A l n red ->
       prodN A l ->
-      sandwich A l (2 + s).
-Arguments Alone {A l s}.
-Arguments Sandwich {A l s}.
+      sandwich A l (2 + n).
+Arguments Alone {A l n}.
+Arguments Sandwich {A l n}.
 
 (* A type for sized deque. *)
 Inductive deque (A : Type) (n : size) : Type :=
@@ -254,15 +254,16 @@ Qed.
 Definition packet_cmseq
   {T : Type -> level -> Type}
   (f : forall A l, T A l -> list A)
-  {A lt l hl pktn hn C} :
-  packet (T A lt) l hl pktn hn C -> list A -> list A :=
-  let fix local {l hl pktn hn C}
-    (pkt : packet (T A lt) l hl pktn hn C) (l : list A) : list A :=
+  {A lt l hl n hn C} :
+  packet (T A lt) l hl n hn C -> list A -> list A :=
+  let fix local {l hl n hn C}
+    (pkt : packet (T A lt) l hl n hn C) (lst : list A) : list A :=
     match pkt with
-    | Hole => l
-    | Packet p pkt s => buffer_cmseq f p ++
-                        local pkt l ++
-                        buffer_cmseq f s
+    | Hole => lst
+    | Packet p pkt s =>
+        buffer_cmseq f p ++
+        local pkt lst ++
+        buffer_cmseq f s
     end
   in local.
 
@@ -274,10 +275,10 @@ Notation packet_seq :=
 Lemma correct_packet_cmseq
   {T : Type -> level -> Type}
   (f : forall A l, T A l -> list A)
-  {A lt l hl pktn hn C}
-  (pkt : packet (T A lt) l hl pktn hn C) (ts : list (T A lt)) :
-  packet_cmseq f pkt (concat (map (f A lt) ts)) =
-    concat (map (f A lt) (packet_seq pkt ts)).
+  {A lt l hl n hn C}
+  (pkt : packet (T A lt) l hl n hn C) (lst : list (T A lt)) :
+  packet_cmseq f pkt (concat (map (f A lt) lst)) =
+    concat (map (f A lt) (packet_seq pkt lst)).
 Proof.
   induction pkt as [ | ???????? p pkt IHpkt s ]; simpl.
   - reflexivity.
@@ -371,7 +372,7 @@ Unset Equations Transparent.
 Set Equations Transparent.
 
 (* Returns the sequence associated to a product. *)
-Equations prodN_seq' {A n} : prodN A n -> list A :=
+Equations prodN_seq' {A l} : prodN A l -> list A :=
 prodN_seq' (prodZ a) := [a];
 prodN_seq' (prodS p1 p2) := prodN_seq' p1 ++ prodN_seq' p2.
 
@@ -382,14 +383,14 @@ buffer_seq' (B1 a) := prodN_seq' a;
 buffer_seq' (B2 a b) := prodN_seq' a ++ prodN_seq' b;
 buffer_seq' (B3 a b c) := prodN_seq' a ++ prodN_seq' b ++ prodN_seq' c;
 buffer_seq' (B4 a b c d) := prodN_seq' a ++ prodN_seq' b ++ prodN_seq' c ++
-                              prodN_seq' d;
+                            prodN_seq' d;
 buffer_seq' (B5 a b c d e) := prodN_seq' a ++ prodN_seq' b ++ prodN_seq' c ++
-                                prodN_seq' d ++ prodN_seq' e.
+                              prodN_seq' d ++ prodN_seq' e.
 
 (* Returns the sequence associated to a packet,
    given the sequence [accu] associated to its hole. *)
-Equations packet_seq' {A l hl pktn hn C} :
-  packet A l hl pktn hn C -> list A -> list A :=
+Equations packet_seq' {A l hl n hn C} :
+  packet A l hl n hn C -> list A -> list A :=
 packet_seq' Hole accu := accu;
 packet_seq' (Packet p pkt s) accu :=
   buffer_seq' p ++ packet_seq' pkt accu ++ buffer_seq' s.
@@ -429,7 +430,7 @@ Unset Equations Transparent.
 (* +------------------------------------------------------------------------+ *)
 
 (* [prodN_seq'] is equivalent to [prodN_seq] *)
-Lemma prodN_seq'_equiv {A n} (p : prodN A n) :
+Lemma prodN_seq'_equiv {A l} (p : prodN A l) :
   prodN_seq' p = prodN_seq p.
 Proof.
   funelim (prodN_seq' p); hauto.
@@ -447,8 +448,8 @@ Qed.
 #[export] Hint Rewrite @buffer_seq'_equiv : models.
 
 (* [packet_seq'] is equivalent to [packet_seq] *)
-Lemma packet_seq'_equiv {A l hl pktn hn C}
-  (pkt : packet A l hl pktn hn C) (accu : list A) :
+Lemma packet_seq'_equiv {A l hl n hn C}
+  (pkt : packet A l hl n hn C) (accu : list A) :
   packet_seq' pkt accu = packet_seq pkt accu.
 Proof.
   funelim (packet_seq' pkt accu); hauto db:models.
@@ -630,7 +631,7 @@ buffer_pop (B4 a b c d) := ? Some (a, B3 b c d);
 buffer_pop (B5 a b c d e) := ? Some (a, B4 b c d e).
 
 (* Ejects off a buffer, and returns an option.
-   Extra properties about the n of the buffer are returned. *)
+   Extra properties about the size of the buffer are returned. *)
 Equations buffer_eject {A l n C} (b : buffer A l n C) :
   { o : option (buffer A l (Nat.pred n) red * prodN A l) |
     match o with
@@ -878,11 +879,11 @@ green_opt_inject (B2 a b) (SomeN c) := ? Ending (B3 a b c);
 green_opt_inject (B3 a b c) (SomeN d) := ? Ending (B4 a b c d).
 
 (* Creates a green chain from 3 options. *)
-Equations chain_of_opt3 {A l s1 s2 s3}
-  (o1 : optionN A l s1)
-  (o2 : optionN A (S l) s2)
-  (o3 : optionN A l s3) :
-  { c : chain A l (s1 + 2 * s2 + s3) green |
+Equations chain_of_opt3 {A l n1 n2 n3}
+  (o1 : optionN A l n1)
+  (o2 : optionN A (S l) n2)
+  (o3 : optionN A l n3) :
+  { c : chain A l (n1 + 2 * n2 + n3) green |
     chain_seq c = optionN_seq o1 ++ optionN_seq o2 ++ optionN_seq o3 } :=
 chain_of_opt3 NoneN NoneN NoneN := ? Ending B0;
 chain_of_opt3 (SomeN a) NoneN NoneN := ? Ending (B1 a);
@@ -1030,8 +1031,8 @@ green_of_red (Chain R (Packet p1 (Packet p2 child s2) s1) c)
   let '? c' := translate c _ in ? c' }.
 Next Obligation.
   intros * Hp * Hs * c.
-  yellow_size p2 as Hpsize0.
-  yellow_size s2 as Hssize0.
+  yellow_size p2 as Hp0Sn.
+  yellow_size s2 as Hs0Sn.
   pose (dec_by_2 pn) as Hpn. rewrite <-Hpn at 3.
   pose (dec_by_2 sn) as Hsn. rewrite <-Hsn at 3.
   hauto.
@@ -1048,8 +1049,8 @@ Next Obligation.
 Qed.
 Next Obligation.
   intros * Hp * Hs * c.
-  yellow_size p2 as Hpsize0.
-  yellow_size s2 as Hssize0.
+  yellow_size p2 as Hp0Sn.
+  yellow_size s2 as Hs0Sn.
   pose (dec_by_2 pn) as Hpn. rewrite <-Hpn at 3.
   pose (dec_by_2 sn) as Hsn. rewrite <-Hsn at 3.
   hauto.
@@ -1075,12 +1076,12 @@ ensure_green (Chain R pkt c) := green_of_red (Chain R pkt c).
 
 (* Takes a prefix non-red buffer, a child packet and a suffix non-red buffer,
    and a following green or red chain, and makes a deque out of them. *)
-Equations make_yellow {A l ps pkts ss cs n} {gp yp ypkt gs ys gc rc}
-  (p : buffer A 0 ps (Mix gp yp NoRed))
-  (pkt : packet A 1 l pkts cs (Mix NoGreen ypkt NoRed))
-  (s : buffer A 0 ss (Mix gs ys NoRed))
-  (c : chain A l cs (Mix gc NoYellow rc)) :
-  n = ps + 2 * pkts + ss ->
+Equations make_yellow {A hl pn pktn sn hn n gp yp ypkt gs ys gc rc}
+  (p : buffer A 0 pn (Mix gp yp NoRed))
+  (pkt : packet A 1 hl pktn hn (Mix NoGreen ypkt NoRed))
+  (s : buffer A 0 sn (Mix gs ys NoRed))
+  (c : chain A hl hn (Mix gc NoYellow rc)) :
+  n = pn + 2 * pktn + sn ->
   { d : deque A n | deque_seq d =
     buffer_seq p ++ packet_seq pkt (chain_seq c) ++ buffer_seq s } :=
 make_yellow p1 child s1 c eq
@@ -1090,12 +1091,12 @@ make_yellow p1 child s1 c eq
 
 (* Takes a prefix buffer of any color, a child packet and a suffix buffer of
    any color, and a following green chain, and makes a deque out of them. *)
-Equations make_red {A l ps pkts ss cs n} {Cp ypkt Cs}
-  (p : buffer A 0 ps Cp)
-  (pkt : packet A 1 l pkts cs (Mix NoGreen ypkt NoRed))
-  (s : buffer A 0 ss Cs)
-  (c : chain A l cs green) :
-  n = ps + 2 * pkts + ss ->
+Equations make_red {A l pn pktn sn hn n Cp ypkt Cs}
+  (p : buffer A 0 pn Cp)
+  (pkt : packet A 1 l pktn hn (Mix NoGreen ypkt NoRed))
+  (s : buffer A 0 sn Cs)
+  (c : chain A l hn green) :
+  n = pn + 2 * pktn + sn ->
   { d : deque A n | deque_seq d =
     buffer_seq p ++ packet_seq pkt (chain_seq c) ++ buffer_seq s } :=
 make_red p1 child s1 c eq
