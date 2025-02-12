@@ -1,5 +1,5 @@
 From Cadeque.color Require Import GYOR.
-From Cadeque.cadeque Require Import buffer.
+From Cadeque.cadeque Require Import vector deque.
 
 (* An arity is 0, 1, or 2. *)
 Notation arity  := nat.
@@ -19,11 +19,11 @@ Definition size := nat.
 Derive NoConfusion for kind.
 
 (* Types for general prefixes and suffixes, they are simply other names for
-   buffer.t. In the following, prefixes and suffixes will contain stored
+   deques. In the following, prefixes and suffixes will contain stored
    triples. *)
 
-Definition prefix' := buffer.t.
-Definition suffix' := buffer.t.
+Definition prefix' := deque.
+Definition suffix' := deque.
 
 (* A type for the coloring relation of nodes. *)
 Inductive node_coloring : size -> size -> arity -> color -> Type :=
@@ -144,12 +144,12 @@ Definition node   (A : Type) (l : level) := node' (stored A l).
 
 (* A type for green buffers, buffers of at least eight elements. *)
 Inductive green_buffer (A : Type) (l : level) : Type :=
-  | Gbuf {q} : buffer.t (stored A l) (8 + q) -> green_buffer A l.
+  | Gbuf {q} : deque (stored A l) (8 + q) -> green_buffer A l.
 Arguments Gbuf {A l q}.
 
 (* A type for stored buffers, buffers of at least three elements. *)
 Inductive stored_buffer (A : Type) (l : level) : Type :=
-  | Sbuf {q} : buffer.t (stored A l) (3 + q) -> stored_buffer A l.
+  | Sbuf {q} : deque (stored A l) (3 + q) -> stored_buffer A l.
 Arguments Sbuf {A l q}.
 
 (* A type for the coloring relation of triples. *)

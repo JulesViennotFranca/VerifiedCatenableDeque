@@ -3,7 +3,7 @@ Import ListNotations.
 From Equations Require Import Equations.
 Require Import Coq.Program.Equality.
 
-From Cadeque.cadeque Require Import buffer types.
+From Cadeque.cadeque Require Import vector deque types.
 
 (* Sequence + map + concat for non-leveled nodes. *)
 Definition node'_cmseq
@@ -11,10 +11,10 @@ Definition node'_cmseq
   (f : forall A l, T A l -> list A)
   {A lt ar k C} (n : node' (T A lt) ar k C) (l : list A) : list A :=
   match n with
-  | Only_end p  => buffer.cmseq f p
-  | Only  _ p s => buffer.cmseq f p ++ l ++ buffer.cmseq f s
-  | Left  _ p (y, z) => buffer.cmseq f p ++ l ++ f _ _ y ++ f _ _ z
-  | Right _ (a, b) s => f _ _ a ++ f _ _ b ++ l ++ buffer.cmseq f s
+  | Only_end p  => deque_cmseq f p
+  | Only  _ p s => deque_cmseq f p ++ l ++ deque_cmseq f s
+  | Left  _ p (y, z) => deque_cmseq f p ++ l ++ f _ _ y ++ f _ _ z
+  | Right _ (a, b) s => f _ _ a ++ f _ _ b ++ l ++ deque_cmseq f s
   end.
 
 Set Equations Transparent.
@@ -25,11 +25,11 @@ by struct st :=
 stored_seq A l (Ground a) :=
   [a];
 stored_seq A l (Small s) :=
-  buffer.cmseq stored_seq s;
+  deque_cmseq stored_seq s;
 stored_seq A l (Big p child s) :=
-  buffer.cmseq stored_seq p ++
+  deque_cmseq stored_seq p ++
   chain_seq child ++
-  buffer.cmseq stored_seq s
+  deque_cmseq stored_seq s
 
 (* Returns the sequence associated to a body. *)
 with body_seq {A hl tl hk tk} (b : body A hl tl hk tk) : list A -> list A
@@ -56,27 +56,23 @@ chain_seq (Single _ pkt rest) := packet_seq pkt (chain_seq rest);
 chain_seq (Pair lc rc) := chain_seq lc ++ chain_seq rc.
 
 Arguments stored_seq {A l}.
-Arguments stored_seq {A l}.
-
-(* Returns the sequence associated to a buffer containing stored triples. *)
-Notation buffer_seq b := (buffer.cmseq (@stored_seq) b).
 
 (* Returns the sequence associated to a prefix containing stored triples. *)
-Notation prefix_seq p := (buffer_seq p).
+Notation prefix_seq p := (deque_cmseq (@stored_seq) p).
 
 (* Returns the sequence associated to a suffix containing stored triples. *)
-Notation suffix_seq s := (buffer_seq s).
+Notation suffix_seq s := (deque_cmseq (@stored_seq) s).
 
 (* Returns the sequence associated to a node containing stored triples. *)
 Notation node_seq n l := (node'_cmseq (@stored_seq) n l).
 
 (* Returns the sequence associated to a green buffer. *)
 Equations green_buffer_seq {A l} : green_buffer A l -> list A :=
-green_buffer_seq (Gbuf b) := buffer_seq b.
+green_buffer_seq (Gbuf b) := prefix_seq b.
 
 (* Returns the sequence associated to a stored buffer. *)
 Equations stored_buffer_seq {A l} : stored_buffer A l -> list A :=
-stored_buffer_seq (Sbuf b) := buffer_seq b.
+stored_buffer_seq (Sbuf b) := suffix_seq b.
 
 (* Returns the sequence associated to a triple. *)
 Equations triple_seq {A l k C} : triple A l k C -> list A :=

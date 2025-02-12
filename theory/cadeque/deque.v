@@ -5,69 +5,23 @@ From Hammer Require Import Tactics.
 
 From Cadeque.utils Require Import comp_eq.
 From Cadeque.deque Require Import deque_size.
-Module deque := deque_size.
-
-(* +------------------------------------------------------------------------+ *)
-(* |                                Vectors                                 | *)
-(* +------------------------------------------------------------------------+ *)
-
-(* A type for vectors. *)
-Inductive vector (A : Type) : nat -> Type :=
-| V0 {u : nat} : vector A u
-| V1 {u : nat} : A -> vector A (1 + u)
-| V2 {u : nat} : A -> A -> vector A (2 + u)
-| V3 {u : nat} : A -> A -> A -> vector A (3 + u)
-| V4 {u : nat} : A -> A -> A -> A -> vector A (4 + u)
-| V5 {u : nat} : A -> A -> A -> A -> A -> vector A (5 + u)
-| V6 {u : nat} : A -> A -> A -> A -> A -> A -> vector A (6 + u).
-Arguments V0 {A u}.
-Arguments V1 {A u}.
-Arguments V2 {A u}.
-Arguments V3 {A u}.
-Arguments V4 {A u}.
-Arguments V5 {A u}.
-Arguments V6 {A u}.
-
-Set Equations Transparent.
-
-(* Returns the sequence associated to a vector. *)
-Equations vector_seq {A u} : vector A u -> list A :=
-vector_seq V0 := [];
-vector_seq (V1 a) := [a];
-vector_seq (V2 a b) := [a] ++ [b];
-vector_seq (V3 a b c) := [a] ++ [b] ++ [c];
-vector_seq (V4 a b c d) := [a] ++ [b] ++ [c] ++ [d];
-vector_seq (V5 a b c d e) := [a] ++ [b] ++ [c] ++ [d] ++ [e];
-vector_seq (V6 a b c d e f) := [a] ++ [b] ++ [c] ++ [d] ++ [e] ++ [f].
-
-(* Returns the number of elements contained in a vector. *)
-Equations vector_size {A u} (v : vector A u) : nat :=
-vector_size V0 := 0;
-vector_size (V1 _) := 1;
-vector_size (V2 _ _) := 2;
-vector_size (V3 _ _ _) := 3;
-vector_size (V4 _ _ _ _) := 4;
-vector_size (V5 _ _ _ _ _) := 5;
-vector_size (V6 _ _ _ _ _ _) := 6.
-
-Unset Equations Transparent.
+From Cadeque.cadeque Require Import vector.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
 (* +------------------------------------------------------------------------+ *)
 
-(* A type for buffers. *)
-Definition t (A : Type) (n : size) : Type := deque A n.
+Definition deque (A : Type) (n : nat) : Type := deque A n.
 
-(* This type represent a buffer which size is the maximum of [increment] and
+(* This type represents a deque which size is the maximum of [increment] and
    [n].
 
    In practice, this type is used in cases where [n] is greater than
-   [increment]. The definition of [pt] ensures that the size of the buffer
+   [increment]. The definition of [pdeque] ensures that the size of the buffer
    represented is equal to [n], while precising that the size is at
    least [increment]. *)
-Definition pt (A : Type) (increment : nat) (n : nat) :=
-    t A (increment + Nat.iter increment Nat.pred n).
+Definition pdeque (A : Type) (increment : nat) (n : nat) :=
+    deque A (increment + Nat.iter increment Nat.pred n).
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Models                                 | *)
@@ -78,14 +32,24 @@ Opaque app.
 Definition singleton {A : Type} (a1 : A) : list A := [a1].
 Opaque singleton.
 
-(* Sequence + map + concat for buffers. *)
-Notation cmseq := deque.deque_cmseq.
+(* Sequence + map + concat for deques. *)
+Definition deque_cmseq
+  {T : Type -> level -> Type}
+  (f : forall A l, T A l -> list A)
+  {A lt n} (d : deque (T A lt) n) : list A := deque_cmseq f d.
 
-(* Returns the sequence associated to a buffer. *)
-Notation seq := deque.deque_seq.
+(* Returns the sequence associated to a deque. *)
+Definition deque_seq {A n} (d : deque A n) : list A := deque_seq d.
 
-(* Ensures the correct behavior of buffers model functions. *)
-Notation correct_cmseq := deque.correct_deque_cmseq.
+(* Ensures the correct behavior of deques model functions. *)
+Lemma correct_deque_cmseq
+  [T : Type -> level -> Type]
+  (f : forall A l, T A l -> list A)
+  [A lt n] (d : deque (T A lt) n) :
+  deque_cmseq f d = concat (map (f A lt) (deque_seq d)).
+Proof.
+  apply correct_deque_cmseq.
+Qed.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                  Core                                  | *)
@@ -100,127 +64,152 @@ Notation correct_cmseq := deque.correct_deque_cmseq.
    hint database. *)
 #[local] Obligation Tactic := try (cbn; hauto db:rbuffer).
 
+(* The empty deque. *)
+Definition empty {A} : { d : deque A 0 | deque_seq d = [] } := empty.
+
+(* Pushes one element on a deque. *)
+Definition push {A n} (a : A) (d : deque A n) :
+  { d' : deque A (S n) | deque_seq d' = [a] ++ deque_seq d } := push a d.
+
+(* Injects one element on a deque. *)
+Definition inject {A n} (d : deque A n) (a : A) :
+  { d' : deque A (S n) | deque_seq d' = deque_seq d ++ [a] } := inject d a.
+
+(* Pops one element off a deque. *)
+Definition pop {A n} (d : deque A (S n)) :
+  { '(a, d') : A * deque A n | deque_seq d = [a] ++ deque_seq d' } := pop d.
+
+(* Ejects one element off a deque. *)
+Definition eject {A n} (d : deque A (S n)) :
+  { '(d', a) : deque A n * A | deque_seq d = deque_seq d' ++ [a] } := eject d.
+
 (* Pushes two elements on a buffer. *)
-Equations push2 {A n} (a1 a2 : A) (b : t A n) :
-  { b' : t A (S (S n)) | seq b' = [a1] ++ [a2] ++ seq b } :=
+Equations push2 {A n} (a1 a2 : A) (b : deque A n) :
+  { b' : deque A (S (S n)) | deque_seq b' = [a1] ++ [a2] ++ deque_seq b } :=
 push2 a1 a2 b with push a2 b => {
   | ? b' with push a1 b' => {
     | ? b'' := ? b'' } }.
 
 (* Injects two elemets on a buffer. *)
-Equations inject2 {A n} (b : t A n) (a2 a1 : A) :
-  { b' : t A (S (S n)) | seq b' = seq b ++ [a2] ++ [a1] } :=
+Equations inject2 {A n} (b : deque A n) (a2 a1 : A) :
+  { b' : deque A (S (S n)) | deque_seq b' = deque_seq b ++ [a2] ++ [a1] } :=
 inject2 b a2 a1 with inject b a2 => {
   | ? b' with inject b' a1 => {
     | ? b'' := ? b'' } }.
 
 (* Pops two elements off a buffer containing at least two elements. *)
-Equations pop2 {A n} (b : t A (S (S n))) :
-  { '(a1, a2, b') : A * A * t A n | seq b = [a1] ++ [a2] ++ seq b' } :=
+Equations pop2 {A n} (b : deque A (S (S n))) :
+  { '(a1, a2, b') : A * A * deque A n |
+    deque_seq b = [a1] ++ [a2] ++ deque_seq b' } :=
 pop2 b with pop b => {
   | ? (a1, b') with pop b' => {
     | ? (a2, b'') := ? (a1, a2, b'') } }.
 
 (* Ejects two elements off a buffer containing at least two elements. *)
-Equations eject2 {A n} (b : t A (S (S n))) :
-  { '(b', a2, a1) : t A n * A * A | seq b = seq b' ++ [a2] ++ [a1] } :=
+Equations eject2 {A n} (b : deque A (S (S n))) :
+  { '(b', a2, a1) : deque A n * A * A |
+    deque_seq b = deque_seq b' ++ [a2] ++ [a1] } :=
 eject2 b with eject b => {
   | ? (b', a1) with eject b' => {
     | ? (b'', a2) := ? (b'', a2, a1) } }.
 
-(* Ensures that the sequence associated to a buffer containing no element is
+(* Ensures that the sequence associated to a deque containing no element is
    empty. *)
-Lemma empty_buffer [A] (b : t A 0) : seq b = [].
+Lemma empty_deque [A] (d : deque A 0) : deque_seq d = [].
 Proof.
-  dependent elimination b. simpl.
+  destruct d. simpl.
   dependent elimination c; simpl.
   - dependent elimination b. reflexivity.
   - inversion p; subst.
     + dependent elimination r.
-    + pose (yellow_size X) as Hpsize.
-      destruct Hpsize as [ps Hpsize].
+    + pose (yellow_size X) as HpnSk.
+      destruct HpnSk as [k Hp2Sk].
       exfalso; lia.
 Qed.
 
-(* The last lemma is added to the hint database. *)
-#[export] Hint Rewrite empty_buffer : rbuffer.
+(* The last two lemmas are added to the hint database. *)
+#[export] Hint Rewrite empty_deque : rbuffer.
 
 (* Returns a buffer containing one element. *)
-Equations single {A} (a1 : A) : { b : t A 1 | seq b = [a1] } :=
-single a1 with deque.empty => {
+Equations single {A} (a1 : A) : { b : deque A 1 | deque_seq b = [a1] } :=
+single a1 with empty => {
   | ? d with deque.push a1 d => {
     | ? d' := ? d' } }.
 
 (* Returns a buffer containing two elements. *)
-Equations pair {A} (a1 a2 : A) : { b : t A 2 | seq b = [a1] ++ [a2] } :=
+Equations pair {A} (a1 a2 : A) :
+  { b : deque A 2 | deque_seq b = [a1] ++ [a2] } :=
 pair a1 a2 with single a2 => {
   | ? b with push a1 b => { | ? b' := ? b' } }.
 
 (* Pushes three elements on a buffer. *)
-Equations push3 {A n} (a1 a2 a3 : A) (b : t A n) :
-    { b' : t A (3 + n) | seq b' = [a1] ++ [a2] ++ [a3] ++ seq b } :=
+Equations push3 {A n} (a1 a2 a3 : A) (b : deque A n) :
+    { b' : deque A (3 + n) |
+      deque_seq b' = [a1] ++ [a2] ++ [a3] ++ deque_seq b } :=
 push3 a1 a2 a3 b with push2 a2 a3 b => {
   | ? b' with push a1 b' => { | ? b'' := ? b'' } }.
 
 (* Injects three elements on a buffer. *)
-Equations inject3 {A n} (b : t A n) (a3 a2 a1 : A) :
-    { b' : t A (3 + n) | seq b' = seq b ++ [a3] ++ [a2] ++ [a1] } :=
+Equations inject3 {A n} (b : deque A n) (a3 a2 a1 : A) :
+    { b' : deque A (3 + n) |
+      deque_seq b' = deque_seq b ++ [a3] ++ [a2] ++ [a1] } :=
 inject3 b a3 a2 a1 with inject2 b a3 a2 => {
   | ? b' with inject b' a1 => { | ? b'' := ? b'' } }.
 
 (* Pushes five elements on a buffer. *)
-Equations push5 {A n} (a1 a2 a3 a4 a5 : A) (b : t A n) :
-  { b' : t A (5 + n) |
-    seq b' = [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ seq b } :=
+Equations push5 {A n} (a1 a2 a3 a4 a5 : A) (b : deque A n) :
+  { b' : deque A (5 + n) |
+    deque_seq b' = [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ deque_seq b } :=
 push5 a1 a2 a3 a4 a5 b with push3 a3 a4 a5 b => {
   | ? b' with push2 a1 a2 b' => { | ? b'' := ? b'' } }.
 
 (* Injects five elements on a buffer. *)
-Equations inject5 {A n} (b : t A n) (a5 a4 a3 a2 a1 : A) :
-  { b' : t A (5 + n) |
-    seq b' = seq b ++ [a5] ++ [a4] ++ [a3] ++ [a2] ++ [a1] } :=
+Equations inject5 {A n} (b : deque A n) (a5 a4 a3 a2 a1 : A) :
+  { b' : deque A (5 + n) |
+    deque_seq b' = deque_seq b ++ [a5] ++ [a4] ++ [a3] ++ [a2] ++ [a1] } :=
 inject5 b a5 a4 a3 a2 a1 with inject3 b a5 a4 a3 => {
   | ? b' with inject2 b' a2 a1 => { | ? b'' := ? b'' } }.
 
 (* Pops five elements off a buffer containing at least five elements. *)
-Equations pop5 {A n} (b : t A (5 + n)) :
-  { '(a1, a2, a3, a4, a5, b') : A * A * A * A * A * t A n |
-    seq b = [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ seq b' } :=
+Equations pop5 {A n} (b : deque A (5 + n)) :
+  { '(a1, a2, a3, a4, a5, b') : A * A * A * A * A * deque A n |
+    deque_seq b = [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ deque_seq b' } :=
 pop5 b with pop2 b => {
   | ? (a1, a2, b') with pop2 b' => {
     | ? (a3, a4, b'') with pop b'' => {
       | ? (a5, b''') := ? (a1, a2, a3, a4, a5, b''') } } }.
 
 (* Pushes six elements on a buffer. *)
-Equations push6 {A n} (a1 a2 a3 a4 a5 a6 : A) (b : t A n) :
-  { b' : t A (6 + n) |
-    seq b' = [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ [a6] ++ seq b } :=
+Equations push6 {A n} (a1 a2 a3 a4 a5 a6 : A) (b : deque A n) :
+  { b' : deque A (6 + n) | deque_seq b' =
+    [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ [a6] ++ deque_seq b } :=
 push6 a1 a2 a3 a4 a5 a6 b with push5 a2 a3 a4 a5 a6 b => {
   | ? b' with push a1 b' => { | ? b'' := ? b'' } }.
 
 (* Injects six elements on a buffer. *)
-Equations inject6 {A n} (b : t A n) (a6 a5 a4 a3 a2 a1 : A) :
-  { b' : t A (6 + n) |
-    seq b' = seq b ++ [a6] ++ [a5] ++ [a4] ++ [a3] ++ [a2] ++ [a1] } :=
+Equations inject6 {A n} (b : deque A n) (a6 a5 a4 a3 a2 a1 : A) :
+  { b' : deque A (6 + n) | deque_seq b' =
+    deque_seq b ++ [a6] ++ [a5] ++ [a4] ++ [a3] ++ [a2] ++ [a1] } :=
 inject6 b a6 a5 a4 a3 a2 a1 with inject5 b a6 a5 a4 a3 a2 => {
   | ? b' with inject b' a1 => { | ? b'' := ? b'' } }.
 
 (* Injects eight elements on a buffer. *)
-Equations inject8 {A n} (b : t A n) (a8 a7 a6 a5 a4 a3 a2 a1 : A) :
-  { b' : t A (8 + n) |  seq b' =
-    seq b ++ [a8] ++ [a7] ++ [a6] ++ [a5] ++ [a4] ++ [a3] ++ [a2] ++ [a1] } :=
+Equations inject8 {A n} (b : deque A n) (a8 a7 a6 a5 a4 a3 a2 a1 : A) :
+  { b' : deque A (8 + n) |  deque_seq b' =
+    deque_seq b ++ [a8] ++ [a7] ++ [a6] ++ [a5] ++ [a4] ++ [a3] ++ [a2] ++ [a1] } :=
 inject8 b a8 a7 a6 a5 a4 a3 a2 a1 with inject6 b a8 a7 a6 a5 a4 a3 => {
   | ? b' with inject2 b' a2 a1 => { | ? b'' := ? b'' } }.
 
 (* Provided the equality of two natural numbers, translates a buffer of size
    the first into a buffer of size the second. *)
-Equations translate {A n1 n2} (b : t A n1) (eq : n1 = n2) :
-  { b' : t A n2 | seq b' = seq b } :=
+Equations translate {A n1 n2} (b : deque A n1) (eq : n1 = n2) :
+  { b' : deque A n2 | deque_seq b' = deque_seq b } :=
 translate b eq with comp_eq eq => { | eq_refl := ? b }.
 
 (* Pushes a vector on a buffer. *)
-Equations push_vector {A u n} (v : vector A u) (b : t A n) :
-    { b' : t A (n + vector_size v) | seq b' = vector_seq v ++ seq b } :=
+Equations push_vector {A u n} (v : vector A u) (b : deque A n) :
+    { b' : deque A (n + vector_size v) |
+      deque_seq b' = vector_seq v ++ deque_seq b } :=
 push_vector V0 b with translate b _ => { | ? b' := ? b' };
 push_vector (V1 a1) b with push a1 b => {
   | ? b' with translate b' _ => { | ? b'' := ? b'' } };
@@ -238,8 +227,9 @@ push_vector (V6 a1 a2 a3 a4 a5 a6) b with push6 a1 a2 a3 a4 a5 a6 b => {
   | ? b' with translate b' _ => { | ? b'' := ? b'' } }.
 
 (* Injects a vector on a buffer. *)
-Equations inject_vector {A u n} (b : t A n) (v : vector A u) :
-    { b' : t A (n + vector_size v) | seq b' = seq b ++ vector_seq v } :=
+Equations inject_vector {A u n} (b : deque A n) (v : vector A u) :
+    { b' : deque A (n + vector_size v) |
+      deque_seq b' = deque_seq b ++ vector_seq v } :=
 inject_vector b V0 with translate b _ => { | ? b' := ? b' };
 inject_vector b (V1 a1) with inject b a1 => {
   | ? b' with translate b' _ => { | ? b'' := ? b'' } };
@@ -258,36 +248,36 @@ inject_vector b (V6 a1 a2 a3 a4 a5 a6) with inject6 b a1 a2 a3 a4 a5 a6 => {
 
 (* Pushes a vector then five elements on a buffer. *)
 Equations push_5vector {A u n}
-  (a1 a2 a3 a4 a5 : A) (vec : vector A u) (b : t A n) :
-  { b' : t A (5 + n + vector_size vec) | seq b' =
-    [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ vector_seq vec ++ seq b } :=
+  (a1 a2 a3 a4 a5 : A) (vec : vector A u) (b : deque A n) :
+  { b' : deque A (5 + n + vector_size vec) | deque_seq b' =
+    [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ vector_seq vec ++ deque_seq b } :=
 push_5vector a1 a2 a3 a4 a5 vec b with push_vector vec b => {
   | ? b' with push5 a1 a2 a3 a4 a5 b' => { | ? b'' := ? b'' } }.
 
 (* Injects five elements the a vector on a buffer. *)
 Equations inject_5vector {A u n}
-  (b : t A n) (z5 z4 z3 z2 z1 : A) (vec : vector A u) :
-  { b' : t A (5 + n + vector_size vec) | seq b' =
-    seq b ++ [z5] ++ [z4] ++ [z3] ++ [z2] ++ [z1] ++ vector_seq vec } :=
+  (b : deque A n) (z5 z4 z3 z2 z1 : A) (vec : vector A u) :
+  { b' : deque A (5 + n + vector_size vec) | deque_seq b' =
+    deque_seq b ++ [z5] ++ [z4] ++ [z3] ++ [z2] ++ [z1] ++ vector_seq vec } :=
 inject_5vector b z5 z4 z3 z2 z1 vec with inject5 b z5 z4 z3 z2 z1 => {
   | ? b' with inject_vector b' vec => { | ? b'' := ? b'' } }.
 
 (* Takes a buffer and returns an option indicating wheter the buffer is empty
    or not. *)
-Equations has1 {A n} (b : t A n) :
-  { o : option (pt A 1 n) |
-    seq b = match o with None => [] | Some b' => seq b' end } :=
+Equations has1 {A n} (b : deque A n) :
+  { o : option (pdeque A 1 n) |
+    deque_seq b = match o with None => [] | Some b' => deque_seq b' end } :=
 has1 (n := 0) _ := ? None;
 has1 (n := _) b := ? Some b.
 
 (* Takes a buffer and returns a sum indicating whether the buffer contains less
    or strictly more than two elements. *)
-Equations has3 {A n} (b : t A n) :
-  { s : sum (vector A 2) (pt A 3 n) |
-    seq b = match s with
-            | inl vec => vector_seq vec
-            | inr b' => seq b'
-            end } :=
+Equations has3 {A n} (b : deque A n) :
+  { s : sum (vector A 2) (pdeque A 3 n) |
+    deque_seq b = match s with
+                  | inl vec => vector_seq vec
+                  | inr b' => deque_seq b'
+                  end } :=
 has3 (n := 0) b := ? inl V0;
 has3 (n := 1) b with pop b => { | ? (a1, _) := ? inl (V1 a1) };
 has3 (n := 2) b with pop2 b => { | ? (a1, a2, _) := ? inl (V2 a1 a2) };
@@ -296,13 +286,13 @@ has3 (n := _) b := ? inr b.
 (* Takes a buffer of at least three elements and returns its first three
    elements along with a sum indicating whether the remaining buffer contains
    less or strictly more than three elements. *)
-Equations has3p {A n} (b : t A (3 + n)) :
-  { p : (A * A * A) * sum (vector A 2) (pt A 3 n) |
+Equations has3p {A n} (b : deque A (3 + n)) :
+  { p : (A * A * A) * sum (vector A 2) (pdeque A 3 n) |
     let '((a1, a2, a3), s) := p in
-    seq b = [a1] ++ [a2] ++ [a3] ++ match s with
-                            | inl vec => vector_seq vec
-                            | inr b' => seq b'
-                            end } :=
+    deque_seq b = [a1] ++ [a2] ++ [a3] ++ match s with
+                                          | inl vec => vector_seq vec
+                                          | inr b' => deque_seq b'
+                                          end } :=
 has3p b with pop2 b => { | ? (a1, a2, b') with pop b' => {
   | ? (a3, b'') with has3 b'' => {
     | ? s := ? ((a1, a2, a3), s) } } }.
@@ -310,25 +300,25 @@ has3p b with pop2 b => { | ? (a1, a2, b') with pop b' => {
 (* Takes a buffer of at least three elements and returns its last three
   elements along with a sum indicating whether the remaining buffer contains
   less or strictly more than three elements. *)
-Equations has3s {A n} (b : t A (3 + n)) :
-  { p : sum (vector A 2) (pt A 3 n) * (A * A * A) |
+Equations has3s {A n} (b : deque A (3 + n)) :
+  { p : sum (vector A 2) (pdeque A 3 n) * (A * A * A) |
     let '(s, (a3, a2, a1)) := p in
-    seq b = match s with
-            | inl vec => vector_seq vec
-            | inr b' => seq b'
-            end ++ [a3] ++ [a2] ++ [a1] } :=
+    deque_seq b = match s with
+                  | inl vec => vector_seq vec
+                  | inr b' => deque_seq b'
+                  end ++ [a3] ++ [a2] ++ [a1] } :=
 has3s b with eject2 b => { | ? (b', a2, a1) with eject b' => {
   | ? (b'', a3) with has3 b'' => {
     | ? s := ? (s, (a3, a2, a1)) } } }.
 
 (* Takes a buffer of at least four elements and returns a sum indicating
    whether the buffer contains exactly four or more than five elements. *)
-Equations has5 {A n} (b : t A (4 + n)) :
-  { s : sum (A * A * A * A) (pt A 5 (4 + n)) |
-    seq b = match s with
-            | inl (a1, a2, a3, a4) => [a1] ++ [a2] ++ [a3] ++ [a4]
-            | inr b' => seq b'
-            end } :=
+Equations has5 {A n} (b : deque A (4 + n)) :
+  { s : sum (A * A * A * A) (pdeque A 5 (4 + n)) |
+    deque_seq b = match s with
+                  | inl (a1, a2, a3, a4) => [a1] ++ [a2] ++ [a3] ++ [a4]
+                  | inr b' => deque_seq b'
+                  end } :=
 has5 (n := 0) b with pop2 b => {
   | ? (a1, a2, b') with pop2 b' => {
     | ? (a3, a4, _) := ? inl (a1, a2, a3, a4) } };
@@ -338,12 +328,12 @@ has5 (n := _) b := ? inr b.
     the buffer contains strictly less or more than seven elements. If the
     buffer contains more than seven elements, its last two elements are
     extracted. *)
-Equations has7s {A n} (b : t A (S n)) :
-  { s : sum (vector A 6) (pt A 5 (Nat.pred n) * A * A) |
-    seq b = match s with
-            | inl vec => vector_seq vec
-            | inr (b', z2, z1) => seq b' ++ [z2] ++ [z1]
-            end } :=
+Equations has7s {A n} (b : deque A (S n)) :
+  { s : sum (vector A 6) (pdeque A 5 (Nat.pred n) * A * A) |
+    deque_seq b = match s with
+                  | inl vec => vector_seq vec
+                  | inr (b', z2, z1) => deque_seq b' ++ [z2] ++ [z1]
+                  end } :=
 has7s (n := 0) b with eject b => { | ? (_, z1) := ? inl (V1 z1) };
 has7s (n := 1) b with eject2 b => { | ? (_, z2, z1) := ? inl (V2 z2 z1) };
 has7s (n := 2) b with eject2 b => {
@@ -362,12 +352,12 @@ has7s (n := _) b with eject2 b => { | ? r := ? inr r }.
     the buffer contains strictly less or more than seven elements. If the
     buffer contains more than seven elements, its first two elements are
     extracted. *)
-Equations has7p {A n} (b : t A (S n)) :
-  { s : sum (vector A 6) (A * A * pt A 5 (Nat.pred n)) |
-    seq b = match s with
-            | inl vec => vector_seq vec
-            | inr (a1, a2, b') => [a1] ++ [a2] ++ seq b'
-            end } :=
+Equations has7p {A n} (b : deque A (S n)) :
+  { s : sum (vector A 6) (A * A * pdeque A 5 (Nat.pred n)) |
+    deque_seq b = match s with
+                  | inl vec => vector_seq vec
+                  | inr (a1, a2, b') => [a1] ++ [a2] ++ deque_seq b'
+                  end } :=
 has7p (n := 0) b with pop b => { | ? (a1, _) := ? inl (V1 a1) };
 has7p (n := 1) b with pop2 b => { | ? (a1, a2, _) := ? inl (V2 a1 a2) };
 has7p (n := 2) b with pop2 b => {
@@ -384,13 +374,13 @@ has7p (n := _) b with pop2 b => { | ? r := ? inr r }.
 
 (* Takes a buffer of at least five elements and returns a sum indicating
    whether the buffer contains less or strictly more than seven elements. *)
-Equations has8 {A n} (b : t A (5 + n)) :
-  { s : sum (A * A * A * A * A * vector A 2) (pt A 8 (5 + n)) |
-    seq b = match s with
-            | inl (a1, a2, a3, a4, a5, vec) =>
-              [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ vector_seq vec
-            | inr b' => seq b'
-            end } :=
+Equations has8 {A n} (b : deque A (5 + n)) :
+  { s : sum (A * A * A * A * A * vector A 2) (pdeque A 8 (5 + n)) |
+    deque_seq b = match s with
+                  | inl (a1, a2, a3, a4, a5, vec) =>
+                    [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ vector_seq vec
+                  | inr b' => deque_seq b'
+                  end } :=
 has8 (n := 0) b with pop5 b => {
   | ? (a1, a2, a3, a4, a5, _) := ? inl (a1, a2, a3, a4, a5, V0) };
 has8 (n := 1) b with pop5 b => {
@@ -403,15 +393,16 @@ has8 (n := _) b := ? inr b.
 
 (* Takes a buffer of at least eight elements and returns a sum indicating
    whether the buffer contains less or strictly more than 10 elements. *)
-Equations has3p8 {A n} (b : t A (8 + n)) :
+Equations has3p8 {A n} (b : deque A (8 + n)) :
   {s : sum (A * A * A * A * A * A * A * A * vector A 2)
-           (t A 3 * pt A 8 (5 + n)) |
-    seq b = match s with
-            | inl (a1, a2, a3, a4, a5, a6, a7, a8, vec) =>
-              [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ [a6] ++ [a7] ++ [a8] ++
-              vector_seq vec
-            | inr (b3, b8) => seq b3 ++ seq b8
-            end } :=
+           (deque A 3 * pdeque A 8 (5 + n)) |
+    deque_seq b = match s with
+                  | inl (a1, a2, a3, a4, a5, a6, a7, a8, vec) =>
+                    [a1] ++ [a2] ++ [a3] ++ [a4] ++
+                    [a5] ++ [a6] ++ [a7] ++ [a8] ++
+                    vector_seq vec
+                  | inr (b3, b8) => deque_seq b3 ++ deque_seq b8
+                  end } :=
 has3p8 b with pop2 b => { | ? (a1, a2, b') with pop b' => {
   | ? (a3, b'') with has8 b'' => {
     | ? inl (a4, a5, a6, a7, a8, v) :=

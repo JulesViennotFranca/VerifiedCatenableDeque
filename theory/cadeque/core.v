@@ -8,7 +8,7 @@ From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
 From Cadeque.color Require Import GYOR.
-From Cadeque.cadeque Require Import buffer types models.
+From Cadeque.cadeque Require Import vector deque types models.
 
 (* The [app] function and the singleton list are made opaque. *)
 Opaque app.
@@ -25,7 +25,9 @@ Opaque singleton.
 #[export] Hint Rewrite map_app : rlist.
 #[export] Hint Rewrite concat_app : rlist.
 
-#[export] Hint Rewrite buffer.correct_cmseq : rlist.
+#[export] Hint Rewrite correct_deque_cmseq : rlist.
+
+(* Opaque deque.deque_cmseq. *)
 
 (* Notation for dependent types hiding the property on [x]. *)
 Notation "? x" := (@exist _ _ x _) (at level 100).
@@ -41,15 +43,15 @@ Equations push_left_node {A l ar C}
   { st' : node A l ar left C |
     forall (l : list A),
       node_seq st' l = stored_seq a1 ++ node_seq st l } :=
-push_left_node a1 (Left GN p s) with buffer.push a1 p => {
+push_left_node a1 (Left GN p s) with deque.push a1 p => {
   | ? p' := ? Left GN p' s };
-push_left_node a1 (Left YN p s) with buffer.push a1 p => {
+push_left_node a1 (Left YN p s) with deque.push a1 p => {
   | ? p' := ? Left YN p' s };
-push_left_node a1 (Left ON p s) with buffer.push a1 p => {
+push_left_node a1 (Left ON p s) with deque.push a1 p => {
   | ? p' := ? Left ON p' s };
-push_left_node a1 (Left RN p s) with buffer.push a1 p => {
+push_left_node a1 (Left RN p s) with deque.push a1 p => {
   | ? p' := ? Left RN p' s };
-push_left_node a1 (Left EN p s) with buffer.push a1 p => {
+push_left_node a1 (Left EN p s) with deque.push a1 p => {
   | ? p' := ? Left EN p' s }.
 
 (* Injects on a right node. *)
@@ -59,15 +61,15 @@ Equations inject_right_node {A l ar C}
   { st' : node A l ar right C |
     forall (l : list A),
       node_seq st' l = node_seq st l ++ stored_seq a1 } :=
-inject_right_node (Right GN p s) a1 with buffer.inject s a1 => {
+inject_right_node (Right GN p s) a1 with deque.inject s a1 => {
   | ? s' := ? Right GN p s' };
-inject_right_node (Right YN p s) a1 with buffer.inject s a1 => {
+inject_right_node (Right YN p s) a1 with deque.inject s a1 => {
   | ? s' := ? Right YN p s' };
-inject_right_node (Right ON p s) a1 with buffer.inject s a1 => {
+inject_right_node (Right ON p s) a1 with deque.inject s a1 => {
   | ? s' := ? Right ON p s' };
-inject_right_node (Right RN p s) a1 with buffer.inject s a1 => {
+inject_right_node (Right RN p s) a1 with deque.inject s a1 => {
   | ? s' := ? Right RN p s' };
-inject_right_node (Right EN p s) a1 with buffer.inject s a1 => {
+inject_right_node (Right EN p s) a1 with deque.inject s a1 => {
   | ? s' := ? Right EN p s' }.
 
 (* Pushes on an only node. *)
@@ -77,15 +79,15 @@ Equations push_only_node {A l ar C}
   { st' : node A l ar only C |
     forall (l : list A),
       node_seq st' l = stored_seq a1 ++ node_seq st l } :=
-push_only_node a1 (Only GN p s) with buffer.push a1 p => {
+push_only_node a1 (Only GN p s) with deque.push a1 p => {
   | ? p' := ? Only GN p' s };
-push_only_node a1 (Only YN p s) with buffer.push a1 p => {
+push_only_node a1 (Only YN p s) with deque.push a1 p => {
   | ? p' := ? Only YN p' s };
-push_only_node a1 (Only ON p s) with buffer.push a1 p => {
+push_only_node a1 (Only ON p s) with deque.push a1 p => {
   | ? p' := ? Only ON p' s };
-push_only_node a1 (Only RN p s) with buffer.push a1 p => {
+push_only_node a1 (Only RN p s) with deque.push a1 p => {
   | ? p' := ? Only RN p' s };
-push_only_node a1 (Only_end p) with buffer.push a1 p => {
+push_only_node a1 (Only_end p) with deque.push a1 p => {
   | ? p' := ? Only_end p' }.
 
 (* Injects on an only node. *)
@@ -95,15 +97,15 @@ Equations inject_only_node {A l ar C}
   { st' : node A l ar only C |
     forall (l : list A),
       node_seq st' l = node_seq st l ++ stored_seq a1 } :=
-inject_only_node (Only GN p s) a1 with buffer.inject s a1 => {
+inject_only_node (Only GN p s) a1 with deque.inject s a1 => {
   | ? s' := ? Only GN p s' };
-inject_only_node (Only YN p s) a1 with buffer.inject s a1 => {
+inject_only_node (Only YN p s) a1 with deque.inject s a1 => {
   | ? s' := ? Only YN p s' };
-inject_only_node (Only ON p s) a1 with buffer.inject s a1 => {
+inject_only_node (Only ON p s) a1 with deque.inject s a1 => {
   | ? s' := ? Only ON p s' };
-inject_only_node (Only RN p s) a1 with buffer.inject s a1 => {
+inject_only_node (Only RN p s) a1 with deque.inject s a1 => {
   | ? s' := ? Only RN p s' };
-inject_only_node (Only_end p) a1 with buffer.inject p a1 => {
+inject_only_node (Only_end p) a1 with deque.inject p a1 => {
   | ? p' := ? Only_end p' }.
 
 (* Pushes on a left packet. *)
@@ -187,7 +189,7 @@ Equations single_node {A l}
   (a1 : stored A l) :
   { st : node A l 0 only green |
     forall (l : list A), node_seq st l = stored_seq a1 } :=
-single_node a1 with buffer.single a1 => { | ? p := ? Only_end p }.
+single_node a1 with deque.single a1 => { | ? p := ? Only_end p }.
 
 (* Returns a packet containing one element. *)
 Equations single_packet {A l}
@@ -370,22 +372,22 @@ chain_of_triple (Triple RT hd child) :=
 (* Makes a left [left_right_triple] out of an only triple. *)
 Equations left_of_only {A l C} (t : triple A l only C) :
   { lt : left_right_triple A l left C | lr_triple_seq lt = triple_seq t } :=
-left_of_only (Triple GT (Only_end p) Empty) with buffer.has7s p => {
+left_of_only (Triple GT (Only_end p) Empty) with deque.has7s p => {
   | ? inl v := ? Not_enough v;
   | ? inr (p1, z2, z1) :=
     ? Ok_lrt (Triple GT (Left EN p1 (z2, z1)) Empty) };
-left_of_only (Triple tc (Only nc p s) child) with buffer.eject2 s => {
+left_of_only (Triple tc (Only nc p s) child) with deque.eject2 s => {
   | ? (s1, z2, z1) with inject_ne_chain child (Small s1) => {
     | ? child1 := ? Ok_lrt (Triple tc (Left nc p (z2, z1)) child1) } }.
 
 (* Makes a right [left_right_triple] out of an only triple. *)
 Equations right_of_only {A l C} (t : triple A l only C) :
   { rt : left_right_triple A l right C | lr_triple_seq rt = triple_seq t } :=
-right_of_only (Triple GT (Only_end s) Empty) with buffer.has7p s => {
+right_of_only (Triple GT (Only_end s) Empty) with deque.has7p s => {
   | ? inl v := ? Not_enough v;
   | ? inr (a1, a2, s1) :=
     ? Ok_lrt (Triple GT (Right EN (a1, a2) s1) Empty) };
-right_of_only (Triple tc (Only nc p s) child) with buffer.pop2 p => {
+right_of_only (Triple tc (Only nc p s) child) with deque.pop2 p => {
   | ? (a1, a2, p1) with push_ne_chain (Small p1) child => {
     | ? child1 := ? Ok_lrt (Triple tc (Right nc (a1, a2) s) child1) } }.
 
@@ -399,8 +401,8 @@ Equations stored_of_right {A l ql C}
     stored_seq stored ++ stored_seq z2 ++ stored_seq z1 =
     suffix_seq sl ++ triple_seq tr } :=
 stored_of_right sl (Triple tc (Right nc (st1, st2) sr) child)
-  with buffer.inject2 sl st1 st2 => {
-    | ? p1 with buffer.eject2 sr => {
+  with deque.inject2 sl st1 st2 => {
+    | ? p1 with deque.eject2 sr => {
       | ? (s1, z2, z1) := ? (Big p1 child s1, (z2, z1)) } }.
 
 (* Takes a left triple and a prefix of at least one element and returns a
@@ -413,8 +415,8 @@ Equations stored_of_left {A l qr C}
     stored_seq a1 ++ stored_seq a2 ++ stored_seq stored =
     triple_seq tl ++ prefix_seq pr } :=
 stored_of_left (Triple tc (Left nc pl (z2, z1)) child) pr
-  with buffer.push2 z2 z1 pr => {
-    | ? s1 with buffer.pop2 pl => {
+  with deque.push2 z2 z1 pr => {
+    | ? s1 with deque.pop2 pl => {
       | ? (st1, st2, p1) := ? ((st1, st2), Big p1 child s1) } }.
 
 (* Makes a left triple out of a pair of left and right triples. *)
@@ -423,12 +425,12 @@ Equations left_of_pair {A l lC rC}
   { tl' : triple A l left lC |
     triple_seq tl' = triple_seq tl ++ triple_seq tr } :=
 left_of_pair (Triple GT (Left EN p (z2, z1)) Empty) tr
-  with buffer.inject p z2, buffer.single z1 => {
+  with deque.inject p z2, deque.single z1 => {
     | ? p1, ? s1 with stored_of_right s1 tr => {
       | ? (stored, s2) with single_chain stored => {
         | ? child := ? Triple OST (Left ON p1 s2) child } } };
 left_of_pair (Triple tc (Left nc p (z2, z1)) child) tr
-  with buffer.pair z2 z1 => { | ? s with stored_of_right s tr => {
+  with deque.pair z2 z1 => { | ? s with stored_of_right s tr => {
     | ? (stored, s1) with inject_ne_chain child stored => {
       | ? child1 := ? Triple tc (Left nc p s1) child1 } } }.
 
@@ -442,12 +444,12 @@ Equations right_of_pair {A l lC rC}
   { tr' : triple A l right rC |
     triple_seq tr' = triple_seq tl ++ triple_seq tr } :=
 right_of_pair tl (Triple GT (Right EN (a1, a2) s) Empty)
-  with buffer.single a1, buffer.push a2 s => {
+  with deque.single a1, deque.push a2 s => {
     | ? p1, ? s1 with stored_of_left tl p1 => {
       | ? (p2, stored) with single_chain stored => {
         | ? child := ? Triple OST (Right ON p2 s1) child } } };
 right_of_pair tl (Triple tc (Right nc (a1, a2) s) child)
-  with buffer.pair a1 a2 => { | ? p with stored_of_left tl p => {
+  with deque.pair a1 a2 => { | ? p with stored_of_left tl p => {
     | ? (p1, stored) with push_ne_chain stored child => {
       | ? child1 := ? Triple tc (Right nc p1 s) child1 } } }.
 
@@ -493,20 +495,20 @@ orange_tc (Pair _ _)     := OPT.
 Equations pop_left_green {A l} (tl : triple A l left green) :
   { '(a1, pt) : stored A l * partial_triple A l pair left |
     triple_seq tl = stored_seq a1 ++ pt_triple_seq pt } :=
-pop_left_green (Triple GT (Left EN p (z2, z1)) Empty) with buffer.pop p => {
-  | ? (a1, p1) with buffer.has5 p1 => {
+pop_left_green (Triple GT (Left EN p (z2, z1)) Empty) with deque.pop p => {
+  | ? (a1, p1) with deque.has5 p1 => {
     | ? inl (a2, a3, a4, a5) := ? (a1, Six_elements (a2, a3, a4, a5, z2, z1));
     | ? inr p2 => ? (a1, Ok_pt (Triple GT (Left EN p2 (z2, z1)) Empty)) } };
-pop_left_green (Triple GT (Left GN p s) child) with buffer.pop p => {
+pop_left_green (Triple GT (Left GN p s) child) with deque.pop p => {
   | ? (a1, p1) := ? (a1, Ok_pt (Triple YT (Left YN p1 s) child)) };
 pop_left_green (Triple YT (Left YN p s) child)
-  with buffer.pop p => { | ? (a1, p1) :=
+  with deque.pop p => { | ? (a1, p1) :=
     ? (a1, Ok_pt (Triple (orange_tc child) (Left ON p1 s) child)) };
 pop_left_green (Triple OST (Left ON p s) child)
-  with buffer.pop p => { | ? (a1, p1) :=
+  with deque.pop p => { | ? (a1, p1) :=
     ? (a1, Ok_pt (Triple RT (Left RN p1 s) child)) };
 pop_left_green (Triple OPT (Left ON p s) child)
-  with buffer.pop p => { | ? (a1, p1) :=
+  with deque.pop p => { | ? (a1, p1) :=
     ? (a1, Ok_pt (Triple RT (Left RN p1 s) child)) }.
 
 (* Ejects from a green right triple. *)
@@ -514,80 +516,80 @@ Equations eject_right_green {A l} (tr : triple A l right green) :
   { '(pt, z1) : partial_triple A l pair right * stored A l |
     triple_seq tr = pt_triple_seq pt ++ stored_seq z1 } :=
 eject_right_green (Triple GT (Right EN (a1, a2) s) Empty)
-  with buffer.eject s => { | ? (s1, z1) with buffer.has5 s1 => {
+  with deque.eject s => { | ? (s1, z1) with deque.has5 s1 => {
     | ? inl (z5, z4, z3, z2) := ? (Six_elements (a1, a2, z5, z4, z3, z2), z1);
     | ? inr s2 => ? (Ok_pt (Triple GT (Right EN (a1, a2) s2) Empty), z1) } };
-eject_right_green (Triple GT (Right GN p s) child) with buffer.eject s => {
+eject_right_green (Triple GT (Right GN p s) child) with deque.eject s => {
   | ? (s1, z1) := ? (Ok_pt (Triple YT (Right YN p s1) child), z1) };
 eject_right_green (Triple YT (Right YN p s) child)
-  with buffer.eject s => { | ? (s1, z1) :=
+  with deque.eject s => { | ? (s1, z1) :=
     ? (Ok_pt (Triple (orange_tc child) (Right ON p s1) child), z1) };
 eject_right_green (Triple OST (Right ON p s) child)
-  with buffer.eject s => { | ? (s1, z1) :=
+  with deque.eject s => { | ? (s1, z1) :=
     ? (Ok_pt (Triple RT (Right RN p s1) child), z1) };
 eject_right_green (Triple OPT (Right ON p s) child)
-  with buffer.eject s => { | ? (s1, z1) :=
+  with deque.eject s => { | ? (s1, z1) :=
     ? (Ok_pt (Triple RT (Right RN p s1) child), z1) }.
 
 (* Pops from a green only triple. *)
 Equations pop_only_green {A l} (t : triple A l only green) :
   { '(st1, pt) : stored A l * partial_triple A l single only |
     triple_seq t = stored_seq st1 ++ pt_triple_seq pt } :=
-pop_only_green (Triple GT (Only_end p) Empty) with buffer.pop p => {
-  | ? (st1, p1) with buffer.has1 p1 => {
+pop_only_green (Triple GT (Only_end p) Empty) with deque.pop p => {
+  | ? (st1, p1) with deque.has1 p1 => {
     | ? None := ? (st1, Zero_element);
     | ? Some p2 := ? (st1, Ok_pt (Triple GT (Only_end p2) Empty)) } };
-pop_only_green (Triple GT (Only GN p s) child) with buffer.pop p => {
+pop_only_green (Triple GT (Only GN p s) child) with deque.pop p => {
   | ? (st1, p1) := ? (st1, Ok_pt (Triple YT (Only YN p1 s) child)) };
-pop_only_green (Triple YT (Only YN p s) child) with buffer.pop p => {
+pop_only_green (Triple YT (Only YN p s) child) with deque.pop p => {
   | ? (st1, p1) :=
     ? (st1, Ok_pt (Triple (orange_tc child) (Only ON p1 s) child)) };
-pop_only_green (Triple OST (Only ON p s) child) with buffer.pop p => {
+pop_only_green (Triple OST (Only ON p s) child) with deque.pop p => {
   | ? (st1, p1) := ? (st1, Ok_pt (Triple RT (Only RN p1 s) child)) };
-pop_only_green (Triple OPT (Only ON p s) child) with buffer.pop p => {
+pop_only_green (Triple OPT (Only ON p s) child) with deque.pop p => {
   | ? (st1, p1) := ? (st1, Ok_pt (Triple RT (Only RN p1 s) child)) }.
 
 (* Ejects from a green only triple. *)
 Equations eject_only_green {A l} (t : triple A l only green) :
   { '(pt, z1) : partial_triple A l single only * stored A l |
     triple_seq t = pt_triple_seq pt ++ stored_seq z1 } :=
-eject_only_green (Triple GT (Only_end s) Empty) with buffer.eject s => {
-  | ? (st1, z1) with buffer.has1 st1 => {
+eject_only_green (Triple GT (Only_end s) Empty) with deque.eject s => {
+  | ? (st1, z1) with deque.has1 st1 => {
     | ? None := ? (Zero_element, z1);
     | ? Some s2 := ? (Ok_pt (Triple GT (Only_end s2) Empty), z1) } };
-eject_only_green (Triple GT (Only GN p s) child) with buffer.eject s => {
+eject_only_green (Triple GT (Only GN p s) child) with deque.eject s => {
   | ? (st1, z1) := ? (Ok_pt (Triple YT (Only YN p st1) child), z1) };
-eject_only_green (Triple YT (Only YN p s) child) with buffer.eject s => {
+eject_only_green (Triple YT (Only YN p s) child) with deque.eject s => {
   | ? (st1, z1) :=
     ? (Ok_pt (Triple (orange_tc child) (Only ON p st1) child), z1) };
-eject_only_green (Triple OST (Only ON p s) child) with buffer.eject s => {
+eject_only_green (Triple OST (Only ON p s) child) with deque.eject s => {
   | ? (st1, z1) := ? (Ok_pt (Triple RT (Only RN p st1) child), z1) };
-eject_only_green (Triple OPT (Only ON p s) child) with buffer.eject s => {
+eject_only_green (Triple OPT (Only ON p s) child) with deque.eject s => {
   | ? (st1, z1) := ? (Ok_pt (Triple RT (Only RN p st1) child), z1) }.
 
 (* Takes an green only triple and represent it as a sandwich. *)
 Equations sandwich_only_green {A l} (t : triple A l only green) :
   { s : sandwich (stored A l) (partial_triple A l single only) |
     triple_seq t = sandwich_seq stored_seq pt_triple_seq s } :=
-sandwich_only_green (Triple GT (Only_end p) Empty) with buffer.pop p => {
-  | ? (st1, p1) with buffer.has1 p1 => {
+sandwich_only_green (Triple GT (Only_end p) Empty) with deque.pop p => {
+  | ? (st1, p1) with deque.has1 p1 => {
     | ? None := ? Alone st1;
-    | ? Some s with buffer.eject s => {
-      | ? (s1, z1) with buffer.has1 s1 => {
+    | ? Some s with deque.eject s => {
+      | ? (s1, z1) with deque.has1 s1 => {
         | ? None := ? Sandwich st1 Zero_element z1;
         | ? Some b :=
           ? Sandwich st1 (Ok_pt (Triple GT (Only_end b) Empty)) z1 } } } };
 sandwich_only_green (Triple GT (Only GN p s) child)
-  with buffer.pop p, buffer.eject s => { | ? (st1, p1), ? (s1, z1) :=
+  with deque.pop p, deque.eject s => { | ? (st1, p1), ? (s1, z1) :=
     ? Sandwich st1 (Ok_pt (Triple YT (Only YN p1 s1) child)) z1 };
 sandwich_only_green (Triple YT (Only YN p s) child)
-  with buffer.pop p, buffer.eject s => { | ? (st1, p1), ? (s1, z1) :=
+  with deque.pop p, deque.eject s => { | ? (st1, p1), ? (s1, z1) :=
     ? Sandwich st1 (Ok_pt (Triple (orange_tc child) (Only ON p1 s1) child)) z1 };
 sandwich_only_green (Triple OST (Only ON p s) child)
-  with buffer.pop p, buffer.eject s => { | ? (st1, p1), ? (s1, z1) :=
+  with deque.pop p, deque.eject s => { | ? (st1, p1), ? (s1, z1) :=
     ? Sandwich st1 (Ok_pt (Triple RT (Only RN p1 s1) child)) z1 };
 sandwich_only_green (Triple OPT (Only ON p s) child)
-  with buffer.pop p, buffer.eject s => { | ? (st1, p1), ? (s1, z1) :=
+  with deque.pop p, deque.eject s => { | ? (st1, p1), ? (s1, z1) :=
     ? Sandwich st1 (Ok_pt (Triple RT (Only RN p1 s1) child)) z1 }.
 
 (* Adapts a node coloring to a prefix of 8 or more elements. *)
@@ -606,12 +608,12 @@ Equations only_of_right {A l C}
   { t : triple A l only C |
     triple_seq t = six_stored_seq six ++ triple_seq tr } :=
 only_of_right (a1, a2, a3, a4, a5, a6) (Triple GT (Right EN (a7, a8) s) Empty)
-    with buffer.push2 a7 a8 s => {
-      | ? s1 with buffer.push6 a1 a2 a3 a4 a5 a6 s1 => {
+    with deque.push2 a7 a8 s => {
+      | ? s1 with deque.push6 a1 a2 a3 a4 a5 a6 s1 => {
         | ? s2 := ? Triple GT (Only_end s2) Empty } };
 only_of_right (a1, a2, a3, a4, a5, a6) (Triple tc (Right nc (a7, a8) s) child)
-  with buffer.pair a7 a8 => {
-    | ? p1 with buffer.push6 a1 a2 a3 a4 a5 a6 p1 => {
+  with deque.pair a7 a8 => {
+    | ? p1 with deque.push6 a1 a2 a3 a4 a5 a6 p1 => {
       | ? p2 := ? Triple tc (Only (adapt_to_prefix nc) p2 s) child } }.
 
 (* Adapts a node coloring to a suffix of 8 or more elements. *)
@@ -630,12 +632,12 @@ Equations only_of_left {A l C}
   { t : triple A l only C |
     triple_seq t = triple_seq tl ++ six_stored_seq six } :=
 only_of_left (Triple GT (Left EN p (z8, z7)) Empty) (z6, z5, z4, z3, z2, z1)
-    with buffer.inject2 p z8 z7 => {
-      | ? p1 with buffer.inject6 p1 z6 z5 z4 z3 z2 z1 => {
+    with deque.inject2 p z8 z7 => {
+      | ? p1 with deque.inject6 p1 z6 z5 z4 z3 z2 z1 => {
         | ? p2 := ? Triple GT (Only_end p2) Empty } };
 only_of_left (Triple tc (Left nc p (z8, z7)) child) (z6, z5, z4, z3, z2, z1)
-  with buffer.pair z8 z7 => {
-    | ? s1 with buffer.inject6 s1 z6 z5 z4 z3 z2 z1 => {
+  with deque.pair z8 z7 => {
+    | ? s1 with deque.inject6 s1 z6 z5 z4 z3 z2 z1 => {
       | ? s2 := ? Triple tc (Only (adapt_to_suffix nc) p s2) child } }.
 
 (* Pops from a green pair chain. *)
@@ -679,9 +681,9 @@ sandwich_pair_green (Pair cl cr)
   with triple_of_chain cl, triple_of_chain cr => {
     | ? tl, ? tr with pop_left_green tl, eject_right_green tr => {
       | ? (a1, Six_elements (a2, a3, a4, a5, a6, a7)),
-        ? (Six_elements (z7, z6, z5, z4, z3, z2), z1) with buffer.empty => {
-        | ? b with buffer.push6 a2 a3 a4 a5 a6 a7 b => {
-          | ? b1 with buffer.inject6 b1 z7 z6 z5 z4 z3 z2 => { | ? b2 :=
+        ? (Six_elements (z7, z6, z5, z4, z3, z2), z1) with deque.empty => {
+        | ? b with deque.push6 a2 a3 a4 a5 a6 a7 b => {
+          | ? b1 with deque.inject6 b1 z7 z6 z5 z4 z3 z2 => { | ? b2 :=
             ? Sandwich
               a1
               (Semi (Single G (Packet Hole (Only_end b2)) Empty))
@@ -708,8 +710,7 @@ pop_green (ar := 0) c with triple_of_chain c => {
     | ? (a1, Zero_element) := ? (a1, Semi Empty)
     | ? (a1, Ok_pt t1) with chain_of_triple t1 => {
       | ? c1 := ? (a1, Semi c1) } } };
-pop_green (ar := 1) c with pop_pair_green c => {
-  | ? (a1, sd) := ? (a1, sd) }.
+pop_green (ar := 1) c := pop_pair_green c.
 
 (* Ejects from a non-empty green chain. *)
 Equations eject_green {A l ar} (c : chain A l (S ar) only green green) :
@@ -720,8 +721,7 @@ eject_green (ar := 0) c with triple_of_chain c => {
     | ? (Zero_element, a1) := ? (Semi Empty, a1);
     | ? (Ok_pt t1, a1) with chain_of_triple t1 => {
       | ? c1 := ? (Semi c1, a1) } } };
-eject_green (ar := 1) c with eject_pair_green c => {
-  | ? (sd, a1) := ? (sd, a1) }.
+eject_green (ar := 1) c := eject_pair_green c.
 
 (* Takes a non-empty green chain and represent it as a sandwich. *)
 Equations sandwich_green {A l ar}
@@ -734,7 +734,7 @@ sandwich_green (ar := 0) c with triple_of_chain c => {
     | ? Sandwich a1 Zero_element z1 := ? Sandwich a1 (Semi Empty) z1;
     | ? Sandwich a1 (Ok_pt t1) z1 with chain_of_triple t1 => {
       | ? c1 := ? Sandwich a1 (Semi c1) z1 } } };
-sandwich_green (ar := 1) c with sandwich_pair_green c => { | ? res := ? res }.
+sandwich_green (ar := 1) c := sandwich_pair_green c.
 
 (* Takes a prefix of at least 5 elements, a prefix of at least 3 elements and
    and a semi-regular cadeque of stored triples. Rearranges the elements of the
@@ -746,11 +746,11 @@ Equations make_green_prefix {A l q qstored}
   { '(pgreen, child') : green_buffer A l * semi_cadeque A (S l) |
     green_buffer_seq pgreen ++ semi_cadeque_seq child' =
     prefix_seq p ++ prefix_seq pstored ++ semi_cadeque_seq child } :=
-make_green_prefix p pstored child with buffer.has3p pstored => {
-  | ? ((a1, a2, a3), inl v) with buffer.inject3 p a1 a2 a3 => {
-    | ? pgreen with buffer.inject_vector pgreen v => {
+make_green_prefix p pstored child with deque.has3p pstored => {
+  | ? ((a1, a2, a3), inl v) with deque.inject3 p a1 a2 a3 => {
+    | ? pgreen with deque.inject_vector pgreen v => {
       | ? pgreen1 := ? (Gbuf pgreen1, child) } };
-  | ? ((a1, a2, a3), inr pstored1) with buffer.inject3 p a1 a2 a3 => {
+  | ? ((a1, a2, a3), inr pstored1) with deque.inject3 p a1 a2 a3 => {
     | ? pgreen with semi_push (Small pstored1) child => {
       | ? child1 := ? (Gbuf pgreen, child1) } } }.
 
@@ -764,11 +764,11 @@ Equations make_green_suffix {A l q qstored}
   { '(child', sgreen) : semi_cadeque A (S l) * green_buffer A l |
     semi_cadeque_seq child' ++ green_buffer_seq sgreen =
     semi_cadeque_seq child ++ suffix_seq sstored ++ suffix_seq s } :=
-make_green_suffix child sstored s with buffer.has3s sstored => {
-  | ? (inl v, (a3, a2, a1)) with buffer.push3 a3 a2 a1 s => {
-    | ? sgreen with buffer.push_vector v sgreen => {
+make_green_suffix child sstored s with deque.has3s sstored => {
+  | ? (inl v, (a3, a2, a1)) with deque.push3 a3 a2 a1 s => {
+    | ? sgreen with deque.push_vector v sgreen => {
       | ? sgreen1 := ? (child, Gbuf sgreen1) } };
-  | ? (inr sstored1, (a3, a2, a1)) with buffer.push3 a3 a2 a1 s => {
+  | ? (inr sstored1, (a3, a2, a1)) with deque.push3 a3 a2 a1 s => {
     | ? sgreen with semi_inject child (Small sstored1) => {
       | ? child1 := ? (child1, Gbuf sgreen) } } }.
 
@@ -880,10 +880,10 @@ Equations make_green_only {A hl tl hk qp qs}
   { c : chain A hl single hk green green |
     chain_seq c =
       body_seq bd (prefix_seq p ++ semi_cadeque_seq child ++ suffix_seq s) } :=
-make_green_only bd p (Semi Empty) s with buffer.has3p8 s => {
+make_green_only bd p (Semi Empty) s with deque.has3p8 s => {
   | ? inl ((a1, a2, a3, a4, a5, a6, a7, a8), v)
-    with buffer.inject8 p a1 a2 a3 a4 a5 a6 a7 a8 => {
-      | ? p1 with buffer.inject_vector p1 v => {
+    with deque.inject8 p a1 a2 a3 a4 a5 a6 a7 a8 => {
+      | ? p1 with deque.inject_vector p1 v => {
         | ? p2 :=
           ? Single G (Packet bd (Only_end p2)) Empty } };
   | ? inr (small, s1) with single_chain (Small small) => {
@@ -907,23 +907,23 @@ Equations green_of_red_only {A hl tl hk ar}
   { c : chain A hl single hk green green |
     chain_seq c = body_seq bd (node_seq red (chain_seq child)) } :=
 green_of_red_only bd (Only RN p s) child
-  with buffer.has8 p, buffer.has8 s => {
+  with deque.has8 p, deque.has8 s => {
     | ? inl (a1, a2, a3, a4, a5, vp),
       ? inl (z5, z4, z3, z2, z1, vs) with sandwich_green child => {
       | ? Alone (Small b)
-        with buffer.push_5vector a1 a2 a3 a4 a5 vp b => {
-          | ? b1 with buffer.inject_5vector b1 z5 z4 z3 z2 z1 vs => {
+        with deque.push_5vector a1 a2 a3 a4 a5 vp b => {
+          | ? b1 with deque.inject_5vector b1 z5 z4 z3 z2 z1 vs => {
             | ? b2 := ? Single G (Packet bd (Only_end b2)) Empty } };
       | ? Alone (Big pre1 child1 suf1)
-        with buffer.push_5vector a1 a2 a3 a4 a5 vp pre1 => {
-          | ? pre2 with buffer.inject_5vector suf1 z5 z4 z3 z2 z1 vs => {
+        with deque.push_5vector a1 a2 a3 a4 a5 vp pre1 => {
+          | ? pre2 with deque.inject_5vector suf1 z5 z4 z3 z2 z1 vs => {
             | ? suf2 with make_green_only bd pre2 (Semi child1) suf2 => {
               | ? res := ? res } } };
       | ? Sandwich storedl child1 storedr
         with extract_prefix storedl child1 => { | ? (Sbuf pre1, child2)
           with extract_suffix child2 storedr => { | ? (child3, Sbuf suf1)
-            with buffer.push_5vector a1 a2 a3 a4 a5 vp pre1 => { | ? pre2
-              with buffer.inject_5vector suf1 z5 z4 z3 z2 z1 vs => { | ? suf2
+            with deque.push_5vector a1 a2 a3 a4 a5 vp pre1 => { | ? pre2
+              with deque.inject_5vector suf1 z5 z4 z3 z2 z1 vs => { | ? suf2
                 with make_green_only bd pre2 child3 suf2 => {
                   | ? res := ? res } } } } } };
     | ? inl _, ? inr suf1 with ensure_green_prefix p child => {
@@ -949,7 +949,7 @@ Qed.
 Next Obligation.
   cbn.
   intros * Hp * Hs * Hp2 * Hp1 * Hres Hs2 Hs1 Hchild.
-  do 2 rewrite buffer.correct_cmseq in *.
+  do 2 rewrite deque.correct_deque_cmseq in *.
   rewrite Hp, Hs, Hres, Hp2, Hs2, Hchild.
   autorewrite with rlist rassoc.
   do 7 f_equal.
@@ -959,7 +959,7 @@ Qed.
 Next Obligation.
   cbn.
   intros * Hp * Hs * Hres Hchild.
-  do 2 rewrite buffer.correct_cmseq in *.
+  do 2 rewrite deque.correct_deque_cmseq in *.
   rewrite Hres, Hs.
   aac_rewrite <-Hchild.
   hauto db:rlist, rassoc.
