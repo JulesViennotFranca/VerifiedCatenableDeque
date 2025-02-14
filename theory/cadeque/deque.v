@@ -4,7 +4,7 @@ From Equations Require Import Equations.
 From Hammer Require Import Tactics.
 
 From Cadeque.utils Require Import comp_eq.
-From Cadeque.deque Require Import deque_size.
+From Cadeque.deque Require Import deque.
 From Cadeque.cadeque Require Import vector.
 
 (* +------------------------------------------------------------------------+ *)
