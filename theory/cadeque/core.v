@@ -8,7 +8,8 @@ From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
 From Cadeque.color Require Import GYOR.
-From Cadeque.cadeque Require Import vector deque types models.
+From Cadeque.deque Require Import deque.
+From Cadeque.cadeque Require Import types models.
 
 (* The [app] function and the singleton list are made opaque. *)
 Opaque app.
@@ -25,9 +26,17 @@ Opaque singleton.
 #[export] Hint Rewrite map_app : rlist.
 #[export] Hint Rewrite concat_app : rlist.
 
-#[export] Hint Rewrite correct_deque_cmseq : rlist.
+(* NB: adding [correct_deque_cmseq] as a general rewrite rule would loop,
+   because [deque_seq] is simply an instance of [deque_cmseq]. Instead, adding
+   the specialized rewrite rule below is enough. *)
+Lemma correct_deque_cmseq_stored
+  [A lt n] (d : deque (stored A lt) n) :
+  deque_cmseq (@stored_seq) d = concat (map (stored_seq) (deque_seq d)).
+Proof.
+  apply correct_deque_cmseq.
+Qed.
 
-(* Opaque deque.deque_cmseq. *)
+#[export] Hint Rewrite correct_deque_cmseq_stored : rlist.
 
 (* Notation for dependent types hiding the property on [x]. *)
 Notation "? x" := (@exist _ _ x _) (at level 100).
@@ -949,19 +958,26 @@ Qed.
 Next Obligation.
   cbn.
   intros * Hp * Hs * Hp2 * Hp1 * Hres Hs2 Hs1 Hchild.
-  do 2 rewrite deque.correct_deque_cmseq in *.
+  do 2 rewrite correct_deque_cmseq_stored in *.
   rewrite Hp, Hs, Hres, Hp2, Hs2, Hchild.
   autorewrite with rlist rassoc.
   do 7 f_equal.
-  aac_rewrite Hs1. aac_rewrite Hp1.
+  (* XXX work around aac_rewrite bugs *)
+  set (X := concat (map stored_seq (deque_seq suf1))) in *.
+  aac_rewrite Hs1.
+  subst X.
+  set (X := concat (map stored_seq (deque_seq pre1))) in *.
+  aac_rewrite Hp1.
+  subst X.
   aac_reflexivity.
 Qed.
 Next Obligation.
   cbn.
   intros * Hp * Hs * Hres Hchild.
-  do 2 rewrite deque.correct_deque_cmseq in *.
+  do 2 rewrite correct_deque_cmseq_stored in *.
   rewrite Hres, Hs.
-  aac_rewrite <-Hchild.
+  rewrite app_assoc, <-Hchild.
+  (* XXX: aac_rewrite <-Hchild. *)
   hauto db:rlist, rassoc.
 Qed.
 Next Obligation.

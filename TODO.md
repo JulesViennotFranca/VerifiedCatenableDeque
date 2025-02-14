@@ -3,14 +3,6 @@
 
 * `make` currently fails with Coq 8.20.
 
-* In `theory/cadeque`, merge `buffer.v` into `deque.v`.
-  Or keep `buffer.v` but make the type `buffer` a synonym for `deque` (no constructor).
-
-* In `theory/deque`, rename `deque_size.v` into `deque.v`. (Thus the module alias can be removed.)
-  `deque.v` (unindexed) should be `deque_plain.v` or something similar.
-  Each of the three files `deque*.v` should begin with a comment
-  explaining its role (and pointing to the other two).
-
 * Let every file name begin with a capital letter,
   so that module names begin with a capital letter,
   as in OCaml? (The paper assumes `Deque` is a module name.)

@@ -3,7 +3,8 @@ Import ListNotations.
 From Equations Require Import Equations.
 Require Import Coq.Program.Equality.
 
-From Cadeque.cadeque Require Import vector deque types.
+From Cadeque.deque Require Import deque.
+From Cadeque.cadeque Require Import types.
 
 (* Sequence + map + concat for non-leveled nodes. *)
 Definition node'_cmseq

@@ -895,9 +895,9 @@ chain_of_opt3 NoneN (SomeN (prodS a b)) (SomeN c) := ? Ending (B3 a b c);
 chain_of_opt3 (SomeN a) (SomeN (prodS b c)) (SomeN d) := ? Ending (B4 a b c d).
 
 (* Provided the equality of two natural numbers, translates a chain of size the first into a chain of size the second. *)
-Equations translate {A l n1 n2 C} (c : chain A l n1 C) :
+Equations translate_chain {A l n1 n2 C} (c : chain A l n1 C) :
   n1 = n2 -> { c' : chain A l n2 C | chain_seq c' = chain_seq c } :=
-translate c eq with comp_eq eq => { | eq_refl := ? c }.
+translate_chain c eq with comp_eq eq => { | eq_refl := ? c }.
 
 (* Proves that all natural numbers [n] can be writen as [n mod 2] plus 2 times
    [n / 2]. *)
@@ -931,41 +931,41 @@ make_small b1 b2 b3 with prefix_decompose b1, suffix_decompose b3 => {
   | ? Underflow p1, ? Underflow s1 with buffer_unsandwich b2 => {
     | ? Alone opt with chain_of_opt3 p1 opt s1 => { | ? c := ? c };
     | ? Sandwich ab rest cd with prefix23 p1 ab, suffix23 cd s1 => {
-      | ? p, ? s with translate (Chain G (Packet p Hole s) (Ending rest)) _ => {
+      | ? p, ? s with translate_chain (Chain G (Packet p Hole s) (Ending rest)) _ => {
         | ? c := ? c } } };
   | ? Underflow p1, ? Ok s1 with buffer_pop b2 => {
     | ? None with green_opt_push p1 s1 => {
-      | ? c with translate c _ => { | ? c' := ? c' } };
+      | ? c with translate_chain c _ => { | ? c' := ? c' } };
     | ? Some (cd, rest) with prefix23 p1 cd => {
-      | ? p with translate (Chain G (Packet p Hole s1) (Ending rest)) _ => {
+      | ? p with translate_chain (Chain G (Packet p Hole s1) (Ending rest)) _ => {
         | ? c := ? c } } };
   | ? Underflow p1, ? Overflow s1 ab with suffix_rot b2 ab => {
     | ? (cd, center) with prefix23 p1 cd => { | ? p
       with
-        translate (Chain G (Packet p Hole s1) (Ending (to_red center))) _ => {
+        translate_chain (Chain G (Packet p Hole s1) (Ending (to_red center))) _ => {
           | ? c := ? c } } };
   | ? Ok p1, ? Underflow s1 with buffer_eject b2 => {
     | ? None with green_opt_inject p1 s1 => {
-      | ? c with translate c _ => { | ? c' := ? c' } };
+      | ? c with translate_chain c _ => { | ? c' := ? c' } };
     | ? Some (rest, ab) with suffix23 ab s1 => {
-      | ? s with translate (Chain G (Packet p1 Hole s) (Ending rest)) _ => {
+      | ? s with translate_chain (Chain G (Packet p1 Hole s) (Ending rest)) _ => {
         | ? c := ? c } } };
   | ? Ok p1, ? Ok s1 := ? Chain G (Packet p1 Hole s1) (Ending (to_red b2));
   | ? Ok p1, ? Overflow s1 ab with buffer_inject b2 ab => {
-    | ? c2 with translate (Chain G (Packet p1 Hole s1) c2) _ => { | ? c := ? c } };
+    | ? c2 with translate_chain (Chain G (Packet p1 Hole s1) c2) _ => { | ? c := ? c } };
   | ? Overflow p1 cd, ? Underflow s1 with prefix_rot cd b2 => {
     | ? (center, ab) with suffix23 ab s1 => { | ? s
       with
-        translate (Chain G (Packet p1 Hole s) (Ending (to_red center))) _ => {
+        translate_chain (Chain G (Packet p1 Hole s) (Ending (to_red center))) _ => {
           | ? c := ? c } } };
   | ? Overflow p1 cd, ? Ok s1 with buffer_push cd b2 => {
     | ? c2
-      with translate (Chain G (Packet p1 Hole s1) c2) _ => { | ? c := ? c } };
+      with translate_chain (Chain G (Packet p1 Hole s1) c2) _ => { | ? c := ? c } };
   | ? Overflow p1 cd, ? Overflow s1 ab with buffer_halve b2 => {
     | ? (x, rest) with suffix12 cd x => {
       | ? p :=
         let c := Chain G (Packet p1 (Packet p Hole (B1 ab)) s1) (Ending rest) in
-        let '? c' := translate c _ in ? c' } } }.
+        let '? c' := translate_chain c _ in ? c' } } }.
 Next Obligation.
   cbn. intros * Hb1 * Hp * Hb2 Hb3 * Hc.
   rewrite Hc, to_red_seq, Hp.
@@ -1022,13 +1022,13 @@ green_of_red (Chain R (Packet p1 Hole s1) (Chain G (Packet p2 child s2) c))
   with green_prefix_concat p1 p2, green_suffix_concat s2 s1 => {
   | ? (p1', p2'), ? (s2', s1') :=
     let c := Chain G (Packet p1' (Packet p2' child s2') s1') c in
-    let '? c' := translate c _ in ? c' };
+    let '? c' := translate_chain c _ in ? c' };
 green_of_red (Chain R (Packet p1 (Packet p2 child s2) s1) c)
   with yellow_prefix_concat p1 (to_yellow p2),
        yellow_suffix_concat (to_yellow s2) s1 => {
   | ? (p1', p2'), ? (s2', s1') :=
   let c := Chain G (Packet p1' Hole s1') (Chain R (Packet p2' child s2') c) in
-  let '? c' := translate c _ in ? c' }.
+  let '? c' := translate_chain c _ in ? c' }.
 Next Obligation.
   intros * Hp * Hs * c.
   yellow_size p2 as Hp0Sn.
@@ -1105,12 +1105,28 @@ make_red p1 child s1 c eq
       | ? c' => ? T c' } }.
 
 (* +------------------------------------------------------------------------+ *)
-(* |                               Operations                               | *)
+(* |                          Core operations                               | *)
 (* +------------------------------------------------------------------------+ *)
 
 (* The empty deque. *)
 Equations empty {A} : { d : deque A 0 | deque_seq d = [] } :=
 empty := ? T (Ending B0).
+
+(* Ensures that the sequence associated to a deque containing no element is
+   empty. *)
+Lemma empty_deque [A] (d : deque A 0) : deque_seq d = [].
+Proof.
+  destruct d. simpl.
+  dependent elimination c; simpl.
+  - dependent elimination b. reflexivity.
+  - inversion p; subst.
+    + dependent elimination r.
+    + pose (yellow_size X) as HpnSk.
+      destruct HpnSk as [k Hp2Sk].
+      exfalso; lia.
+Qed.
+
+#[export] Hint Rewrite empty_deque : rlist.
 
 (* Pushes on a deque. *)
 Equations push {A : Type} {n : size} (x : A) (d : deque A n) :
@@ -1201,3 +1217,373 @@ Equations eject {A : Type} {n : size} (d : deque A (S n)) :
 eject d with option_eject d => {
   | ? None := _;
   | ? Some (d', x) := ? (d', x) }.
+
+(* +------------------------------------------------------------------------+ *)
+(* |                           Extra operations                             | *)
+(* |                    (useful to implement cadeques)                      | *)
+(* +------------------------------------------------------------------------+ *)
+
+(* Provided the equality of two natural numbers, translates a buffer of size
+   the first into a buffer of size the second. *)
+Equations translate {A n1 n2} (b : deque A n1) (eq : n1 = n2) :
+  { b' : deque A n2 | deque_seq b' = deque_seq b } :=
+translate b eq with comp_eq eq => { | eq_refl := ? b }.
+
+(* Returns a buffer containing one element. *)
+Equations single {A} (a1 : A) : { b : deque A 1 | deque_seq b = [a1] } :=
+single a1 with empty => {
+  | ? d with deque.push a1 d => {
+    | ? d' := ? d' } }.
+
+(* Returns a buffer containing two elements. *)
+Equations pair {A} (a1 a2 : A) :
+  { b : deque A 2 | deque_seq b = [a1] ++ [a2] } :=
+pair a1 a2 with single a2 => {
+  | ? b with push a1 b => { | ? b' := ? b' } }.
+
+(* Pushes two elements on a buffer. *)
+Equations push2 {A n} (a1 a2 : A) (b : deque A n) :
+  { b' : deque A (S (S n)) | deque_seq b' = [a1] ++ [a2] ++ deque_seq b } :=
+push2 a1 a2 b with push a2 b => {
+  | ? b' with push a1 b' => {
+    | ? b'' := ? b'' } }.
+
+(* Injects two elemets on a buffer. *)
+Equations inject2 {A n} (b : deque A n) (a2 a1 : A) :
+  { b' : deque A (S (S n)) | deque_seq b' = deque_seq b ++ [a2] ++ [a1] } :=
+inject2 b a2 a1 with inject b a2 => {
+  | ? b' with inject b' a1 => {
+    | ? b'' := ? b'' } }.
+
+(* Pops two elements off a buffer containing at least two elements. *)
+Equations pop2 {A n} (b : deque A (S (S n))) :
+  { '(a1, a2, b') : A * A * deque A n |
+    deque_seq b = [a1] ++ [a2] ++ deque_seq b' } :=
+pop2 b with pop b => {
+  | ? (a1, b') with pop b' => {
+    | ? (a2, b'') := ? (a1, a2, b'') } }.
+
+(* Ejects two elements off a buffer containing at least two elements. *)
+Equations eject2 {A n} (b : deque A (S (S n))) :
+  { '(b', a2, a1) : deque A n * A * A |
+    deque_seq b = deque_seq b' ++ [a2] ++ [a1] } :=
+eject2 b with eject b => {
+  | ? (b', a1) with eject b' => {
+    | ? (b'', a2) := ? (b'', a2, a1) } }.
+
+(* Pushes three elements on a buffer. *)
+Equations push3 {A n} (a1 a2 a3 : A) (b : deque A n) :
+    { b' : deque A (3 + n) |
+      deque_seq b' = [a1] ++ [a2] ++ [a3] ++ deque_seq b } :=
+push3 a1 a2 a3 b with push2 a2 a3 b => {
+  | ? b' with push a1 b' => { | ? b'' := ? b'' } }.
+
+(* Injects three elements on a buffer. *)
+Equations inject3 {A n} (b : deque A n) (a3 a2 a1 : A) :
+    { b' : deque A (3 + n) |
+      deque_seq b' = deque_seq b ++ [a3] ++ [a2] ++ [a1] } :=
+inject3 b a3 a2 a1 with inject2 b a3 a2 => {
+  | ? b' with inject b' a1 => { | ? b'' := ? b'' } }.
+
+(* Pushes five elements on a buffer. *)
+Equations push5 {A n} (a1 a2 a3 a4 a5 : A) (b : deque A n) :
+  { b' : deque A (5 + n) |
+    deque_seq b' = [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ deque_seq b } :=
+push5 a1 a2 a3 a4 a5 b with push3 a3 a4 a5 b => {
+  | ? b' with push2 a1 a2 b' => { | ? b'' := ? b'' } }.
+
+(* Injects five elements on a buffer. *)
+Equations inject5 {A n} (b : deque A n) (a5 a4 a3 a2 a1 : A) :
+  { b' : deque A (5 + n) |
+    deque_seq b' = deque_seq b ++ [a5] ++ [a4] ++ [a3] ++ [a2] ++ [a1] } :=
+inject5 b a5 a4 a3 a2 a1 with inject3 b a5 a4 a3 => {
+  | ? b' with inject2 b' a2 a1 => { | ? b'' := ? b'' } }.
+
+(* Pops five elements off a buffer containing at least five elements. *)
+Equations pop5 {A n} (b : deque A (5 + n)) :
+  { '(a1, a2, a3, a4, a5, b') : A * A * A * A * A * deque A n |
+    deque_seq b = [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ deque_seq b' } :=
+pop5 b with pop2 b => {
+  | ? (a1, a2, b') with pop2 b' => {
+    | ? (a3, a4, b'') with pop b'' => {
+      | ? (a5, b''') := ? (a1, a2, a3, a4, a5, b''') } } }.
+
+(* Pushes six elements on a buffer. *)
+Equations push6 {A n} (a1 a2 a3 a4 a5 a6 : A) (b : deque A n) :
+  { b' : deque A (6 + n) | deque_seq b' =
+    [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ [a6] ++ deque_seq b } :=
+push6 a1 a2 a3 a4 a5 a6 b with push5 a2 a3 a4 a5 a6 b => {
+  | ? b' with push a1 b' => { | ? b'' := ? b'' } }.
+
+(* Injects six elements on a buffer. *)
+Equations inject6 {A n} (b : deque A n) (a6 a5 a4 a3 a2 a1 : A) :
+  { b' : deque A (6 + n) | deque_seq b' =
+    deque_seq b ++ [a6] ++ [a5] ++ [a4] ++ [a3] ++ [a2] ++ [a1] } :=
+inject6 b a6 a5 a4 a3 a2 a1 with inject5 b a6 a5 a4 a3 a2 => {
+  | ? b' with inject b' a1 => { | ? b'' := ? b'' } }.
+
+(* Injects eight elements on a buffer. *)
+Equations inject8 {A n} (b : deque A n) (a8 a7 a6 a5 a4 a3 a2 a1 : A) :
+  { b' : deque A (8 + n) |  deque_seq b' =
+    deque_seq b ++ [a8] ++ [a7] ++ [a6] ++ [a5] ++ [a4] ++ [a3] ++ [a2] ++ [a1] } :=
+inject8 b a8 a7 a6 a5 a4 a3 a2 a1 with inject6 b a8 a7 a6 a5 a4 a3 => {
+  | ? b' with inject2 b' a2 a1 => { | ? b'' := ? b'' } }.
+
+(* +------------------------------------------------------------------------+ *)
+
+(* A type for vectors of size <= 6. *)
+Inductive vector (A : Type) : nat -> Type :=
+| V0 {u : nat} : vector A u
+| V1 {u : nat} : A -> vector A (1 + u)
+| V2 {u : nat} : A -> A -> vector A (2 + u)
+| V3 {u : nat} : A -> A -> A -> vector A (3 + u)
+| V4 {u : nat} : A -> A -> A -> A -> vector A (4 + u)
+| V5 {u : nat} : A -> A -> A -> A -> A -> vector A (5 + u)
+| V6 {u : nat} : A -> A -> A -> A -> A -> A -> vector A (6 + u).
+Arguments V0 {A u}.
+Arguments V1 {A u}.
+Arguments V2 {A u}.
+Arguments V3 {A u}.
+Arguments V4 {A u}.
+Arguments V5 {A u}.
+Arguments V6 {A u}.
+
+Set Equations Transparent.
+
+(* Returns the sequence associated to a vector. *)
+Equations vector_seq {A u} : vector A u -> list A :=
+vector_seq V0 := [];
+vector_seq (V1 a) := [a];
+vector_seq (V2 a b) := [a] ++ [b];
+vector_seq (V3 a b c) := [a] ++ [b] ++ [c];
+vector_seq (V4 a b c d) := [a] ++ [b] ++ [c] ++ [d];
+vector_seq (V5 a b c d e) := [a] ++ [b] ++ [c] ++ [d] ++ [e];
+vector_seq (V6 a b c d e f) := [a] ++ [b] ++ [c] ++ [d] ++ [e] ++ [f].
+
+(* Returns the number of elements contained in a vector. *)
+Equations vector_size {A u} (v : vector A u) : nat :=
+vector_size V0 := 0;
+vector_size (V1 _) := 1;
+vector_size (V2 _ _) := 2;
+vector_size (V3 _ _ _) := 3;
+vector_size (V4 _ _ _ _) := 4;
+vector_size (V5 _ _ _ _ _) := 5;
+vector_size (V6 _ _ _ _ _ _) := 6.
+
+Unset Equations Transparent.
+
+(* Pushes a vector on a buffer. *)
+Equations push_vector {A u n} (v : vector A u) (b : deque A n) :
+    { b' : deque A (n + vector_size v) |
+      deque_seq b' = vector_seq v ++ deque_seq b } :=
+push_vector V0 b with translate b _ => { | ? b' := ? b' };
+push_vector (V1 a1) b with push a1 b => {
+  | ? b' with translate b' _ => { | ? b'' := ? b'' } };
+push_vector (V2 a1 a2) b with push2 a1 a2 b => {
+  | ? b' with translate b' _ => { | ? b'' := ? b'' } };
+push_vector (V3 a1 a2 a3) b with push2 a2 a3 b => {
+  | ? b' with push a1 b' => { | ? b'' with translate b'' _ => {
+    | ? b''' := ? b''' } } };
+push_vector (V4 a1 a2 a3 a4) b with push2 a3 a4 b => {
+  | ? b' with push2 a1 a2 b' => { | ? b'' with translate b'' _ => {
+    | ? b''' := ? b''' } } };
+push_vector (V5 a1 a2 a3 a4 a5) b with push5 a1 a2 a3 a4 a5 b => {
+  | ? b' with translate b' _ => { | ? b'' := ? b'' } };
+push_vector (V6 a1 a2 a3 a4 a5 a6) b with push6 a1 a2 a3 a4 a5 a6 b => {
+  | ? b' with translate b' _ => { | ? b'' := ? b'' } }.
+
+(* Injects a vector on a buffer. *)
+Equations inject_vector {A u n} (b : deque A n) (v : vector A u) :
+    { b' : deque A (n + vector_size v) |
+      deque_seq b' = deque_seq b ++ vector_seq v } :=
+inject_vector b V0 with translate b _ => { | ? b' := ? b' };
+inject_vector b (V1 a1) with inject b a1 => {
+  | ? b' with translate b' _ => { | ? b'' := ? b'' } };
+inject_vector b (V2 a1 a2) with inject2 b a1 a2 => {
+  | ? b' with translate b' _ => { | ? b'' := ? b'' } };
+inject_vector b (V3 a1 a2 a3) with inject2 b a1 a2 => {
+  | ? b' with inject b' a3 => { | ? b'' with translate b'' _ => {
+    | ? b''' := ? b''' } } };
+inject_vector b (V4 a1 a2 a3 a4) with inject2 b a1 a2 => {
+  | ? b' with inject2 b' a3 a4 => { | ? b'' with translate b'' _ => {
+    | ? b''' := ? b''' } } };
+inject_vector b (V5 a1 a2 a3 a4 a5) with inject5 b a1 a2 a3 a4 a5 => {
+  | ? b' with translate b' _ => { | ? b'' := ? b'' } };
+inject_vector b (V6 a1 a2 a3 a4 a5 a6) with inject6 b a1 a2 a3 a4 a5 a6 => {
+  | ? b' with translate b' _ => { | ? b'' := ? b'' } }.
+
+(* Pushes a vector then five elements on a buffer. *)
+Equations push_5vector {A u n}
+  (a1 a2 a3 a4 a5 : A) (vec : vector A u) (b : deque A n) :
+  { b' : deque A (5 + n + vector_size vec) | deque_seq b' =
+    [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ vector_seq vec ++ deque_seq b } :=
+push_5vector a1 a2 a3 a4 a5 vec b with push_vector vec b => {
+  | ? b' with push5 a1 a2 a3 a4 a5 b' => { | ? b'' := ? b'' } }.
+
+(* Injects five elements the a vector on a buffer. *)
+Equations inject_5vector {A u n}
+  (b : deque A n) (z5 z4 z3 z2 z1 : A) (vec : vector A u) :
+  { b' : deque A (5 + n + vector_size vec) | deque_seq b' =
+    deque_seq b ++ [z5] ++ [z4] ++ [z3] ++ [z2] ++ [z1] ++ vector_seq vec } :=
+inject_5vector b z5 z4 z3 z2 z1 vec with inject5 b z5 z4 z3 z2 z1 => {
+  | ? b' with inject_vector b' vec => { | ? b'' := ? b'' } }.
+
+(* +------------------------------------------------------------------------+ *)
+
+(* This type represents a deque which size is the maximum of [increment] and
+   [n].
+
+   In practice, this type is used in cases where [n] is greater than
+   [increment]. The definition of [pdeque] ensures that the size of the buffer
+   represented is equal to [n], while precising that the size is at
+   least [increment]. *)
+Definition pdeque (A : Type) (increment : nat) (n : nat) :=
+    deque A (increment + Nat.iter increment Nat.pred n).
+
+(* Takes a buffer and returns an option indicating wheter the buffer is empty
+   or not. *)
+Equations has1 {A n} (b : deque A n) :
+  { o : option (pdeque A 1 n) |
+    deque_seq b = match o with None => [] | Some b' => deque_seq b' end } :=
+has1 (n := 0) _ := ? None;
+has1 (n := _) b := ? Some b.
+
+(* Takes a buffer and returns a sum indicating whether the buffer contains less
+   or strictly more than two elements. *)
+Equations has3 {A n} (b : deque A n) :
+  { s : sum (vector A 2) (pdeque A 3 n) |
+    deque_seq b = match s with
+                  | inl vec => vector_seq vec
+                  | inr b' => deque_seq b'
+                  end } :=
+has3 (n := 0) b := ? inl V0;
+has3 (n := 1) b with pop b => { | ? (a1, _) := ? inl (V1 a1) };
+has3 (n := 2) b with pop2 b => { | ? (a1, a2, _) := ? inl (V2 a1 a2) };
+has3 (n := _) b := ? inr b.
+
+(* Takes a buffer of at least three elements and returns its first three
+   elements along with a sum indicating whether the remaining buffer contains
+   less or strictly more than three elements. *)
+Equations has3p {A n} (b : deque A (3 + n)) :
+  { p : (A * A * A) * sum (vector A 2) (pdeque A 3 n) |
+    let '((a1, a2, a3), s) := p in
+    deque_seq b = [a1] ++ [a2] ++ [a3] ++ match s with
+                                          | inl vec => vector_seq vec
+                                          | inr b' => deque_seq b'
+                                          end } :=
+has3p b with pop2 b => { | ? (a1, a2, b') with pop b' => {
+  | ? (a3, b'') with has3 b'' => {
+    | ? s := ? ((a1, a2, a3), s) } } }.
+
+(* Takes a buffer of at least three elements and returns its last three
+  elements along with a sum indicating whether the remaining buffer contains
+  less or strictly more than three elements. *)
+Equations has3s {A n} (b : deque A (3 + n)) :
+  { p : sum (vector A 2) (pdeque A 3 n) * (A * A * A) |
+    let '(s, (a3, a2, a1)) := p in
+    deque_seq b = match s with
+                  | inl vec => vector_seq vec
+                  | inr b' => deque_seq b'
+                  end ++ [a3] ++ [a2] ++ [a1] } :=
+has3s b with eject2 b => { | ? (b', a2, a1) with eject b' => {
+  | ? (b'', a3) with has3 b'' => {
+    | ? s := ? (s, (a3, a2, a1)) } } }.
+
+(* Takes a buffer of at least four elements and returns a sum indicating
+   whether the buffer contains exactly four or more than five elements. *)
+Equations has5 {A n} (b : deque A (4 + n)) :
+  { s : sum (A * A * A * A) (pdeque A 5 (4 + n)) |
+    deque_seq b = match s with
+                  | inl (a1, a2, a3, a4) => [a1] ++ [a2] ++ [a3] ++ [a4]
+                  | inr b' => deque_seq b'
+                  end } :=
+has5 (n := 0) b with pop2 b => {
+  | ? (a1, a2, b') with pop2 b' => {
+    | ? (a3, a4, _) := ? inl (a1, a2, a3, a4) } };
+has5 (n := _) b := ? inr b.
+
+(* Takes a buffer of at least one element and returns a sum indicating whether
+    the buffer contains strictly less or more than seven elements. If the
+    buffer contains more than seven elements, its last two elements are
+    extracted. *)
+Equations has7s {A n} (b : deque A (S n)) :
+  { s : sum (vector A 6) (pdeque A 5 (Nat.pred n) * A * A) |
+    deque_seq b = match s with
+                  | inl vec => vector_seq vec
+                  | inr (b', z2, z1) => deque_seq b' ++ [z2] ++ [z1]
+                  end } :=
+has7s (n := 0) b with eject b => { | ? (_, z1) := ? inl (V1 z1) };
+has7s (n := 1) b with eject2 b => { | ? (_, z2, z1) := ? inl (V2 z2 z1) };
+has7s (n := 2) b with eject2 b => {
+  | ? (b', z2, z1) with eject b' => { | ? (_, z3) := ? inl (V3 z3 z2 z1) } };
+has7s (n := 3) b with eject2 b => {
+  | ? (b', z2, z1) with eject2 b' => {
+    | ? (_, z4, z3) := ? inl (V4 z4 z3 z2 z1) } };
+has7s (n := 4) b with pop5 b => {
+  | ? (z5, z4, z3, z2, z1, _) := ? inl (V5 z5 z4 z3 z2 z1) };
+has7s (n := 5) b with pop5 b => {
+  | ? (z6, z5, z4, z3, z2, b') with eject b' => {
+    | ? (_, z1) := ? inl (V6 z6 z5 z4 z3 z2 z1) } };
+has7s (n := _) b with eject2 b => { | ? r := ? inr r }.
+
+(* Takes a buffer of at least one element and returns a sum indicating whether
+    the buffer contains strictly less or more than seven elements. If the
+    buffer contains more than seven elements, its first two elements are
+    extracted. *)
+Equations has7p {A n} (b : deque A (S n)) :
+  { s : sum (vector A 6) (A * A * pdeque A 5 (Nat.pred n)) |
+    deque_seq b = match s with
+                  | inl vec => vector_seq vec
+                  | inr (a1, a2, b') => [a1] ++ [a2] ++ deque_seq b'
+                  end } :=
+has7p (n := 0) b with pop b => { | ? (a1, _) := ? inl (V1 a1) };
+has7p (n := 1) b with pop2 b => { | ? (a1, a2, _) := ? inl (V2 a1 a2) };
+has7p (n := 2) b with pop2 b => {
+  | ? (a1, a2, b') with pop b' => { | ? (a3, _) := ? inl (V3 a1 a2 a3) } };
+has7p (n := 3) b with pop2 b => {
+  | ? (a1, a2, b') with pop2 b' => {
+    | ? (a3, a4, _) := ? inl (V4 a1 a2 a3 a4) } };
+has7p (n := 4) b with pop5 b => {
+  | ? (a1, a2, a3, a4, a5, _) := ? inl (V5 a1 a2 a3 a4 a5) };
+has7p (n := 5) b with pop5 b => {
+  | ? (a1, a2, a3, a4, a5, b') with pop b' => {
+    | ? (a6, _) := ? inl (V6 a1 a2 a3 a4 a5 a6) } };
+has7p (n := _) b with pop2 b => { | ? r := ? inr r }.
+
+(* Takes a buffer of at least five elements and returns a sum indicating
+   whether the buffer contains less or strictly more than seven elements. *)
+Equations has8 {A n} (b : deque A (5 + n)) :
+  { s : sum (A * A * A * A * A * vector A 2) (pdeque A 8 (5 + n)) |
+    deque_seq b = match s with
+                  | inl (a1, a2, a3, a4, a5, vec) =>
+                    [a1] ++ [a2] ++ [a3] ++ [a4] ++ [a5] ++ vector_seq vec
+                  | inr b' => deque_seq b'
+                  end } :=
+has8 (n := 0) b with pop5 b => {
+  | ? (a1, a2, a3, a4, a5, _) := ? inl (a1, a2, a3, a4, a5, V0) };
+has8 (n := 1) b with pop5 b => {
+  | ? (a1, a2, a3, a4, a5, b') with pop b' => {
+    | ? (a6, _) := ? inl (a1, a2, a3, a4, a5, V1 a6) } };
+has8 (n := 2) b with pop5 b => {
+  | ? (a1, a2, a3, a4, a5, b') with pop2 b' => {
+    | ? (a6, a7, _) := ? inl (a1, a2, a3, a4, a5, V2 a6 a7) } };
+has8 (n := _) b := ? inr b.
+
+(* Takes a buffer of at least eight elements and returns a sum indicating
+   whether the buffer contains less or strictly more than 10 elements. *)
+Equations has3p8 {A n} (b : deque A (8 + n)) :
+  {s : sum (A * A * A * A * A * A * A * A * vector A 2)
+           (deque A 3 * pdeque A 8 (5 + n)) |
+    deque_seq b = match s with
+                  | inl (a1, a2, a3, a4, a5, a6, a7, a8, vec) =>
+                    [a1] ++ [a2] ++ [a3] ++ [a4] ++
+                    [a5] ++ [a6] ++ [a7] ++ [a8] ++
+                    vector_seq vec
+                  | inr (b3, b8) => deque_seq b3 ++ deque_seq b8
+                  end } :=
+has3p8 b with pop2 b => { | ? (a1, a2, b') with pop b' => {
+  | ? (a3, b'') with has8 b'' => {
+    | ? inl (a4, a5, a6, a7, a8, v) :=
+      ? inl (a1, a2, a3, a4, a5, a6, a7, a8, v);
+    | ? inr br with pair a2 a3 => { | ? bl with push a1 bl => {
+        | ? bl' := ? inr (bl', br) } } } } }.
