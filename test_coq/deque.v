@@ -1,6 +1,6 @@
-From Cadeque.deque Require Import deque.
+From Cadeque.deque Require Import deque_plain.
 
-Definition test : option (deque nat * nat) :=
+Definition test_plain : option (deque nat * nat) :=
   let d := proj1_sig empty in
   let d := proj1_sig (push 2 d) in
   let d := proj1_sig (push 1 d) in
@@ -13,7 +13,7 @@ Definition test : option (deque nat * nat) :=
   | None => None
   end.
 
-Eval vm_compute in test.
+Eval vm_compute in test_plain.
 
 From Cadeque.deque Require Import deque_lvl.
 
@@ -30,11 +30,11 @@ Definition test_lvl : option (deque nat * nat) :=
   | None => None
   end.
 
-Eval vm_compute in test.
+Eval vm_compute in test_lvl.
 
-From Cadeque.deque Require Import deque_size.
+From Cadeque.deque Require Import deque.
 
-Definition test_size : deque nat 4 * nat :=
+Definition test : deque nat 4 * nat :=
   let d := proj1_sig empty in
   let d := proj1_sig (push 2 d) in
   let d := proj1_sig (push 1 d) in
