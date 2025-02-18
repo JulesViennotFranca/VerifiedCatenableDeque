@@ -22,12 +22,6 @@
 
 * Extend the `Makefile` with more entries (if useful).
 
-* Set up an OCaml package and a Coq package.
-  Declare the dependencies of the Coq package
-  on `coq-aac-tactics`, `coq-hammer`, `coq-equations`.
-  Document which versions of OCaml/Coq are supported.
-  (Add constraints in `dune-project`.)
-
 * Review (together) the public APIs of the OCaml and Coq libraries,
   and make sure that we are happy with the naming conventions.
 
