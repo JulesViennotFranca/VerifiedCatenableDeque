@@ -29,5 +29,7 @@
 
 * Clean up `theory/cadeque/abstraction.v`.
 
+* Check we do not use any axioms. Add this command to the `Makefile`.
+
 * Perform Monolith tests.
   Apply them to all of the libraries that we benchmark.
