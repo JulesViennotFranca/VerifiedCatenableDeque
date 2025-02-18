@@ -1,7 +1,7 @@
-
+; do not run tests when doing 'dune build'
 (alias
   (name default)
   (deps
    (alias_rec theory/all)
-   (alias_rec src/all)
+   (alias_rec extraction/all)
    (alias_rec lib/all)))
