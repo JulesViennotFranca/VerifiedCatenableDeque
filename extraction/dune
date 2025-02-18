@@ -1,0 +1,15 @@
+(coq.extraction
+  (prelude Extraction)
+  (extracted_modules
+    Datatypes Classes Nat EqDec PeanoNat
+    GYR GYOR
+    deque deque_lvl deque_plain
+    steque
+    core types operations
+  )
+  (flags -w -extraction-default-directory)
+  (theories Cadeque Equations Hammer AAC_tactics))
+
+ (library
+   (name cadeque_extraction)
+   (flags -w -unused-var -w -ignored-extra-argument))
