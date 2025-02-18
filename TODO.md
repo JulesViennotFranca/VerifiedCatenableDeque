@@ -35,11 +35,5 @@
 
 * Clean up `theory/cadeque/abstraction.v`.
 
-* Remove `theory/extraction`,
-  add `make extract` to produce the extracted code,
-  document it.
-  Make sure that `dune` can compile it
-  (disable certain errors).
-
 * Perform Monolith tests.
   Apply them to all of the libraries that we benchmark.

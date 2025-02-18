@@ -66,6 +66,21 @@ The main directories are as follows:
   This Coq code is compiled by the command `dune build theory`,
   which requires about 20 minutes.
 
++ [extraction](/extraction/) defines build rules to extract the
+  Rocq implementation of each data structure into OCaml.
+
+  Extracting the Rocq code into OCaml and compiling the result
+  as an OCaml library is done by the command `dune build extraction`,
+  which takes a few seconds.
+
+  Note: although the extracted code is a useful witness that our Rocq
+  implementation can be executed, it is currently expected that it is not
+  efficient, and in particular not constant time. This is because the extracted
+  code contains superfluous computations on natural numbers (size and level
+  indices) that we have no good way of erasing at extraction.
+  Our handwritten OCaml implementation is the one that should be used for
+  all practical purposes.
+
 + [test](/test/) contains some tests of the OCaml code.
   They are executed by the command `dune test`.
 
