@@ -7,7 +7,8 @@
     steque
     core types operations
   )
-  (flags -w -extraction-default-directory)
+  (flags -w -extraction-default-directory
+     -w -extraction-opaque-accessed)
   (theories Cadeque Equations Hammer AAC_tactics))
 
  (library
