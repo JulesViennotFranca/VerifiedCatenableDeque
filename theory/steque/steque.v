@@ -115,7 +115,7 @@ Definition singleton {A : Type} (x : A) : list A := [x].
 Opaque singleton.
 
 (* Sequence + map + concat function for unleveled prefixes. *)
-Definition concat_map_prefix'_seq
+Definition prefix'_cmseq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt C} (p : prefix' (T A lvlt) C) : list A :=
@@ -130,14 +130,14 @@ Definition concat_map_prefix'_seq
 (* Returns the sequence associated to a pair. *)
 Equations pair_seq A lvl (p : pair A lvl) : list A by struct p :=
 pair_seq A lvl (Ground a) := [a];
-pair_seq A lvl (Pair p c) := concat_map_prefix'_seq pair_seq p ++ chain_seq c
+pair_seq A lvl (Pair p c) := prefix'_cmseq pair_seq p ++ chain_seq c
 
 (* Returns the sequence associated to a packet. *)
 with packet_seq {A lvl hlvl C}
   (pkt : packet A lvl hlvl C) : list A -> list A by struct pkt :=
 packet_seq Hole l := l;
 packet_seq (Packet p pkt s) l :=
-  concat_map_prefix'_seq pair_seq p ++
+  prefix'_cmseq pair_seq p ++
   packet_seq pkt l ++
   deque_cmseq pair_seq s
 
@@ -149,7 +149,7 @@ chain_seq (Chain _ pkt c) := packet_seq pkt (chain_seq c).
 Arguments pair_seq {A lvl}.
 
 (* Returns the sequence associated to a leveled prefix. *)
-Notation prefix_seq p := (concat_map_prefix'_seq (@pair_seq) p).
+Notation prefix_seq p := (prefix'_cmseq (@pair_seq) p).
 
 (* Returns the sequence associated to a leveled suffix. *)
 Notation suffix_seq := (deque_cmseq (@pair_seq)).
