@@ -72,3 +72,4 @@ _opam/
 *.opam
 bench/tmp/
 dune-workspace.versions
+test_monolith/output

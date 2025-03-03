@@ -90,3 +90,9 @@ The main directories are as follows:
   where the operation of appending a sequence with itself
   is repeated 1000 times:
   ![appending 1000 times with itself](bench/result/concat.png)
+
++ [test_monolith](/test_monolith/) contains a harness for model-based testing of
+  the OCaml library against a reference implementation (lists). To run this
+  test, you first need to additionally install the
+  [Monolith](https://gitlab.inria.fr/fpottier/monolith) OCaml library, and the
+  `parallel` tool, then run `cd test_monolith && make run`.

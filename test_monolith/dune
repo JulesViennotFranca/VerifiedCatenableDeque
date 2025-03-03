@@ -1,0 +1,3 @@
+(executables
+  (names test_deque test_steque test_cadeque)
+  (libraries deques monolith))
