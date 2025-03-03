@@ -26,5 +26,5 @@
 
 * fix `make test`: the code in `test/` needs updating
 
-* Perform Monolith tests.
+* Perform Monolith tests. (Done: in `test_monolith`)
   Apply them to all of the libraries that we benchmark.
