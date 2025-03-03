@@ -7,9 +7,9 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Cadeque.color Require Import GYOR.
-From Cadeque.deque Require Import deque.
-From Cadeque.cadeque Require Import types models.
+From Deques.color Require Import GYOR.
+From Deques.deque Require Import deque.
+From Deques.cadeque Require Import types models.
 
 (* The [app] function and the singleton list are made opaque. *)
 Opaque app.

@@ -6,8 +6,8 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Cadeque.color Require Import GYR.
-From Cadeque.deque Require Import deque_lvl.
+From Deques.color Require Import GYR.
+From Deques.deque Require Import deque_lvl.
 Module deque := deque_lvl.
 
 (* +------------------------------------------------------------------------+ *)

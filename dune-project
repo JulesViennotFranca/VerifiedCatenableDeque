@@ -15,7 +15,7 @@
   (depends (ocaml (>= "4.08"))))
 
 (package
-  (name coq-cadeque)
+  (name coq-deques)
   (depends
     (coq (= "8.19.0"))
     (coq-aac-tactics (>= "8.19.1"))

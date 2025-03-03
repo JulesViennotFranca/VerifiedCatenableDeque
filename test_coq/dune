@@ -1,8 +1,8 @@
 (include_subdirs qualified)
 
 (coq.theory
- (name Cadeque_test)
- (theories Cadeque))
+ (name Deques_test)
+ (theories Deques))
 
 (alias
   (name runtest)

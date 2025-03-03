@@ -1,7 +1,7 @@
 From Coq Require Extraction.
-From Cadeque Require deque deque_lvl deque_plain.
-From Cadeque Require steque.
-From Cadeque Require cadeque.operations.
+From Deques Require deque deque_lvl deque_plain.
+From Deques Require steque.
+From Deques Require cadeque.operations.
 
 Separate Extraction
   deque.empty

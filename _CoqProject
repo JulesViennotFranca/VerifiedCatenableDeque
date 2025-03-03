@@ -1,2 +1,2 @@
--Q _build/default/theory Cadeque
--Q _build/default/test_coq Cadeque_test
+-Q _build/default/theory Deques
+-Q _build/default/test_coq Deques_test

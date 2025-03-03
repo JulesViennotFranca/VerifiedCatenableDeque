@@ -1,4 +1,4 @@
-From Cadeque.cadeque Require Import types operations.
+From Deques.cadeque Require Import types operations.
 
 Definition test3 : cadeque nat :=
   let d := proj1_sig D.empty in

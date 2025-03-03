@@ -1,5 +1,5 @@
-From Cadeque.color Require Import GYOR.
-From Cadeque.deque Require Import deque.
+From Deques.color Require Import GYOR.
+From Deques.deque Require Import deque.
 
 (* An arity is 0, 1, or 2. *)
 Notation arity  := nat.

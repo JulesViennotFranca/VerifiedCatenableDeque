@@ -9,8 +9,8 @@
   )
   (flags -w -extraction-default-directory
      -w -extraction-opaque-accessed)
-  (theories Cadeque Equations Hammer AAC_tactics))
+  (theories Deques Equations Hammer AAC_tactics))
 
  (library
-   (name cadeque_extraction)
+   (name deques_extraction)
    (flags -w -unused-var -w -ignored-extra-argument))
