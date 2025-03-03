@@ -24,5 +24,7 @@
 
 * Clean up `theory/cadeque/abstraction.v`.
 
+* fix `make test`: the code in `test/` needs updating
+
 * Perform Monolith tests.
   Apply them to all of the libraries that we benchmark.
