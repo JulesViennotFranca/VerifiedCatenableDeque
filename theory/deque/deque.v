@@ -161,8 +161,8 @@ Opaque singleton.
    [***_cmseq] function, where [T] is instanciated with [fun A _ => A] and [f]
    is the singleton function.
 
-   The correct behavior of [concat_map_***_seq] functions is verified with
-   [***_cmseq] lemmas. *)
+   The correct behavior of the [***_cmseq] functions is verified in corresponding
+   [correct_***_cmseq] lemmas. *)
 
 (* Sequence + map + concat for products. *)
 Definition prodN_cmseq
