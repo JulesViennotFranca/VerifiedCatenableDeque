@@ -1,7 +1,5 @@
-open Color.GYR
+open Color_GYR
 type orange = nogreen * someyellow * somered
-
-module Deque = Deque.Package
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)

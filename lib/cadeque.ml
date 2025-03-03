@@ -1,3 +1,4 @@
+module Core = Cadeque_core
 open Core
 
 module Base = struct

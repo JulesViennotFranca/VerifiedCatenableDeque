@@ -1,3 +1,4 @@
+module Core = Steque_core
 open Core
 
 module Base = struct

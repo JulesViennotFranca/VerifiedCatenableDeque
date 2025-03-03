@@ -1,3 +1,4 @@
+module Core = Deque_core
 open Core
 
 module Base = struct
@@ -215,7 +216,7 @@ let nth_opt t i =
   try Some (nth t i) with Failure _ -> None
 
 let rec make_chain
-: type a. int -> a -> (a, Color.GYR.green) chain
+: type a. int -> a -> (a, Color_GYR.green) chain
 = fun n a ->
   match n with
   | 0 -> Ending B0
@@ -234,7 +235,7 @@ let rec make_chain
 let make n a = { core = T (make_chain n a) ; length = n ; rev = false }
 
 let rec chain_of_list
-: type a. a list -> (a, Color.GYR.green) chain
+: type a. a list -> (a, Color_GYR.green) chain
 = function
   | [] -> Ending B0
   | [a] -> Ending (B1 a)

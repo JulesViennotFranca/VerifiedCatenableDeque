@@ -10,7 +10,7 @@
 (version 0.1)
 
 (package
-  (name cadeque)
+  (name deques)
   (allow_empty)
   (depends (ocaml (>= "4.08"))))
 
