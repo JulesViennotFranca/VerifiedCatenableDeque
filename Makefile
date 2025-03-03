@@ -10,6 +10,10 @@ test:
 clean:
 	@ git clean -fdX
 
+.PHONY: check-axioms
+check-axioms: all
+	coqc -R ./_build/default/theory Deques test_coq/check_axioms.v
+
 # ------------------------------------------------------------------------------
 
 # [make versions] compiles the OCaml package under several versions of OCaml,

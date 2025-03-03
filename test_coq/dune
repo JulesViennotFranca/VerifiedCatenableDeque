@@ -2,9 +2,9 @@
 
 (coq.theory
  (name Deques_test)
- (theories Deques))
+ (theories Deques)
+ (modules cadeque deque steque))
 
 (alias
   (name runtest)
-  (deps
-    (alias_rec ./all)))
+  (deps ./Deques_test))
