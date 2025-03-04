@@ -1,3 +1,13 @@
 (executable
   (name benchmark)
+  (public_name benchmark)
+  (package cadeque)
+  (modules Benchmark Push Pop Inject Eject Concat Rdbench Modules Make_bench Base)
   (libraries cadeque unix graphics))
+
+(executable
+  (name listLike)
+  (public_name list_like_benchmark)
+  (package cadeque)
+  (modules listLike)
+  (libraries cadeque))

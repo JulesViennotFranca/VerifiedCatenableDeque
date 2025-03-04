@@ -50,3 +50,19 @@ module Bench (L : LIST) = struct
     ()
 
 end
+
+let () = Printf.printf "List:\n%!"
+module A = Bench (Lst)
+let () = Printf.printf "\n%!"
+
+let () = Printf.printf "Deque:\n%!"
+module B = Bench (Cadeque.Deque)
+let () = Printf.printf "\n%!"
+
+let () = Printf.printf "Steque:\n%!"
+module C = Bench (Cadeque.Steque)
+let () = Printf.printf "\n%!"
+
+let () = Printf.printf "Cadeque:\n%!"
+module D = Bench (Cadeque)
+let () = Printf.printf "\n%!"

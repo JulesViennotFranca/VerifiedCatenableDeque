@@ -12,7 +12,7 @@ end
 
 let modules : (module OP) list = [
   (module Modules.Cadeque);
-  (module Modules.ArtWend)
+  (module Modules.Cadeque2)
 ]
 
 let make_point steps execs (module M : OP) =

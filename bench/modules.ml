@@ -58,9 +58,10 @@ module Cadeque = struct
   let color = "#5C7AFF"
 end
 
-module ArtWend = struct
-  include Cadeque.ArtWend
+module Cadeque2 = struct
+  include Cadeque.Cadeque2
 
-  let name = "AW cadeque"
+  let name = "Cadeque2"
+
   let color = "#6338B3"
 end
