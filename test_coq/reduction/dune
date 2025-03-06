@@ -7,4 +7,5 @@
 
 (alias
   (name runtest)
-  (deps ./Deques_test))
+  (deps
+    (alias_rec ./all)))
