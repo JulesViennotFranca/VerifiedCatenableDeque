@@ -1,26 +1,9 @@
 open Deques
 open Monolith
+open Test_support.Specs
 
-(* Reference implementation: lists *)
-module R = struct
-  let empty = []
-  let is_empty = function
-    | [] -> true
-    | _ -> false
-  let push x l = x :: l
-  let inject l x = l @ [x]
-  let pop l = match l with
-    | [] -> None
-    | x :: xs -> Some (x, xs)
-  let rec eject = function
-    | [] -> None
-    | [x] -> Some ([], x)
-    | x :: y :: xs ->
-       match eject (y :: xs) with
-       | None -> assert false
-       | Some (ys, z) -> Some (x :: ys, z)
-  let append = (@)
-end
+(* Our reference implementation: lists *)
+module R = Test_support.Reference
 
 (* We draw small integers as values in the sequence *)
 
@@ -33,19 +16,66 @@ let cadeque =
 
 (* Print the following prelude when showing a failing test scenario. *)
 let () = dprintf "\
-          open Deques
+          open Cadeques
 "
 
 (* Declare the operations. *)
 
 let () =
-  declare "Cadeque.empty" cadeque Cadeque.empty R.empty;
-  declare "Cadeque.is_empty" (cadeque ^> bool) Cadeque.is_empty R.is_empty;
-  declare "Cadeque.push" (value ^> cadeque ^> cadeque) Cadeque.push R.push;
-  declare "Cadeque.inject" (cadeque ^> value ^> cadeque) Cadeque.inject R.inject;
-  declare "Cadeque.pop" (cadeque ^> option (value *** cadeque)) Cadeque.pop R.pop;
-  declare "Cadeque.eject" (cadeque ^> option (cadeque *** value)) Cadeque.eject R.eject;
-  declare "Cadeque.append" (cadeque ^> cadeque ^> cadeque) Cadeque.append R.append;
+  Monolith.override_exn_eq (fun eq exn1 exn2 ->
+    match exn1, exn2 with
+    | Failure _, Failure _
+    | Invalid_argument _, Invalid_argument _ -> true
+    | _, _ -> eq exn1 exn2
+  )
+
+let () =
+  declare "Cadeque.push" (value ^> cadeque ^> cadeque) R.push Cadeque.push;
+  declare "Cadeque.inject" (cadeque ^> value ^> cadeque) R.inject Cadeque.inject;
+  declare "Cadeque.pop" (cadeque ^> option (value *** cadeque)) R.pop Cadeque.pop;
+  declare "Cadeque.eject" (cadeque ^> option (cadeque *** value)) R.eject Cadeque.eject;
+  declare "Cadeque.length" (cadeque ^> int) R.length Cadeque.length;
+
+  declare "Cadeque.hd" (cadeque ^!> value) R.hd Cadeque.hd;
+  declare "Cadeque.dh" (cadeque ^!> value) R.dh Cadeque.dh;
+  declare "Cadeque.tl" (cadeque ^!> cadeque) R.tl Cadeque.tl;
+  declare "Cadeque.lt" (cadeque ^!> cadeque) R.lt Cadeque.lt;
+  declare "Cadeque.nth" (cadeque ^>> fun l -> list_index l ^!> value) R.nth Cadeque.nth;
+  declare "Cadeque.nth_opt" (cadeque ^>> fun l -> list_index l ^!> option value) R.nth_opt Cadeque.nth_opt;
+
+  declare "Cadeque.is_empty" (cadeque ^> bool) R.is_empty Cadeque.is_empty;
+  declare "Cadeque.empty" cadeque R.empty Cadeque.empty;
+  declare "Cadeque.singleton" (value ^> cadeque) R.singleton Cadeque.singleton;
+
+  (* TODO: make *)
+  declare "Cadeque.init" (init (list value ^> cadeque)) R.init Cadeque.init;
+  declare "Cadeque.rev" (cadeque ^> cadeque) R.rev Cadeque.rev;
+
+  declare "Cadeque.(=)" (cadeque ^> cadeque ^> bool) R.(=) Cadeque.(=);
+  (* TODO: equal, compare *)
+
+  declare "Cadeque.append" (cadeque ^> cadeque ^> cadeque) R.append Cadeque.append;
+  declare "Cadeque.rev_append" (cadeque ^> cadeque ^> cadeque) R.rev_append Cadeque.rev_append;
+  (* TODO: concat *)
+
+  declare "Cadeque.iter" (iter (cadeque ^> list value)) R.iter Cadeque.iter;
+  (* TODO: iteri, map, mapi, rev_map, filter_map, concat_map, fold_left_map, fold_right_map *)
+  declare "Cadeque.fold_left" (foldl (cadeque ^> list value)) R.fold_left Cadeque.fold_left;
+  declare "Cadeque.fold_right" (foldr (cadeque ^> list value)) R.fold_right Cadeque.fold_right;
+  (* TODO: iter2, map2, rev_map2, fold_left2, fold_right2 *)
+  (* TODO: fold_all, exists, for_all2, exists2 *)
+
+  declare "Cadeque.mem" (value ^> cadeque ^> bool) R.mem Cadeque.mem;
+  declare "Cadeque.memq" (value ^> cadeque ^> bool) R.memq Cadeque.memq;
+  (* TODO: find, find_opt, find_map, filter, find_all, filteri, partition *)
+  (* TODO: assoc, assoc_opt, assq, assq_opt, mem_assoc, mem_assq *)
+  (* TODO: split, combine *)
+
+  declare "Cadeque.to_array" (cadeque ^> naive_array value) R.to_array Cadeque.to_array;
+  declare "Cadeque.of_array" (naive_array value ^> cadeque) R.of_array Cadeque.of_array;
+  declare "Cadeque.to_list" (cadeque ^> list value) R.to_list Cadeque.to_list;
+  declare "Cadeque.of_list" (list value ^> cadeque) R.of_list Cadeque.of_list;
+  (* TODO: conversions from/to Seq.t *)
   ()
 
 (* Start the engine! *)

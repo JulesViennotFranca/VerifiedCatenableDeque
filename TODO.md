@@ -21,6 +21,10 @@
 
 * Review (together) the public APIs of the OCaml and Coq libraries,
   and make sure that we are happy with the naming conventions.
+  + rename `dh` and `lt`? (to `last` and `front`?)
+  + document the asymptotic complexity of operations
+  + should we provide operations that have an inefficient implementation
+    (eg going through array)?
 
 * Clean up `theory/cadeque/abstraction.v`.
 
