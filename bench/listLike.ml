@@ -56,13 +56,13 @@ module A = Bench (Lst)
 let () = Printf.printf "\n%!"
 
 let () = Printf.printf "Deque:\n%!"
-module B = Bench (Cadeque.Deque)
+module B = Bench (Deques.Deque)
 let () = Printf.printf "\n%!"
 
 let () = Printf.printf "Steque:\n%!"
-module C = Bench (Cadeque.Steque)
+module C = Bench (Deques.Steque)
 let () = Printf.printf "\n%!"
 
 let () = Printf.printf "Cadeque:\n%!"
-module D = Bench (Cadeque)
+module D = Bench (Deques.Cadeque)
 let () = Printf.printf "\n%!"
