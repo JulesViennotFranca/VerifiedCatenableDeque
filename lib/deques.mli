@@ -11,21 +11,26 @@ module Cadeque : sig
   *)
 
   val push : 'a -> 'a t -> 'a t
-  (** [push x xs] pushes [x] on the left of [xs]. *)
+  (** [push x xs] pushes [x] on the left of [xs].
+      Runs in constant time. *)
 
   val inject : 'a t -> 'a -> 'a t
-  (** [inject xs x] injects [x] on the right of [xs]. *)
+  (** [inject xs x] injects [x] on the right of [xs].
+      Runs in constant time. *)
 
   val pop : 'a t -> ('a * 'a t) option
   (** [pop xs] pops the left-most element of [xs].
+      Runs in constant time.
       @return None if the cadeque is empty. *)
 
   val eject : 'a t -> ('a t * 'a) option
   (** [eject xs] ejects the right-most element of [xs].
+      Runs in constant time.
       @return None if the cadeque is empty. *)
 
   val length : 'a t -> int
-  (** Returns the length (number of elements) of the given cadeque. *)
+  (** Returns the length (number of elements) of the given cadeque.
+      Runs in constant time. *)
 
   val pop1 : 'a t -> 'a
   (** [pop1 xs] returns the left-most element of [xs].
@@ -53,14 +58,15 @@ module Cadeque : sig
 
   val nth : 'a t -> int -> 'a
   (** [nth xs n] returns the [n]-th element of the cadeque [xs]. The left-most
-      element is at position 0.
+      element is at position 0. Runs in linear time with respect to [n].
       @raise Failure if the cadeque is too short.
       @raise Invalid_argument if [n] is negative.
   *)
 
   val nth_opt : 'a t -> int -> 'a option
-  (** [nth xs n] returns the [n]-th element of the cadeque [xs]. The left-most
-      element is at position 0.
+  (** [nth_opt xs n] returns the [n]-th element of the cadeque [xs].
+      The left-most element is at position 0.
+      Runs in linear time with respect to [n].
       @return None if the cadeque is too short.
       @raise Invalid_argument if [n] is negative.
   *)
@@ -86,7 +92,7 @@ module Cadeque : sig
   *)
 
   val rev : 'a t -> 'a t
-  (** Cadeque reversal. *)
+  (** Cadeque reversal. Runs in linear time. *)
 
   (** {1 Comparisons} *)
 
@@ -105,17 +111,19 @@ module Cadeque : sig
   (** {1 Catenation} *)
 
   val append : 'a t -> 'a t -> 'a t
-  (** [append xs ys] appends [ys] to [xs]. *)
+  (** [append xs ys] appends [ys] to [xs]. Runs in constant time. *)
 
   val ( @ ) : 'a t -> 'a t -> 'a t
   (** An alias for [append]: [xs @ ys] concatenates the two cadeques together. *)
 
   val rev_append : 'a t -> 'a t -> 'a t
-  (** [rev_append xs ys] computes [append (rev xs) ys]. *)
+  (** [rev_append xs ys] computes [append (rev xs) ys].
+      It runs in time linear to the length of [xs]. *)
 
   val concat : 'a t t -> 'a t
   (** Concatenate a cadeque of cadeques. The elements of the argument are all
       appended together, in the same order, to give the result.
+      Runs in time linear with respect to the length of the input cadeque.
   *)
 
   val flatten : 'a t t -> 'a t
@@ -362,21 +370,26 @@ module Deque : sig
   *)
 
   val push : 'a -> 'a t -> 'a t
-  (** [push x xs] pushes [x] on the left of [xs]. *)
+  (** [push x xs] pushes [x] on the left of [xs].
+      Runs in constant time. *)
 
   val inject : 'a t -> 'a -> 'a t
-  (** [inject xs x] injects [x] on the right of [xs]. *)
+  (** [inject xs x] injects [x] on the right of [xs].
+      Runs in constant time. *)
 
   val pop : 'a t -> ('a * 'a t) option
   (** [pop xs] pops the left-most element of [xs].
+      Runs in constant time.
       @return None if the deque is empty. *)
 
   val eject : 'a t -> ('a t * 'a) option
   (** [eject xs] ejects the right-most element of [xs].
+      Runs in constant time.
       @return None if the deque is empty. *)
 
   val length : 'a t -> int
-  (** Returns the length (number of elements) of the given deque. *)
+  (** Returns the length (number of elements) of the given deque.
+      Runs in constant time. *)
 
   val pop1 : 'a t -> 'a
   (** [pop1 xs] returns the left-most element of [xs].
@@ -405,6 +418,7 @@ module Deque : sig
   val nth : 'a t -> int -> 'a
   (** [nth xs n] returns the [n]-th element of the deque [xs]. The left-most
       element is at position 0.
+      Runs in logarithmic time (precisely, [O(log min(n, |xs|-n))]).
       @raise Failure if the deque is too short.
       @raise Invalid_argument if [n] is negative.
   *)
@@ -437,7 +451,7 @@ module Deque : sig
   *)
 
   val rev : 'a t -> 'a t
-  (** Deque reversal. *)
+  (** Deque reversal. Runs in constant time. *)
 
   (** {1 Comparisons} *)
 
@@ -456,17 +470,21 @@ module Deque : sig
   (** {1 Catenation} *)
 
   val append : 'a t -> 'a t -> 'a t
-  (** [append xs ys] appends [ys] to [xs]. *)
+  (** [append xs ys] appends [ys] to [xs].
+      Runs in time linear to the length of the smallest argument. *)
 
   val ( @ ) : 'a t -> 'a t -> 'a t
   (** An alias for [append]: [xs @ ys] concatenates the two deques together. *)
 
   val rev_append : 'a t -> 'a t -> 'a t
-  (** [rev_append xs ys] computes [append (rev xs) ys]. *)
+  (** [rev_append xs ys] computes [append (rev xs) ys].
+      Runs in time linear to the length of the smallest argument. *)
 
   val concat : 'a t t -> 'a t
   (** Concatenate a deque of deques. The elements of the argument are all
       appended together, in the same order, to give the result.
+      Runs in time linear to the sum of the lengths of deques stored in
+      the argument deque.
   *)
 
   val flatten : 'a t t -> 'a t
@@ -714,17 +732,21 @@ module Steque : sig
   *)
 
   val push : 'a -> 'a t -> 'a t
-  (** [push x xs] pushes [x] on the left of [xs]. *)
+  (** [push x xs] pushes [x] on the left of [xs].
+      Runs in constant time. *)
 
   val inject : 'a t -> 'a -> 'a t
-  (** [inject xs x] injects [x] on the right of [xs]. *)
+  (** [inject xs x] injects [x] on the right of [xs].
+      Runs in constant time. *)
 
   val pop : 'a t -> ('a * 'a t) option
   (** [pop xs] pops the left-most element of [xs].
+      Runs in constant time.
       @return None if the steque is empty. *)
 
   val length : 'a t -> int
-  (** Returns the length (number of elements) of the given steque. *)
+  (** Returns the length (number of elements) of the given steque.
+      Runs in constant time. *)
 
   val pop1 : 'a t -> 'a
   (** [pop1 xs] returns the left-most element of [xs].
@@ -741,6 +763,7 @@ module Steque : sig
   val nth : 'a t -> int -> 'a
   (** [nth xs n] returns the [n]-th element of the steque [xs]. The left-most
       element is at position 0.
+      Runs in time linear with respect to [n].
       @raise Failure if the steque is too short.
       @raise Invalid_argument if [n] is negative.
   *)
@@ -773,7 +796,7 @@ module Steque : sig
   *)
 
   val rev : 'a t -> 'a t
-  (** Steque reversal. *)
+  (** Steque reversal. Runs in linear time. *)
 
   (** {1 Comparisons} *)
 
@@ -792,17 +815,19 @@ module Steque : sig
   (** {1 Catenation} *)
 
   val append : 'a t -> 'a t -> 'a t
-  (** [append xs ys] appends [ys] to [xs]. *)
+  (** [append xs ys] appends [ys] to [xs]. Runs in constant time. *)
 
   val ( @ ) : 'a t -> 'a t -> 'a t
   (** An alias for [append]: [xs @ ys] concatenates the two steques together. *)
 
   val rev_append : 'a t -> 'a t -> 'a t
-  (** [rev_append xs ys] computes [append (rev xs) ys]. *)
+  (** [rev_append xs ys] computes [append (rev xs) ys].
+      Runs in time linear with the length of [xs]. *)
 
   val concat : 'a t t -> 'a t
   (** Concatenate a steque of steques. The elements of the argument are all
       appended together, in the same order, to give the result.
+      Runs in time linear with the length of the input steque.
   *)
 
   val flatten : 'a t t -> 'a t
