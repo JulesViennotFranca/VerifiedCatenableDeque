@@ -23,15 +23,18 @@ let rec eject = function
      | None -> assert false
      | Some (ys, z) -> Some (x :: ys, z)
 
-let dh l =
-  match eject l with
-  | None -> failwith "List.dh"
-  | Some (_, x) -> x
+let pop1 = List.hd
+let pop2 = List.tl
 
-let lt l =
+let eject1 l =
   match eject l with
-  | None -> failwith "List.lt"
+  | None -> failwith "List.eject1"
   | Some (xs, _) -> xs
+
+let eject2 l =
+  match eject l with
+  | None -> failwith "List.eject2"
+  | Some (_, x) -> x
 
 let singleton x = [x]
 

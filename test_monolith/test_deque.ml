@@ -36,10 +36,10 @@ let () =
   declare "Deque.eject" (deque ^> option (deque *** value)) R.eject Deque.eject;
   declare "Deque.length" (deque ^> int) R.length Deque.length;
 
-  declare "Deque.hd" (deque ^!> value) R.hd Deque.hd;
-  declare "Deque.dh" (deque ^!> value) R.dh Deque.dh;
-  declare "Deque.tl" (deque ^!> deque) R.tl Deque.tl;
-  declare "Deque.lt" (deque ^!> deque) R.lt Deque.lt;
+  declare "Deque.pop1" (deque ^!> value) R.pop1 Deque.pop1;
+  declare "Deque.pop2" (deque ^!> deque) R.pop2 Deque.pop2;
+  declare "Deque.eject1" (deque ^!> deque) R.eject1 Deque.eject1;
+  declare "Deque.eject2" (deque ^!> value) R.eject2 Deque.eject2;
   declare "Deque.nth" (deque ^>> fun l -> list_index l ^!> value) R.nth Deque.nth;
   declare "Deque.nth_opt" (deque ^>> fun l -> list_index l ^!> option value) R.nth_opt Deque.nth_opt;
 

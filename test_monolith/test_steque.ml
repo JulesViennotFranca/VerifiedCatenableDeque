@@ -33,16 +33,16 @@ let () =
   declare "Steque.push" (value ^> steque ^> steque) R.push Steque.push;
   declare "Steque.inject" (steque ^> value ^> steque) R.inject Steque.inject;
   declare "Steque.pop" (steque ^> option (value *** steque)) R.pop Steque.pop;
-  declare "Deque.length" (steque ^> int) R.length Steque.length;
+  declare "Steque.length" (steque ^> int) R.length Steque.length;
 
-  declare "Steque.hd" (steque ^!> value) R.hd Steque.hd;
-  declare "Steque.tl" (steque ^!> steque) R.tl Steque.tl;
+  declare "Steque.pop1" (steque ^!> value) R.pop1 Steque.pop1;
+  declare "Steque.pop2" (steque ^!> steque) R.pop2 Steque.pop2;
   declare "Steque.nth" (steque ^>> fun l -> list_index l ^!> value) R.nth Steque.nth;
   declare "Steque.nth_opt" (steque ^>> fun l -> list_index l ^!> option value) R.nth_opt Steque.nth_opt;
 
   declare "Steque.is_empty" (steque ^> bool) R.is_empty Steque.is_empty;
   declare "Steque.empty" steque R.empty Steque.empty;
-  declare "Deque.singleton" (value ^> steque) R.singleton Steque.singleton;
+  declare "Steque.singleton" (value ^> steque) R.singleton Steque.singleton;
 
   declare "Steque.make" (list_size ^> value ^!> steque) R.make Steque.make;
   declare "Steque.init" (init (list value ^> steque)) R.init Steque.init;

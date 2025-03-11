@@ -36,10 +36,10 @@ let () =
   declare "Cadeque.eject" (cadeque ^> option (cadeque *** value)) R.eject Cadeque.eject;
   declare "Cadeque.length" (cadeque ^> int) R.length Cadeque.length;
 
-  declare "Cadeque.hd" (cadeque ^!> value) R.hd Cadeque.hd;
-  declare "Cadeque.dh" (cadeque ^!> value) R.dh Cadeque.dh;
-  declare "Cadeque.tl" (cadeque ^!> cadeque) R.tl Cadeque.tl;
-  declare "Cadeque.lt" (cadeque ^!> cadeque) R.lt Cadeque.lt;
+  declare "Cadeque.pop1" (cadeque ^!> value) R.pop1 Cadeque.pop1;
+  declare "Cadeque.pop2" (cadeque ^!> cadeque) R.pop2 Cadeque.pop2;
+  declare "Cadeque.eject1" (cadeque ^!> cadeque) R.eject1 Cadeque.eject1;
+  declare "Cadeque.eject2" (cadeque ^!> value) R.eject2 Cadeque.eject2;
   declare "Cadeque.nth" (cadeque ^>> fun l -> list_index l ^!> value) R.nth Cadeque.nth;
   declare "Cadeque.nth_opt" (cadeque ^>> fun l -> list_index l ^!> option value) R.nth_opt Cadeque.nth_opt;
 

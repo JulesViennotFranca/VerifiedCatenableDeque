@@ -25,12 +25,12 @@ end
 
 module OfSteque (S : STEQUE) = struct
 
-  let hd t = match S.pop t with
-    | None -> failwith (S.name ^ ".hd")
+  let pop1 t = match S.pop t with
+    | None -> failwith (S.name ^ ".pop1")
     | Some (x, _) -> x
 
-  let tl t = match S.pop t with
-    | None -> failwith (S.name ^ ".tl")
+  let pop2 t = match S.pop t with
+    | None -> failwith (S.name ^ ".pop2")
     | Some (_, t) -> t
 
   let iter f t = S.fold_left (fun () x -> f x) () t
@@ -335,13 +335,13 @@ end
 module OfDeque (D : DEQUE) = struct
   include OfSteque(D)
 
-  let dh t = match D.eject t with
-    | None -> failwith (D.name ^ ".dh")
-    | Some (_, x) -> x
-
-  let lt t = match D.eject t with
-    | None -> failwith (D.name ^ ".lt")
+  let eject1 t = match D.eject t with
+    | None -> failwith (D.name ^ ".eject1")
     | Some (t, _) -> t
+
+  let eject2 t = match D.eject t with
+    | None -> failwith (D.name ^ ".eject2")
+    | Some (_, x) -> x
 
   let fold_right2 f xs ys z =
     let xs, z =

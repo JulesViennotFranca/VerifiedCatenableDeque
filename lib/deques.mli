@@ -27,23 +27,27 @@ module Cadeque : sig
   val length : 'a t -> int
   (** Returns the length (number of elements) of the given cadeque. *)
 
-  val hd : 'a t -> 'a
-  (** [hd xs] returns the left-most element of [xs].
+  val pop1 : 'a t -> 'a
+  (** [pop1 xs] returns the left-most element of [xs].
+      It is equal to the first projection of [pop xs].
       @raise Failure if the cadeque is empty.
   *)
 
-  val dh : 'a t -> 'a
-  (** [dh xs] returns the right-most element of [xs].
+  val pop2 : 'a t -> 'a t
+  (** [pop2 xs] is [xs] except for its left-most element.
+      It is equal to the second projection of [pop xs].
       @raise Failure if the cadeque is empty.
   *)
 
-  val tl : 'a t -> 'a t
-  (** [tl xs] removes the left-most element of [xs].
+  val eject1 : 'a t -> 'a t
+  (** [eject1 xs] is [xs] except for its right-most element.
+      It is equal to the first projection of [eject xs].
       @raise Failure if the cadeque is empty.
   *)
 
-  val lt : 'a t -> 'a t
-  (** [lt xs] removes the right-most element of [xs].
+  val eject2 : 'a t -> 'a
+  (** [eject2 xs] returns the right-most element of [xs].
+      It is equal to the second projection of [eject xs].
       @raise Failure if the cadeque is empty.
   *)
 
@@ -374,24 +378,28 @@ module Deque : sig
   val length : 'a t -> int
   (** Returns the length (number of elements) of the given deque. *)
 
-  val hd : 'a t -> 'a
-  (** [hd xs] returns the left-most element of [xs].
-      @raise Failure if the deque is empty.
+  val pop1 : 'a t -> 'a
+  (** [pop1 xs] returns the left-most element of [xs].
+      It is equal to the first projection of [pop xs].
+      @raise Failure if the cadeque is empty.
   *)
 
-  val dh : 'a t -> 'a
-  (** [dh xs] returns the right-most element of [xs].
-      @raise Failure if the deque is empty.
+  val pop2 : 'a t -> 'a t
+  (** [pop2 xs] is [xs] except for its left-most element.
+      It is equal to the second projection of [pop xs].
+      @raise Failure if the cadeque is empty.
   *)
 
-  val tl : 'a t -> 'a t
-  (** [tl xs] removes the left-most element of [xs].
-      @raise Failure if the deque is empty.
+  val eject1 : 'a t -> 'a t
+  (** [eject1 xs] is [xs] except for its right-most element.
+      It is equal to the first projection of [eject xs].
+      @raise Failure if the cadeque is empty.
   *)
 
-  val lt : 'a t -> 'a t
-  (** [lt xs] removes the right-most element of [xs].
-      @raise Failure if the deque is empty.
+  val eject2 : 'a t -> 'a
+  (** [eject2 xs] returns the right-most element of [xs].
+      It is equal to the second projection of [eject xs].
+      @raise Failure if the cadeque is empty.
   *)
 
   val nth : 'a t -> int -> 'a
@@ -718,14 +726,16 @@ module Steque : sig
   val length : 'a t -> int
   (** Returns the length (number of elements) of the given steque. *)
 
-  val hd : 'a t -> 'a
-  (** [hd xs] returns the left-most element of [xs].
-      @raise Failure if the steque is empty.
+  val pop1 : 'a t -> 'a
+  (** [pop1 xs] returns the left-most element of [xs].
+      It is equal to the first projection of [pop xs].
+      @raise Failure if the cadeque is empty.
   *)
 
-  val tl : 'a t -> 'a t
-  (** [tl xs] removes the left-most element of [xs].
-      @raise Failure if the steque is empty.
+  val pop2 : 'a t -> 'a t
+  (** [pop2 xs] is [xs] except for its left-most element.
+      It is equal to the second projection of [pop xs].
+      @raise Failure if the cadeque is empty.
   *)
 
   val nth : 'a t -> int -> 'a
