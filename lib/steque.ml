@@ -121,6 +121,8 @@ end
 include Base
 include ListLike.OfSteque(Base)
 
-let make n a = { core = T (Ending (Deque.make n a)) ; length = n }
+let make n a =
+  if n < 0 then raise (Invalid_argument "Steque.make")
+  else { core = T (Ending (Deque.make n a)) ; length = n }
 
 let singleton x = { core = T (Ending (Deque.singleton x)) ; length = 1 }

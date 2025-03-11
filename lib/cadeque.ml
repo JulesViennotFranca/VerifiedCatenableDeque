@@ -198,10 +198,13 @@ end
 include Base
 include ListLike.OfDeque(Base)
 
-let make n a = match Buffer.make n a with
-  | Exact_0 -> { core = T Empty ; length = 0 }
-  | At_least_1 b ->
-    let core = T (Single (G, Packet (Hole, Only_end b), Empty)) in
-    { core ; length = n }
+let make n a =
+  if n < 0 then raise (Invalid_argument "Cadeque.make")
+  else
+    match Buffer.make n a with
+    | Exact_0 -> { core = T Empty ; length = 0 }
+    | At_least_1 b ->
+      let core = T (Single (G, Packet (Hole, Only_end b), Empty)) in
+      { core ; length = n }
 
 let singleton x = push x empty

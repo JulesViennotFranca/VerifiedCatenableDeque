@@ -232,7 +232,9 @@ let rec make_chain
     else
       Chain (G, Packet (B3 (a, a, a), Hole, B3 (a, a, a)), rest)
 
-let make n a = { core = T (make_chain n a) ; length = n ; rev = false }
+let make n a =
+  if n < 0 then raise (Invalid_argument "Deque.make")
+  else { core = T (make_chain n a) ; length = n ; rev = false }
 
 let rec chain_of_list
 : type a. a list -> (a, Color_GYR.green) chain

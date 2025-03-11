@@ -47,9 +47,7 @@ let () =
   declare "Deque.empty" deque R.empty Deque.empty;
   declare "Deque.singleton" (value ^> deque) R.singleton Deque.singleton;
 
-  (* FIXME hangs?? *)
-  (* declare "Deque.make" (list_size ^> value ^!> deque) R.make Deque.make; *)
-
+  declare "Deque.make" (list_size ^> value ^!> deque) R.make Deque.make;
   declare "Deque.init" (init (list value ^> deque)) R.init Deque.init;
   declare "Deque.rev" (deque ^> deque) R.rev Deque.rev;
 

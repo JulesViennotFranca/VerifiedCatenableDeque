@@ -47,7 +47,7 @@ let () =
   declare "Cadeque.empty" cadeque R.empty Cadeque.empty;
   declare "Cadeque.singleton" (value ^> cadeque) R.singleton Cadeque.singleton;
 
-  (* TODO: make *)
+  declare "Cadeque.make" (list_size ^> value ^!> cadeque) R.make Cadeque.make;
   declare "Cadeque.init" (init (list value ^> cadeque)) R.init Cadeque.init;
   declare "Cadeque.rev" (cadeque ^> cadeque) R.rev Cadeque.rev;
 

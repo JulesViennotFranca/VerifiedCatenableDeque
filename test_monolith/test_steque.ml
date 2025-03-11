@@ -44,7 +44,7 @@ let () =
   declare "Steque.empty" steque R.empty Steque.empty;
   declare "Deque.singleton" (value ^> steque) R.singleton Steque.singleton;
 
-  (* TODO: make *)
+  declare "Steque.make" (list_size ^> value ^!> steque) R.make Steque.make;
   declare "Steque.init" (init (list value ^> steque)) R.init Steque.init;
   declare "Steque.rev" (steque ^> steque) R.rev Steque.rev;
 
