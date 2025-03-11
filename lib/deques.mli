@@ -313,25 +313,7 @@ module Cadeque : sig
       @raise Invalid_argument if the two cadeques have different lengths.
   *)
 
-  (** {1 Sorting} *)
-
-  val sort : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** [sort cmp xs] sorts the cadeque [xs] in increasing order, according to the
-      comparison function [cmp].  This comparison function [cmp] must return
-      [0] when its argument are equal, a positive integer if the first is
-      greater and a negative integer if the first is smaller.
-      See {! Array.sort} for a complete specification.
-  *)
-
-  val stable_sort : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** Same as [sort], but guarantees that elements that compare equal are kept
-      in their original order. *)
-
-  val fast_sort : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** Same as [sort]. *)
-
-  val sort_uniq : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** Same as [sort], but also removes duplicates. *)
+  (** {1 Sorted cadeques} *)
 
   val merge : ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
   (** Assuming that [xs] and [ys] are two cadeques already sorted in increasing
@@ -678,25 +660,7 @@ module Deque : sig
       @raise Invalid_argument if the two deques have different lengths.
   *)
 
-  (** {1 Sorting} *)
-
-  val sort : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** [sort cmp xs] sorts the deque [xs] in increasing order, according to the
-      comparison function [cmp].  This comparison function [cmp] must return
-      [0] when its argument are equal, a positive integer if the first is
-      greater and a negative integer if the first is smaller.
-      See {! Array.sort} for a complete specification.
-  *)
-
-  val stable_sort : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** Same as [sort], but guarantees that elements that compare equal are kept
-      in their original order. *)
-
-  val fast_sort : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** Same as [sort]. *)
-
-  val sort_uniq : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** Same as [sort], but also removes duplicates. *)
+  (** {1 Sorted deques} *)
 
   val merge : ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
   (** Assuming that [xs] and [ys] are two deques already sorted in increasing
@@ -1023,25 +987,7 @@ module Steque : sig
       @raise Invalid_argument if the two steques have different lengths.
   *)
 
-  (** {1 Sorting} *)
-
-  val sort : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** [sort cmp xs] sorts the steque [xs] in increasing order, according to the
-      comparison function [cmp].  This comparison function [cmp] must return
-      [0] when its argument are equal, a positive integer if the first is
-      greater and a negative integer if the first is smaller.
-      See {! Array.sort} for a complete specification.
-  *)
-
-  val stable_sort : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** Same as [sort], but guarantees that elements that compare equal are kept
-      in their original order. *)
-
-  val fast_sort : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** Same as [sort]. *)
-
-  val sort_uniq : ('a -> 'a -> int) -> 'a t -> 'a t
-  (** Same as [sort], but also removes duplicates. *)
+  (** {1 Sorted steques} *)
 
   val merge : ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
   (** Assuming that [xs] and [ys] are two steques already sorted in increasing

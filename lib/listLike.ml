@@ -219,25 +219,6 @@ module OfSteque (S : STEQUE) = struct
 
   let merge cmp xs ys = merge cmp S.empty xs ys
 
-  let sort cmp t =
-    let t = to_array t in
-    Array.sort cmp t ;
-    of_array t
-
-  let stable_sort cmp t =
-    let t = to_array t in
-    Array.stable_sort cmp t ;
-    of_array t
-
-  let fast_sort cmp t =
-    let t = to_array t in
-    Array.fast_sort cmp t ;
-    of_array t
-
-  let sort_uniq cmp t =
-    of_list @@ List.sort_uniq cmp @@ to_list t
-
-
   let fold_left2 ~exn f z xs ys =
     let z, ys =
       S.fold_left
