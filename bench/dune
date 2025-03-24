@@ -2,8 +2,8 @@
   (name benchmark)
   (public_name benchmark)
   (package deques)
-  (modules Benchmark Base)
-  (libraries deques unix))
+  (modules Benchmark Measure Database)
+  (libraries deques unix sek))
 
 (executable
   (name listLike)
