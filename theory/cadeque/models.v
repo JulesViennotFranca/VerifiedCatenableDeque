@@ -10,7 +10,7 @@ From Deques.cadeque Require Import types.
 Definition node'_cmseq
   {T : Type -> nat -> Type}
   (f : forall A l, T A l -> list A)
-  {A lt ar k C} (n : node' (T A lt) ar k C) (l : list A) : list A :=
+  {A lt a k C} (n : node' (T A lt) a k C) (l : list A) : list A :=
   match n with
   | Only_end p  => deque_cmseq f p
   | Only  _ p s => deque_cmseq f p ++ l ++ deque_cmseq f s
@@ -45,12 +45,12 @@ body_seq (Pair_orange hd cl b) accu :=
   node'_cmseq stored_seq hd (chain_seq cl ++ body_seq b accu)
 
 (* Returns the sequence associated to a packet. *)
-with packet_seq {A hl tl ar k C} : packet A hl tl ar k C -> list A -> list A :=
+with packet_seq {A hl tl a k C} : packet A hl tl a k C -> list A -> list A :=
 packet_seq (Packet b tl) accu :=
   body_seq b (node'_cmseq stored_seq tl accu)
 
 (* Returns the sequence associated to a chain. *)
-with chain_seq {A l ar k lC rC} (c : chain A l ar k lC rC) : list A
+with chain_seq {A l a k lC rC} (c : chain A l a k lC rC) : list A
 by struct c :=
 chain_seq Empty := [];
 chain_seq (Single _ pkt rest) := packet_seq pkt (chain_seq rest);
@@ -91,7 +91,7 @@ six_stored_seq (a1, a2, a3, a4, a5, a6) :=
   stored_seq a4 ++ stored_seq a5 ++ stored_seq a6.
 
 (* Returns the sequence associated to a partial triple. *)
-Equations pt_triple_seq {A l ar k} : partial_triple A l ar k -> list A :=
+Equations pt_triple_seq {A l a k} : partial_triple A l a k -> list A :=
 pt_triple_seq Zero_element := [];
 pt_triple_seq (Six_elements six) := six_stored_seq six;
 pt_triple_seq (Ok_pt t) := triple_seq t.
