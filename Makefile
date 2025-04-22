@@ -2,6 +2,14 @@
 all:
 	@ dune build
 
+.PHONY: lib theory extraction
+lib:
+	@ dune build lib
+theory:
+	@ dune build theory
+extraction:
+	@ dune build extraction
+
 .PHONY: test
 test:
 	@ dune test

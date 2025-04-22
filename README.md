@@ -51,26 +51,21 @@ The Rocq implementations are verified.
 
 The main directories are as follows:
 
-+ [lib](/lib/) and [src](/src/) contain OCaml code for each data structure.
-  More specifically,
-  [lib](/lib/) contains an implementation of each data structure,
-  while
-  [src](/src/) defines the public API of our OCaml package.
++ [lib](/lib/) contains OCaml code for each data structure.
 
-  This OCaml code is compiled by the command `dune build src`,
-  which requires about 1 second.
+  This OCaml code can be compiled using the command `make lib`.
 
 + [theory](/theory/) contains Rocq code and proofs of correctness
   for each data structure.
 
-  This Coq code is compiled by the command `dune build theory`,
-  which requires about 20 minutes.
+  This Coq code can be compiled using the command `make theory`,
+  which requires 10 to 30 minutes.
 
 + [extraction](/extraction/) defines build rules to extract the
   Rocq implementation of each data structure into OCaml.
 
   Extracting the Rocq code into OCaml and compiling the result
-  as an OCaml library is done by the command `dune build extraction`,
+  as an OCaml library is done by the command `make extraction`,
   which takes a few seconds.
 
   Note: although the extracted code is a useful witness that our Rocq
@@ -81,15 +76,12 @@ The main directories are as follows:
   Our handwritten OCaml implementation is the one that should be used for
   all practical purposes.
 
-+ [test](/test/) contains some tests of the OCaml code.
-  They are executed by the command `dune test`.
++ [bench](/bench/) contains benchmarks of the OCaml code. The benchmarks can be
+  run with the command `cd bench && make run`, which takes several minutes.
 
-+ [bench](/bench/) contains benchmarks
-  where each data structure is compared against a list.
-  For example, here is the result of a benchmark
-  where the operation of appending a sequence with itself
-  is repeated 1000 times:
-  ![appending 1000 times with itself](bench/result/concat.png)
+  More details on the benchmarks are available in [bench](/bench/).
+
++ [test_coq](/test_coq/) TODO
 
 + [test_monolith](/test_monolith/) contains a harness for model-based testing of
   the OCaml library against a reference implementation (lists). To run this

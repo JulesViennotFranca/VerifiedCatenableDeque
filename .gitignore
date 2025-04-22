@@ -70,6 +70,5 @@ _opam/
 .DS_Store
 .vscode
 *.opam
-bench/tmp/
 dune-workspace.versions
 test_monolith/output
