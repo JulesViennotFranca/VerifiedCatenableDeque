@@ -1194,27 +1194,30 @@ let green_of_red_only body (Only (RN, p, s) : _ node) child =
       let s = Buffer.inject_5vector s elts in
       make_green_only body (p, child, s)
 
-(** Takes any chain and makes it green. *)
-let rec ensure_green
-: type a arity k lc rc.
-     (a, arity, k, lc, rc) chain
-  -> (a, arity, k, green, green) chain
+(** Takes any single chain and makes it green. *)
+let ensure_green_single
+: type a k lc rc.
+     (a, single, k, lc, rc) chain -> (a, single, k, green, green) chain
 = function
-  | Empty -> Empty
   | Single (G, pkt, c) -> Single (G, pkt, c)
-  | Single (R, Packet (body, red), rest) ->
-    begin match red with
+  | Single (R, Packet (body, red), rest) -> match red with
     | Only  (RN, _, _) as red -> green_of_red_only  body red rest
     | Left  (RN, _, _) as red -> green_of_red_left  body red rest
     | Right (RN, _, _) as red -> green_of_red_right body red rest
-    end
-  | Pair (lc, rc) ->
-    Pair (ensure_green lc, ensure_green rc)
 
-  (** Regularizes a semi-regular cadeque. *)
-  let regularize
+(** Takes any chain and makes it green. *)
+let ensure_green
+: type a arity k lc rc.
+     (a, arity, k, lc, rc) chain -> (a, arity, k, green, green) chain
+= function
+  | Empty -> Empty
+  | Single _ as c -> ensure_green_single c
+  | Pair (lc, rc) -> Pair (ensure_green_single lc, ensure_green_single rc)
+
+(** Regularizes a semi-regular cadeque. *)
+let regularize
   : type a. a semi_cadeque -> a cadeque
-  = fun (S c) -> T (ensure_green c)
+  = fun (S c) -> (T (ensure_green c))
 
 (* +------------------------------------------------------------------------+ *)
 (* |                               Operations                               | *)
