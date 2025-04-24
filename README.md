@@ -17,6 +17,13 @@ Robert E. Tarjan
 in the paper
 [Purely Functional, Real-Time Deques with Catenation](https://doi.org/10.1145/324133.324139).
 
+At this time,
+our code is accepted by Rocq 8.19
+but is **rejected by Rocq 8.20**
+with a "universe inconsistency" error
+that we do not understand.
+[We have reported this issue](https://github.com/mattam82/Coq-Equations/issues/635).
+
 ## Data Structures
 
 A double-ended queue, also known as a *deque*, is a queue that supports the
