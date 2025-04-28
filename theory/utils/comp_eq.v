@@ -10,4 +10,4 @@ From Equations Require Import Equations.
 Equations comp_eq {A} {eq_dec: EqDec A} {x y : A} (eq : x = y) : x = y :=
 comp_eq eq with eq_dec x y => {
   | left e => e;
-  | right ne => False_rect _ _ }.
+  | right ne => _ }.
