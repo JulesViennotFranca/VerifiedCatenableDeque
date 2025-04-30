@@ -27,7 +27,7 @@ Definition suffix' := deque.
 
 (* A type for the coloring relation of nodes. *)
 Inductive node_coloring : size -> size -> arity -> color -> Type :=
-  | EN {qp qs}    : node_coloring (0 + qp) (0 + qs) 0      green
+  | EN {qp qs}   : node_coloring (0 + qp) (0 + qs) 0      green
   | GN {qp qs a} : node_coloring (3 + qp) (3 + qs) (S a) green
   | YN {qp qs a} : node_coloring (2 + qp) (2 + qs) (S a) yellow
   | ON {qp qs a} : node_coloring (1 + qp) (1 + qs) (S a) orange
@@ -156,8 +156,8 @@ Arguments Sbuf {A l q}.
 Inductive triple_coloring : color -> arity -> color -> color -> color -> Type :=
   | GT {a lC rC} : triple_coloring green  a      lC    rC    green
   | YT {a lC rC} : triple_coloring yellow (S a)  lC    rC    lC
-  | OST {C}       : triple_coloring orange single  C     C     C
-  | OPT {rC}      : triple_coloring orange pair    green rC    rC
+  | OST {C}      : triple_coloring orange single  C     C     C
+  | OPT {rC}     : triple_coloring orange pair   green rC    rC
   | RT {a}       : triple_coloring red    (S a)  green green red.
 
 (* A type for triples. *)
