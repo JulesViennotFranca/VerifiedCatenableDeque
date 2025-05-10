@@ -3,8 +3,8 @@
   (extracted_modules
     Datatypes Classes Nat EqDec PeanoNat
     GYR GYOR
-    deque deque_lvl deque_plain
-    steque
+    Deque Deque_lvl Deque_plain
+    Steque
     core types operations
   )
   (flags -w -extraction-default-directory

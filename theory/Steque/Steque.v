@@ -6,23 +6,23 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Deques.color Require Import GYR.
-From Deques.deque Require Import deque_lvl.
-Module deque := deque_lvl.
+From Deques.Color Require Import GYR.
+From Deques.Deque Require Import Deque_lvl.
+Module Deque := Deque_lvl.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
 (* +------------------------------------------------------------------------+ *)
 
 (* A type for unleveld suffix buffers. *)
-Notation suffix' A := (deque A).
+Notation suffix' A := (Deque.deque A).
 
 (* A type for unleveled prefix buffers that need to have at least two
    elements. *)
 Inductive prefix' (A : Type) : color -> Type :=
   | P2 : A -> A -> prefix' A red
   | P3 : A -> A -> A -> prefix' A yellow
-  | P4 : A -> A -> A -> A -> deque A -> prefix' A green.
+  | P4 : A -> A -> A -> A -> Deque.deque A -> prefix' A green.
 Arguments P2 {A}.
 Arguments P3 {A}.
 Arguments P4 {A}.
@@ -124,7 +124,7 @@ Definition prefix'_cmseq
   | P3 a1 a2 a3 => f A lvlt a1 ++ f A lvlt a2 ++ f A lvlt a3
   | P4 a1 a2 a3 a4 d =>
       f A lvlt a1 ++ f A lvlt a2 ++ f A lvlt a3 ++ f A lvlt a4 ++
-      deque_cmseq f d
+      Deque.deque_cmseq f d
   end.
 
 (* Returns the sequence associated to a pair. *)
@@ -139,11 +139,11 @@ packet_seq Hole l := l;
 packet_seq (Packet p pkt s) l :=
   prefix'_cmseq pair_seq p ++
   packet_seq pkt l ++
-  deque_cmseq pair_seq s
+  Deque.deque_cmseq pair_seq s
 
 (* Returns the sequence associated to a chain. *)
 with chain_seq {A lvl C} (c : chain A lvl C) : list A by struct c :=
-chain_seq (Ending d) := deque_cmseq pair_seq d;
+chain_seq (Ending d) := Deque.deque_cmseq pair_seq d;
 chain_seq (Chain _ pkt c) := packet_seq pkt (chain_seq c).
 
 Arguments pair_seq {A lvl}.
@@ -152,7 +152,7 @@ Arguments pair_seq {A lvl}.
 Notation prefix_seq p := (prefix'_cmseq (@pair_seq) p).
 
 (* Returns the sequence associated to a leveled suffix. *)
-Notation suffix_seq := (deque_cmseq (@pair_seq)).
+Notation suffix_seq := (Deque.deque_cmseq (@pair_seq)).
 
 (* Returns the sequence associated to a green or yellow prefix. *)
 Equations gy_prefix_seq {A lvl} : gy_prefix A lvl -> list A :=
@@ -193,7 +193,7 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 #[export] Hint Rewrite map_app : rlist.
 #[export] Hint Rewrite concat_app : rlist.
 
-#[export] Hint Rewrite correct_deque_cmseq : rlist.
+#[export] Hint Rewrite Deque.correct_deque_cmseq : rlist.
 
 (* Setting the default tactics for obligations to be [hauto] using the [rlist]
    hint database. *)
@@ -202,7 +202,7 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 (* The empty chain. *)
 Equations empty_chain {A lvl} :
   { c : chain A lvl green | chain_seq c = [] } :=
-empty_chain with deque.empty => { | ? d := ? Ending d }.
+empty_chain with Deque.empty => { | ? d := ? Ending d }.
 
 (* Takes a green prefix [p], a child chain [child] and a suffix [s] and
    returns the green chain (p, child, s). *)
@@ -303,7 +303,7 @@ Equations green_prefix_push {A lvl}
   (x : pair A lvl)
   (p : prefix A lvl green) :
   { p' : prefix A lvl green | prefix_seq p' = pair_seq x ++ prefix_seq p } :=
-green_prefix_push x (P4 a1 a2 a3 a4 d) with deque.push a4 d => {
+green_prefix_push x (P4 a1 a2 a3 a4 d) with Deque.push a4 d => {
     | ? d' := ? P4 x a1 a2 a3 d' }.
 
 (* Pushes on a yellow prefix. *)
@@ -311,7 +311,7 @@ Equations yellow_prefix_push {A lvl}
   (x : pair A lvl)
   (p : prefix A lvl yellow) :
   { p' : prefix A lvl green | prefix_seq p' = pair_seq x ++ prefix_seq p } :=
-yellow_prefix_push x (P3 a1 a2 a3) with deque.empty => {
+yellow_prefix_push x (P3 a1 a2 a3) with Deque.empty => {
     | ? d := ? P4 x a1 a2 a3 d }.
 
 (* Pushes on a red prefix. *)
@@ -327,13 +327,13 @@ Equations prefix_push_two {A lvl C}
   (p : prefix A lvl C) :
   { p' : prefix A lvl green |
       prefix_seq p' = pair_seq x ++ pair_seq y ++ prefix_seq p } :=
-prefix_push_two x y (P2 a1 a2) with deque.empty => {
+prefix_push_two x y (P2 a1 a2) with Deque.empty => {
   | ? d := ? P4 x y a1 a2 d };
-prefix_push_two x y (P3 a1 a2 a3) with deque.empty => {
-  | ? d with deque.push a3 d => {
+prefix_push_two x y (P3 a1 a2 a3) with Deque.empty => {
+  | ? d with Deque.push a3 d => {
     | ? d1 := ? P4 x y a1 a2 d1 } };
-prefix_push_two x y (P4 a1 a2 a3 a4 d) with deque.push a4 d => {
-  | ? d1 with deque.push a3 d1 => {
+prefix_push_two x y (P4 a1 a2 a3 a4 d) with Deque.push a4 d => {
+  | ? d1 with Deque.push a3 d1 => {
     | ? d2 := ? P4 x y a1 a2 d2 } }.
 
 (* Pushes on a chain and returns a steque. *)
@@ -342,7 +342,7 @@ Equations chain_push {A lvl C}
   (c : chain A lvl C) :
   { c' : gy_chain A lvl |
       gy_chain_seq c' = pair_seq x ++ chain_seq c } :=
-chain_push x (Ending d) with deque.push x d => {
+chain_push x (Ending d) with Deque.push x d => {
     | ? d' := ? GY_chn (Ending d') };
 chain_push x (Chain G (Packet p pkt s) c) with green_prefix_push x p => {
     | ? p' := ? GY_chn (Chain G (Packet p' pkt s) c) };
@@ -359,15 +359,15 @@ Equations chain_inject {A lvl C}
   (x : pair A lvl) :
   { c' : chain A lvl C |
       chain_seq c' = chain_seq c ++ pair_seq x } :=
-chain_inject (Ending d) x with deque.inject d x => {
+chain_inject (Ending d) x with Deque.inject d x => {
     | ? d' := ? Ending d' };
-chain_inject (Chain G (Packet p pkt s) c) x with deque.inject s x => {
+chain_inject (Chain G (Packet p pkt s) c) x with Deque.inject s x => {
   | ? s' := ? Chain G (Packet p pkt s') c };
-chain_inject (Chain Y (Packet p pkt s) c) x with deque.inject s x => {
+chain_inject (Chain Y (Packet p pkt s) c) x with Deque.inject s x => {
   | ? s' := ? Chain Y (Packet p pkt s') c };
-chain_inject (Chain O (Packet p pkt s) c) x with deque.inject s x => {
+chain_inject (Chain O (Packet p pkt s) c) x with Deque.inject s x => {
   | ? s' := ? Chain O (Packet p pkt s') c };
-chain_inject (Chain R (Packet p pkt s) c) x with deque.inject s x => {
+chain_inject (Chain R (Packet p pkt s) c) x with Deque.inject s x => {
   | ? s' := ? Chain R (Packet p pkt s') c }.
 
 (* Pushes on a semi-regular steque. *)
@@ -386,15 +386,15 @@ Equations remove_suffix {A lvl C}
   { '(child', sst') : chain A (S lvl) C * semi_steque A lvl |
       chain_seq child' ++ semi_steque_seq sst' =
           chain_seq child ++ suffix_seq s ++ semi_steque_seq sst } :=
-remove_suffix child s sst with deque.pop s => {
+remove_suffix child s sst with Deque.pop s => {
   | ? None => ? (child, sst);
-  | ? Some (a1, s1) with deque.pop s1 => {
+  | ? Some (a1, s1) with Deque.pop s1 => {
     | ? None with semi_push a1 sst => {
       | ? sst' := ? (child, sst') };
-    | ? Some (a2, s2) with deque.pop s2, empty_chain => {
+    | ? Some (a2, s2) with Deque.pop s2, empty_chain => {
       | ? None, ? c with chain_inject child (Pair (P2 a1 a2) c) => {
         | ? child' := ? (child', sst) };
-      | ? Some (a3, s3), ? c with deque.pop s3 => {
+      | ? Some (a3, s3), ? c with Deque.pop s3 => {
         | ? None with chain_inject child (Pair (P3 a1 a2 a3) c) => {
           | ? child' := ? (child', sst) };
         | ? Some (a4, s4)
@@ -434,14 +434,14 @@ join child s sst with remove_suffix child s sst => {
 Equations semi_concat {A lvl} (sst1 sst2 : semi_steque A lvl) :
   { sst3 : semi_steque A lvl |
     semi_steque_seq sst3 = semi_steque_seq sst1 ++ semi_steque_seq sst2 } :=
-semi_concat (Semi (Ending d)) sst2 with deque.pop d => {
+semi_concat (Semi (Ending d)) sst2 with Deque.pop d => {
   | ? None := ? sst2;
-  | ? Some (a1, d1) with deque.pop d1 => {
+  | ? Some (a1, d1) with Deque.pop d1 => {
     | ? None with semi_push a1 sst2 => { | ? sst3 := ? sst3 };
-    | ? Some (a2, d2) with deque.pop d2 => {
+    | ? Some (a2, d2) with Deque.pop d2 => {
       | ? None with semi_push a2 sst2 => {
         | ? sst2' with semi_push a1 sst2' => { | ? sst3 := ? sst3 } };
-      | ? Some (a3, d3) with deque.pop d3 => {
+      | ? Some (a3, d3) with Deque.pop d3 => {
         | ? None with semi_push a3 sst2 => {
           | ? sst2' with semi_push a2 sst2' => {
             | ? sst2'' with semi_push a1 sst2'' => { | ? sst3 := ? sst3 } } };
@@ -476,7 +476,7 @@ semi_concat (Semi (Chain R (Packet p3 pkt s) c)) sst2
 Equations green_prefix_pop {A lvl} (p : prefix A lvl green) :
     { '(x, p') : pair A lvl * gy_prefix A lvl |
         prefix_seq p = pair_seq x ++ gy_prefix_seq p' } :=
-green_prefix_pop (P4 a1 a2 a3 a4 d) with deque.pop d => {
+green_prefix_pop (P4 a1 a2 a3 a4 d) with Deque.pop d => {
   | ? None := ? (a1, GY_pre (P3 a2 a3 a4));
   | ? Some (a5, d') := ? (a1, GY_pre (P4 a2 a3 a4 a5 d')) }.
 
@@ -484,8 +484,8 @@ green_prefix_pop (P4 a1 a2 a3 a4 d) with deque.pop d => {
 Equations green_of_red {A lvl} (c : chain A lvl red) :
     { c' : chain A lvl green | chain_seq c' = chain_seq c } :=
 green_of_red (Chain R (Packet (P2 a1 a2) Hole s) (Ending d))
-  with deque.pop d => {
-  | ? None with deque.push a2 s => { | ? s1 with deque.push a1 s1 => {
+  with Deque.pop d => {
+  | ? None with Deque.push a2 s => { | ? s1 with Deque.push a1 s1 => {
     | ? s2 := ? Ending s2 } };
   | ? Some (Pair p stored, d')
     with prefix_push_two a1 a2 p,
@@ -539,7 +539,7 @@ Equations pop {A} (s : steque A) :
         match o with
         | None => steque_seq s = []
         | Some (x, s') => steque_seq s = [x] ++ steque_seq s' end } :=
-pop (T (Ending d)) with deque.pop d => {
+pop (T (Ending d)) with Deque.pop d => {
   | ? None := ? None;
   | ? Some (Ground x, d') := ? Some (x, T (Ending d')) };
 pop (T (Chain G (Packet p pkt s) c)) with green_prefix_pop p => {
@@ -554,14 +554,14 @@ pop (T (Chain Y (Packet (P3 (Ground x) a1 a2) pkt s) c))
 (* Concatenates two steques. *)
 Equations concat {A} (s1 s2 : steque A) :
   { s3 : steque A | steque_seq s3 = steque_seq s1 ++ steque_seq s2 } :=
-concat (T (Ending d)) (T c2) with deque.pop d => {
+concat (T (Ending d)) (T c2) with Deque.pop d => {
   | ? None := ? T c2;
-  | ? Some (Ground a1, d1) with deque.pop d1 => {
+  | ? Some (Ground a1, d1) with Deque.pop d1 => {
     | ? None with push a1 (T c2) => { | ? sst3 := ? sst3 };
-    | ? Some (Ground a2, d2) with deque.pop d2 => {
+    | ? Some (Ground a2, d2) with Deque.pop d2 => {
       | ? None with push a2 (T c2) => {
         | ? T c2' with push a1 (T c2') => { | ? sst3 := ? sst3 } };
-      | ? Some (Ground a3, d3) with deque.pop d3 => {
+      | ? Some (Ground a3, d3) with Deque.pop d3 => {
         | ? None with push a3 (T c2) => {
           | ? T c2' with push a2 (T c2') => {
             | ? T c2'' with push a1 (T c2'') => { | ? sst3 := ? sst3 } } };

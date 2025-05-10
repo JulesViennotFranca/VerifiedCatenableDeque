@@ -1,5 +1,5 @@
-From Deques.color Require Import GYOR.
-From Deques.deque Require Import deque.
+From Deques.Color Require Import GYOR.
+From Deques.Deque Require Import Deque.
 
 (* An arity is 0, 1, or 2. *)
 Notation arity  := nat.
@@ -22,8 +22,8 @@ Derive NoConfusion for kind.
    deques. In the following, prefixes and suffixes will contain stored
    triples. *)
 
-Definition prefix' := deque.
-Definition suffix' := deque.
+Definition prefix' := Deque.deque.
+Definition suffix' := Deque.deque.
 
 (* A type for the coloring relation of nodes. *)
 Inductive node_coloring : size -> size -> arity -> color -> Type :=
@@ -144,12 +144,12 @@ Definition node   (A : Type) (l : level) := node' (stored A l).
 
 (* A type for green buffers, buffers of at least eight elements. *)
 Inductive green_buffer (A : Type) (l : level) : Type :=
-  | Gbuf {q} : deque (stored A l) (8 + q) -> green_buffer A l.
+  | Gbuf {q} : Deque.deque (stored A l) (8 + q) -> green_buffer A l.
 Arguments Gbuf {A l q}.
 
 (* A type for stored buffers, buffers of at least three elements. *)
 Inductive stored_buffer (A : Type) (l : level) : Type :=
-  | Sbuf {q} : deque (stored A l) (3 + q) -> stored_buffer A l.
+  | Sbuf {q} : Deque.deque (stored A l) (3 + q) -> stored_buffer A l.
 Arguments Sbuf {A l q}.
 
 (* A type for the coloring relation of triples. *)

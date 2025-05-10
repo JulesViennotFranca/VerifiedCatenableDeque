@@ -1,31 +1,31 @@
 From Coq Require Extraction.
-From Deques Require deque deque_lvl deque_plain.
-From Deques Require steque.
-From Deques Require cadeque.operations.
+From Deques Require Deque Deque_lvl Deque_plain.
+From Deques Require Steque.
+From Deques Require Cadeque.Operations.
 
 Separate Extraction
-  deque.empty
-  deque.push
-  deque.inject
-  deque.pop
-  deque.eject
+  Deque.empty
+  Deque.push
+  Deque.inject
+  Deque.pop
+  Deque.eject
 
-  deque_lvl.empty
-  deque_lvl.push
-  deque_lvl.inject
-  deque_lvl.pop
-  deque_lvl.eject
+  Deque_lvl.empty
+  Deque_lvl.push
+  Deque_lvl.inject
+  Deque_lvl.pop
+  Deque_lvl.eject
 
-  deque_plain.empty
-  deque_plain.push
-  deque_plain.inject
-  deque_plain.pop
-  deque_plain.eject
+  Deque_plain.empty
+  Deque_plain.push
+  Deque_plain.inject
+  Deque_plain.pop
+  Deque_plain.eject
 
-  steque.empty
-  steque.push
-  steque.inject
-  steque.pop
-  steque.concat
+  Steque.empty
+  Steque.push
+  Steque.inject
+  Steque.pop
+  Steque.concat
 
-  cadeque.operations.D.
+  Cadeque.Operations.D.

@@ -6,8 +6,8 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Deques.color Require Import GYR.
-From Deques.utils Require Import comp_eq.
+From Deques.Color Require Import GYR.
+From Deques.Utils Require Import comp_eq.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
@@ -1232,7 +1232,7 @@ translate b eq with comp_eq eq => { | eq_refl := ? b }.
 (* Returns a buffer containing one element. *)
 Equations single {A} (a1 : A) : { b : deque A 1 | deque_seq b = [a1] } :=
 single a1 with empty => {
-  | ? d with deque.push a1 d => {
+  | ? d with push a1 d => {
     | ? d' := ? d' } }.
 
 (* Returns a buffer containing two elements. *)

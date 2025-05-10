@@ -3,8 +3,8 @@ Import ListNotations.
 From Equations Require Import Equations.
 Require Import Coq.Program.Equality.
 
-From Deques.deque Require Import deque.
-From Deques.cadeque Require Import types.
+From Deques.Deque Require Import Deque.
+From Deques.Cadeque Require Import Types.
 
 (* Sequence + map + concat for non-leveled nodes. *)
 Definition node'_cmseq
@@ -12,10 +12,10 @@ Definition node'_cmseq
   (f : forall A l, T A l -> list A)
   {A lt a k C} (n : node' (T A lt) a k C) (l : list A) : list A :=
   match n with
-  | Only_end p  => deque_cmseq f p
-  | Only  _ p s => deque_cmseq f p ++ l ++ deque_cmseq f s
-  | Left  _ p (y, z) => deque_cmseq f p ++ l ++ f _ _ y ++ f _ _ z
-  | Right _ (a, b) s => f _ _ a ++ f _ _ b ++ l ++ deque_cmseq f s
+  | Only_end p  => Deque.deque_cmseq f p
+  | Only  _ p s => Deque.deque_cmseq f p ++ l ++ Deque.deque_cmseq f s
+  | Left  _ p (y, z) => Deque.deque_cmseq f p ++ l ++ f _ _ y ++ f _ _ z
+  | Right _ (a, b) s => f _ _ a ++ f _ _ b ++ l ++ Deque.deque_cmseq f s
   end.
 
 Set Equations Transparent.
@@ -26,11 +26,11 @@ by struct st :=
 stored_seq A l (Ground a) :=
   [a];
 stored_seq A l (Small s) :=
-  deque_cmseq stored_seq s;
+  Deque.deque_cmseq stored_seq s;
 stored_seq A l (Big p child s) :=
-  deque_cmseq stored_seq p ++
+  Deque.deque_cmseq stored_seq p ++
   chain_seq child ++
-  deque_cmseq stored_seq s
+  Deque.deque_cmseq stored_seq s
 
 (* Returns the sequence associated to a body. *)
 with body_seq {A hl tl hk tk} (b : body A hl tl hk tk) : list A -> list A
@@ -59,10 +59,10 @@ chain_seq (Pair lc rc) := chain_seq lc ++ chain_seq rc.
 Arguments stored_seq {A l}.
 
 (* Returns the sequence associated to a prefix containing stored triples. *)
-Notation prefix_seq p := (deque_cmseq (@stored_seq) p).
+Notation prefix_seq p := (Deque.deque_cmseq (@stored_seq) p).
 
 (* Returns the sequence associated to a suffix containing stored triples. *)
-Notation suffix_seq s := (deque_cmseq (@stored_seq) s).
+Notation suffix_seq s := (Deque.deque_cmseq (@stored_seq) s).
 
 (* Returns the sequence associated to a node containing stored triples. *)
 Notation node_seq n l := (node'_cmseq (@stored_seq) n l).
