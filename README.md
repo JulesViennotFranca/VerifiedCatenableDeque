@@ -17,8 +17,11 @@ Robert E. Tarjan
 in the paper
 [Purely Functional, Real-Time Deques with Catenation](https://doi.org/10.1145/324133.324139).
 
-At this time,
-our code is accepted by Rocq 8.19
+## Requirements
+
+Our [OCaml code](lib/) requires OCaml 4.08 or newer.
+
+Our [Rocq code](theory/) is accepted by Rocq 8.19
 but is **rejected by Rocq 8.20 and by Rocq 9**
 with a "universe inconsistency" error
 that we do not understand.
@@ -26,8 +29,10 @@ that we do not understand.
 
 ## Data Structures
 
-A double-ended queue, also known as a *deque*, is a queue that supports the
-four operations *push*, *inject*, *pop*, *eject*.
+A double-ended queue, also known as a *deque*,
+is an abstract data structure that represents a sequence
+and that offers the constant *empty*
+as well as the four operations *push*, *inject*, *pop*, *eject*.
 
 + *push* and *pop*
   insert and extract an element at the front end of the queue.
@@ -35,12 +40,13 @@ four operations *push*, *inject*, *pop*, *eject*.
   insert and extract an element at the rear end of the queue.
 
 In addition to these four operations,
-*catenable deques* support a concatenation operation,
+*catenable deques* support a concatenation operation, *concat*,
 which expects two deques and produces a deque.
+We say *cadeque* as a short-hand for *catenable deque*.
 
 Following Kaplan and Tarjan's paper,
 we implement four data structures,
-each of which supports a subset of the above five operations.
+each of which supports a subset of the above operations.
 The following table shows which operations are supported
 and indicates their worst-case time complexity:
 
@@ -54,44 +60,70 @@ and indicates their worst-case time complexity:
 Each data structure is implemented both in OCaml and in Rocq.
 The Rocq implementations are verified.
 
+## Summary of Verified Results
+
+A [signature](theory/Signatures.v) lists the types and operations
+that must be offered by an implementation of catenable deques,
+as well as the correctness properties that these operations must satisfy.
+We offer two variants of this signature, in *intrinsic style*
+and *extrinsic style*.
+
+A [summary](theory/Cadeque/Summary.v) file
+asks Rocq to verify that our implementation of catenable deques
+satisfies (the two variants of) this signature,
+that no axiom has been used,
+and that no proof has been left unfinished.
+
+Typing `make axioms` applies a similar check to all data structures,
+as opposed to just catenable deques.
+
 ## Organization
+
+To compile everything, type `make`.
 
 The main directories are as follows:
 
 + [lib](/lib/) contains OCaml code for each data structure.
 
-  This OCaml code can be compiled using the command `make lib`.
+  This OCaml code is compiled by `make lib`.
 
 + [theory](/theory/) contains Rocq code and proofs of correctness
   for each data structure.
 
-  This Coq code can be compiled using the command `make theory`,
+  This Coq code is compiled by `make theory`,
   which requires 10 to 30 minutes.
 
-+ [extraction](/extraction/) defines build rules to extract the
-  Rocq implementation of each data structure into OCaml.
++ [extraction](/extraction/) contains commands to extract the
+  Rocq implementation of each data structure down to OCaml.
 
-  Extracting the Rocq code into OCaml and compiling the result
-  as an OCaml library is done by the command `make extraction`,
+  Extracting and compiling the resulting OCaml code
+  as an OCaml library is done by `make extraction`,
   which takes a few seconds.
 
-  Note: although the extracted code is a useful witness that our Rocq
-  implementation can be executed, it is currently expected that it is not
-  efficient, and in particular not constant time. This is because the extracted
-  code contains superfluous computations on natural numbers (size and level
-  indices) that we have no good way of erasing at extraction.
-  Our handwritten OCaml implementation is the one that should be used for
-  all practical purposes.
+  Although the extracted code is a useful witness that our Rocq
+  implementation can be executed, it is not
+  efficient: in particular, the complexity of each operation is *not* O(1).
+  Indeed, the extracted code contains superfluous computations on natural numbers
+  (such as size and level indices) which currently cannot be erased during extraction.
+  For all practical purposes,
+  our hand-written OCaml implementation should be preferred.
 
 + [bench](/bench/) contains benchmarks of the OCaml code. The benchmarks can be
-  run with the command `cd bench && make run`, which takes several minutes.
+  run with the command `make bench`, which takes several minutes.
 
-  More details on the benchmarks are available in [bench](/bench/).
+  More details on the benchmarks are available in [bench/README.md](bench/README.md).
 
-+ [test_coq](/test_coq/) TODO
++ [test_coq](/test_coq/) contains the check that is executed by `make axioms`.
+  It also contains a few files where we check that reduction inside Rocq works.
+  These checks are performed by Rocq when everything is compiled via `make`.
 
 + [test_monolith](/test_monolith/) contains a harness for model-based testing of
   the OCaml library against a reference implementation (lists). To run this
-  test, you first need to additionally install the
-  [Monolith](https://gitlab.inria.fr/fpottier/monolith) OCaml library, and the
-  `parallel` tool, then run `cd test_monolith && make run`.
+  test,
+  [Monolith](https://gitlab.inria.fr/fpottier/monolith) and GNU
+  `parallel` are needed. (If necessary, type `opam install monolith`.)
+  Run the tests with `make test`.
+  By design, these tests run forever.
+  If a discrepancy between the reference implementation
+  and the candidate implementation is found
+  then the scenario that gives rise to the problem is printed.
