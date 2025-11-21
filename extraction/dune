@@ -9,7 +9,7 @@
   )
   (flags -w -extraction-default-directory
      -w -extraction-opaque-accessed)
-  (theories Deques Equations Hammer AAC_tactics))
+  (theories Stdlib Deques Equations Hammer AAC_tactics))
 
  (library
    (name deques_extraction)

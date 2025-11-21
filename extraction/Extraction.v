@@ -1,4 +1,4 @@
-From Coq Require Extraction.
+From Stdlib Require Extraction.
 From Deques Require Deque Deque_lvl Deque_plain.
 From Deques Require Steque.
 From Deques Require Cadeque.Operations.

@@ -370,7 +370,7 @@ with chain : nat -> color_constraint -> Type :=
 Definition get_color {c a} (n : node c a) : color :=
   c.
 
-From Coq Require Import Program.
+From Stdlib Require Import Program.
 From Equations Require Import Equations.
 
 Equations decode_body {c a} (b : body) : node c a -> forest -> tree

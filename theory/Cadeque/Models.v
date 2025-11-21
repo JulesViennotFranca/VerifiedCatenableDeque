@@ -1,7 +1,7 @@
-From Coq Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
 From Equations Require Import Equations.
-Require Import Coq.Program.Equality.
+Require Import Stdlib.Program.Equality.
 
 From Deques.Deque Require Import Deque.
 From Deques.Cadeque Require Import Types.
