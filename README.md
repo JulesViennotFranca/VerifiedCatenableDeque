@@ -19,7 +19,7 @@ in the paper
 
 At this time,
 our code is accepted by Rocq 8.19
-but is **rejected by Rocq 8.20**
+but is **rejected by Rocq 8.20 and by Rocq 9**
 with a "universe inconsistency" error
 that we do not understand.
 [We have reported this issue](https://github.com/mattam82/Coq-Equations/issues/635).
