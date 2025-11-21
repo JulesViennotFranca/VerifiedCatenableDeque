@@ -1,6 +1,6 @@
-From Coq Require Import Lia.
+From Stdlib Require Import Lia.
 From Equations Require Import Equations.
-Require Import Coq.Program.Equality.
+Require Import Stdlib.Program.Equality.
 
 From Deques.Color Require Import GYR.
 

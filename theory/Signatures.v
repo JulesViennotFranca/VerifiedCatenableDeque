@@ -1,4 +1,4 @@
-From Coq Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
 
 (* The following module types, or signatures, sum up the types and operations

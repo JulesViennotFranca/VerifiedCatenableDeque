@@ -1,4 +1,4 @@
-From Coq Require Import Program List Lia.
+From Stdlib Require Import Program List Lia.
 Import ListNotations.
 From Equations Require Import Equations.
 From Hammer Require Import Tactics.
