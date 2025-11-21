@@ -34,21 +34,21 @@ Module Type CADEQUE_INTRINSIC.
       model d = []
     }.
 
-  (* [push x d] inserts [x] at the left end of the cadeque [d]. *)
+  (* [push x d] inserts [x] at the front end of the cadeque [d]. *)
   Parameter push :
     forall {A} (x : A) (d : cadeque A),
     { d' : cadeque A |
       model d' = [x] ++ model d
     }.
 
-  (* [inject x d] inserts [x] at the right end of the cadeque [d]. *)
+  (* [inject x d] inserts [x] at the rear end of the cadeque [d]. *)
   Parameter inject :
     forall {A} (d : cadeque A) (x : A),
     { d' : cadeque A |
       model d' = model d ++ [x]
     }.
 
-  (* [pop d] attempts to extract an element at the left end of the cadeque
+  (* [pop d] attempts to extract an element at the front end of the cadeque
      [d]. It returns either nothing or a pair of an element and a cadeque. *)
   Parameter pop :
     forall {A} (d : cadeque A),
@@ -59,7 +59,7 @@ Module Type CADEQUE_INTRINSIC.
                       end
     }.
 
-  (* [eject d] attempts to extract an element at the right end of the cadeque
+  (* [eject d] attempts to extract an element at the rear end of the cadeque
      [d]. It returns either nothing or a pair of a cadeque and an element. *)
   Parameter eject :
     forall {A} (d : cadeque A),
