@@ -1,4 +1,4 @@
-From Coq Require Import Program List Arith Lia.
+From Stdlib Require Import Program List Arith Lia.
 Import ListNotations.
 From Equations Require Import Equations.
 From Hammer Require Import Tactics.

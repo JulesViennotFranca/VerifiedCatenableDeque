@@ -1,4 +1,4 @@
-From Coq Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
 From Deques.Cadeque Require Import Types Models Core Operations.
 From Deques Require Import Signatures.

@@ -3,4 +3,4 @@
 (coq.theory
  (name Deques)
  (package coq-deques)
- (theories Equations Hammer AAC_tactics))
+ (theories Stdlib Equations Hammer AAC_tactics))

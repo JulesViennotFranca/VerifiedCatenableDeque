@@ -1,5 +1,5 @@
 From Equations Require Import Equations.
-Require Import Coq.Program.Equality.
+Require Import Stdlib.Program.Equality.
 
 (* Defining some hues. *)
 Inductive green_hue  := SomeGreen  | NoGreen.
