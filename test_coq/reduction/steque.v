@@ -1,4 +1,4 @@
-From Deques.steque Require Import steque.
+From Deques.Steque Require Import Steque.
 
 Definition test : option (nat * steque nat) :=
   let d := proj1_sig empty in
