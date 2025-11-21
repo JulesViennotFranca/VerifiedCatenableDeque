@@ -45,4 +45,4 @@ versions:
 	  for v in $(VERSIONS) ; do \
 	    echo "(context (opam (switch $$v)))" ; \
 	  done) > dune-workspace.versions
-	@ dune build --workspace dune-workspace.versions src
+	@ dune build --workspace dune-workspace.versions lib
