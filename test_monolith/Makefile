@@ -1,18 +1,20 @@
 # The switch that is used for testing is the current switch.
-SWITCH := default
+SWITCH := $(shell opam switch show)
 
 # By default, [make] compiles the test.
 .PHONY: build
 build:
 	@ dune build
 
-.PHONY: run
-run: build
-	@ parallel --tag --line-buffer make random_nodep EXE={} \
-      ::: \
-      test_deque.exe \
-      test_steque.exe \
-	  test_cadeque.exe
+SUBDIRS := \
+
+.PHONY: parallel
+parallel: build
+	@ parallel --tag --line-buffer make random_nodep EXE=test_{}.exe \
+	::: \
+	deque \
+	steque \
+	cadeque \
 
 .PHONY: run_deque
 run_deque: build

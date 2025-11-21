@@ -2,24 +2,33 @@
 all:
 	@ dune build
 
-.PHONY: lib theory extraction
+.PHONY: lib
 lib:
 	@ dune build lib
+
+.PHONY: theory
 theory:
 	@ dune build theory
+
+.PHONY: extraction
 extraction:
 	@ dune build extraction
 
 .PHONY: test
 test:
-	@ dune test
+	@ make -C test_monolith parallel
+
+.PHONY: bench
+bench:
+	@ make -C bench run
 
 .PHONY: clean
 clean:
 	@ git clean -fdX
 
-.PHONY: check-axioms
-check-axioms: all
+.PHONY: axioms
+axioms: all
+	@ echo "This command should print 'Closed under the global context':"
 	coqc -R ./_build/default/theory Deques test_coq/check_axioms.v
 
 # ------------------------------------------------------------------------------
