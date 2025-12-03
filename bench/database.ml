@@ -53,40 +53,15 @@ let progress_bar title maxN =
       end
     end
 
-(* =============================== operations =============================== *)
-
-type 'a operation =
-  | Push   of ('a -> 'a)
-  | Pop    of ('a -> 'a)
-  | Inject of ('a -> 'a)
-  | Eject  of ('a -> 'a)
-  | Concat of ('a -> 'a -> 'a)
-
-(* ======================= elements with their length ======================= *)
-
-module WithLength = struct
-  type 'a t = 'a * int
-
-  let get = fst
-
-  let length = snd
-
-  let wrap_make f n = (f n, n)
-
-  let wrap_op = function
-    | Push f   -> Push   (fun (a, len) -> (f a, len + 1))
-    | Pop f    -> Pop    (fun (a, len) -> (f a, max 0 (len - 1)))
-    | Inject f -> Inject (fun (a, len) -> (f a, len + 1))
-    | Eject f  -> Eject  (fun (a, len) -> (f a, max 0 (len - 1)))
-    | Concat f -> Concat (fun (a1, len1) (a2, len2) -> (f a1 a2, len1 + len2))
-end
-
 (* ================================= slices ================================= *)
 
 module Slice = struct
   type 'a t = { array : 'a array ; mutable length : int }
 
   let create ~size ~dummy = { array = Array.make size dummy ; length = 0 }
+  (* let create_diff ~size ~dummy = { array = Array.init size (fun _ -> dummy ()) ; length = 0 } *)
+
+  let get t i = assert (0 <= i && i < t.length); t.array.(i)
 
   let add t a =
     t.array.(t.length) <- a;
@@ -100,10 +75,13 @@ module Slice = struct
     done
 
   let iter2 f t1 t2 =
-    assert (t1.length = t2.length);
     for i = 0 to t1.length - 1 do
-        f t1.array.(i) t2.array.(i)
+      for j = 0 to t2.length - 1 do
+        f t1.array.(i) t2.array.(j)
+      done;
     done
+
+  let to_list t = List.init t.length (Array.get t.array)
 
   let sample t = t.array.(Random.int t.length)
 
@@ -120,120 +98,192 @@ module Range = struct
   let inf = fst
   let middle (a, b) = (a + b) / 2
   let sup r = snd r - 1
+
+  let is_in r i = fst r <= i && i < snd r
+
+  let to_string (i, j) = "[" ^ string_of_int i ^ ", " ^ string_of_int j ^ "["
 end
 
-(* =============================== databases ================================ *)
+(* ================================= traces ================================= *)
 
-type 'a t = (Range.t * 'a WithLength.t Slice.t) array
+type operation =
+  | Push of int
+  | Pop of int
+  | Inject of int
+  | Eject of int
+  | Concat of int * int
 
-let get t n = snd (t.(n))
+let string_of_operation = function
+  | Push i -> "Push " ^ string_of_int i
+  | Pop i -> "Pop " ^ string_of_int i
+  | Inject i -> "Inject " ^ string_of_int i
+  | Eject i -> "Eject " ^ string_of_int i
+  | Concat (i1, i2) -> "Concat " ^ string_of_int i1 ^ " " ^ string_of_int i2
 
-let create ~buffers ~size make =
-  let dummy = make 0 in
+module Traces = struct
+  type t = (int * operation) list array
+
+  (** Create a traces database with n elements. *)
+  let create n = Array.make n []
+
+  (** [save t i op j] saves that [j] is obtained by applying operation [op] on [i] in the trace database [t]. *)
+  let save t i op j = if i >= 0 then t.(i) <- (j, op) :: t.(i)
+
+  let to_string t = String.concat "\n" (List.map (fun (i, l) ->
+    string_of_int i ^ " [" ^
+    String.concat ", " (List.map (fun (j, op) ->
+      "(" ^ string_of_int j ^ ", " ^ string_of_operation op ^ ")"
+    ) l) ^ "]"
+  ) (Array.to_list (Array.mapi (fun i l -> (i, l)) t)))
+end
+
+(* ============================= Raw databases ============================== *)
+
+(** A database stores elements, along with their respective range, and the traces leading to the creation of the elements. *)
+type 'a t = {
+  elements : 'a Slice.t ;
+  ranges : (Range.t * int Slice.t) array ;
+  traces : Traces.t ;
+}
+
+(** A raw database stores lengths of elements, along with their respective range, and the traces leading to the creation of the elements. So no elements is created. *)
+type raw_t = int t
+
+let string_of_database db string_of_a =
+  "Elements:\n" ^
+  String.concat "\n" (List.mapi (fun i a ->
+    string_of_int i ^ ": " ^ string_of_a a)
+  (Slice.to_list db.elements)) ^
+  "\n\nRanges:\n" ^
+  String.concat "\n" (
+    List.map (fun (r, s) ->
+      Range.to_string r ^ " " ^
+        String.concat ", " (List.map string_of_int (Slice.to_list s))
+    ) (Array.to_list db.ranges)
+  ) ^
+  "\n\nTraces:\n" ^
+  Traces.to_string db.traces
+
+(** [raw_add_element rdb len p op] adds [len] to the raw database [rdb]. [len] is the length of an element obtained by applying [op] on an element whose size is stored at the index [p] in [rdb]. *)
+let raw_add_element rdb len p op =
+  assert (not (Slice.is_full rdb.elements));
+  let idx = rdb.elements.length in
+  let ridx = ref 0 in
+  while not (Range.is_in (fst rdb.ranges.(!ridx)) len) do
+    ridx := !ridx + 1
+  done;
+  Slice.add rdb.elements len;
+  Slice.add (snd rdb.ranges.(!ridx)) idx;
+  Traces.save rdb.traces p op idx
+
+(** Create a raw database with only the length of the empty elements stored. *)
+let raw_create ~buffers ~size =
   let rec aux accu n = match n with
     | 0 -> Array.of_list accu
-    | _ -> aux ((Range.make (n/2) n, Slice.create ~size ~dummy) :: accu) (n/2)
+    | _ -> aux ((Range.make (n/2) n, Slice.create ~size ~dummy:(-1)) :: accu) (n/2)
   in
-  let t = aux [] (pow2 (buffers - 1)) in
-  Slice.add (get t 2) (make 2);
-  Slice.add (get t 2) (make 3);
-  let add_middle t n =
-    let r, s = t.(n) in
-    let m = Range.middle r in
-    let a = make m in
-    Slice.add s a
-  in
-  List.iter (fun n -> add_middle t (n+3)) (List.init (buffers - 3) Fun.id);
-  let add_dummy t n _ =
-    let a = make n in
-    Slice.add (get t n) a
-  in
-  List.iter (add_dummy t 0) (List.init size Fun.id);
-  List.iter (add_dummy t 1) (List.init size Fun.id);
-  t
+  let ranges = aux [] (pow2 (buffers - 1)) in
+  let rdb = {
+    elements = Slice.create ~size:(buffers * size) ~dummy:(-1) ;
+    ranges = ranges ;
+    traces = Traces.create (buffers * size) ;
+  } in
+  raw_add_element rdb 0 (-1) (Push (-1));
+  rdb
 
-let add_incr t n f =
-  let r, s = t.(n) in
-  let m = choose_bellow 0 n in
-  let a = Slice.sample (get t m) in
-  let cur_length = WithLength.length a in
-  if Range.sup r < cur_length + 1 then ()
+(** Is the given range of the raw database full ? *)
+let is_range_full rdb ridx = Slice.is_full (snd rdb.ranges.(ridx))
+
+(** Has the given range of the raw database some space available ? *)
+let is_range_avail rdb ridx = not (is_range_full rdb ridx)
+
+(** Has the given range of the raw database some space available ? *)
+let is_next_range_avail rdb ridx =
+  ridx < Array.length rdb.ranges - 1 && is_range_avail rdb (ridx + 1)
+
+(** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for a decreasing operation ? *)
+let is_possible_decr rdb i ridx =
+  (ridx <> 0) && (
+    let len = Slice.get rdb.elements i in
+    let inf = Range.inf (fst rdb.ranges.(ridx)) in
+    if inf == len then is_range_avail rdb (ridx - 1)
+    else is_range_avail rdb ridx
+  )
+
+(** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for an increasing operation ? *)
+let is_possible_incr rdb i ridx =
+  let len = Slice.get rdb.elements i in
+  let sup = Range.sup (fst rdb.ranges.(ridx)) in
+  if len == sup then is_next_range_avail rdb ridx
+  else is_range_avail rdb ridx
+
+(** Return indices of elements whose lengths permit some unary operation to be performed to obtain a new element in the raw database. *)
+let possible_ucandidates rdb =
+  let res = ref [] in
+  let a2res x = res := x :: !res in
+  for ridx = 0 to Array.length rdb.ranges - 1 do
+    Slice.iter (fun i ->
+      if is_possible_decr rdb i ridx then
+        begin a2res (Pop i); a2res (Eject i) end;
+      if is_possible_incr rdb i ridx then
+        begin a2res (Push i); a2res (Inject i) end
+    ) (snd rdb.ranges.(ridx))
+    done;
+  Array.of_list !res
+
+(** Does the length of an element contained in range [ridx] in [rdb], allow for a doubling operation ? *)
+let is_possible_add rdb i1 i2 ridx1 ridx2 =
+  if ridx1 == ridx2 then is_next_range_avail rdb ridx1
   else
-    let inf = max (Range.inf r) cur_length in
-    let v = Range.sup r - (inf + 1) in
-    let new_length = inf + 1 + if v <= 0 then v else Random.int v in
-    let a = fold_left f a (new_length - cur_length) in
-    Slice.add s a
+    let ridx = if ridx1 < ridx2 then ridx2 else ridx1 in
+    let len = Slice.get rdb.elements i1 + Slice.get rdb.elements i2 in
+    if Range.is_in (fst rdb.ranges.(ridx)) len then is_range_avail rdb ridx
+    else is_next_range_avail rdb ridx
 
-let add_decr t n f =
-  let r, s = t.(n) in
-  let m = choose_above (Array.length t - 1) n in
-  let a = Slice.sample (get t m) in
-  let cur_length = WithLength.length a in
-  if Range.inf r > cur_length - 1 then ()
-  else
-    let sup = min (Range.sup r) cur_length in
-    let v = sup - 1 - Range.inf r in
-    let new_length = sup - 1 - if v <= 0 then v else Random.int v in
-    let a = fold_left f a (cur_length - new_length) in
-    Slice.add s a
+(** Return indices of elements whose lengths permit some binary operation to be performed to obtain a new element in the raw database. The authorized operations are returned along the indices. *)
+let possible_bcandidates rdb =
+  let res = ref [] in
+  let a2res x = res := x :: !res in
+  for ridx1 = 1 to Array.length rdb.ranges - 1 do
+    for ridx2 = ridx1 to Array.length rdb.ranges - 1 do
+      Slice.iter2 (fun i1 i2 ->
+        if i1 <= i2 && is_possible_add rdb i1 i2 ridx1 ridx2 then
+          a2res (Concat (i1, i2))
+      ) (snd rdb.ranges.(ridx1)) (snd rdb.ranges.(ridx2))
+      done;
+    done;
+  Array.of_list !res
 
-let add_double t n f =
-  if n <= 1 then () else
-    let m1 = choose_bellow 1 (n-1) in
-    let m2 = choose_bellow 1 (n-1) in
-    let as1 = Slice.sample_n (get t m1) (pow2 (n - 1 - m1)) in
-    let as1 = fold_left (merge_flatten f) as1 (n - 1 - m1) in
-    let a1 = List.hd as1 in
-    let as2 = Slice.sample_n (get t m2) (pow2 (n - 1 - m2)) in
-    let as2 = fold_left (merge_flatten f) as2 (n - 1 - m2) in
-    let a2 = List.hd as2 in
-    Slice.add (get t n) (f a1 a2)
+(** Choose a candidate among several. *)
+let choose_candidate candidates =
+  let len = Array.length candidates in
+  candidates.(Random.int len)
 
-let cur_length t =
-  let d = - (get t 0).Slice.length (* section 0 is full at the start *)
-          - (get t 1).length       (* section 1 is full at the start *)
-          - 2                      (* section 2 starts with two elements *)
-          - (Array.length t - 3)   (* other sections start with one element *)
-  in
-  Array.fold_left (fun sum (_, s) -> sum + s.Slice.length) d t
-
-let max_length t =
-  let d = - Array.length (get t 0).Slice.array
-          - Array.length (get t 1).array
-          - 2
-          - (Array.length t - 3)
-  in
-  Array.fold_left (fun sum (_, s) -> sum + Array.length s.Slice.array) d t
-
-let update_progress_bar pb t = pb (cur_length t)
-
-let add_with pb t f =
-  update_progress_bar pb t;
-  let l = List.init (Array.length t) Fun.id in
-  let l = List.filter (fun n -> not (Slice.is_full (get t n))) l in
-  let a = Array.of_list l in
-  if Array.length a = 0 then
-    false
-  else
-    let n = a.(Random.int (Array.length a)) in
-    begin match f with
-      | Push push     -> add_incr t n push
-      | Pop pop       -> add_decr t n pop
-      | Inject inject -> add_incr t n inject
-      | Eject eject   -> add_decr t n eject
-      | Concat concat -> add_double t n concat
+(** Construct randomly a raw database with [buffers] ranges, each of size [size]. *)
+let raw_construct ~buffers ~size  =
+  let rdb = raw_create ~buffers ~size in
+  let ucandidates = ref (possible_ucandidates rdb) in
+  let bcandidates = ref (possible_bcandidates rdb) in
+  while Array.length !ucandidates + Array.length !bcandidates > 0 do
+    let candidates =
+      if Array.length !ucandidates == 0 then !bcandidates
+      else if Array.length !bcandidates == 0 then !ucandidates
+      else if Random.int 5 < 4 then !ucandidates else !bcandidates
+    in
+    let op = choose_candidate candidates in
+    begin match op with
+      | Push i | Inject i ->
+        let len = Slice.get rdb.elements i in
+        raw_add_element rdb (len + 1) i op
+      | Pop i | Eject i ->
+        let len = Slice.get rdb.elements i in
+        raw_add_element rdb (len - 1) i op
+      | Concat (i1, i2) ->
+        let len1 = Slice.get rdb.elements i1 in
+        let len2 = Slice.get rdb.elements i2 in
+        raw_add_element rdb (len1 + len2) (max i1 i2) op
     end;
-    true
-
-let build ~buffers ~size ~make ~operations =
-  let make = WithLength.wrap_make make in
-  let len_op = Array.length operations in
-  let operations = Array.map WithLength.wrap_op operations in
-  let db = create ~buffers ~size make in
-  let f = ref (operations.(Random.int len_op)) in
-  let pb = progress_bar "building" (max_length db) in
-  while add_with pb db !f do
-    f := operations.(Random.int len_op)
+    ucandidates := possible_ucandidates rdb;
+    bcandidates := possible_bcandidates rdb
   done;
-  db
+  rdb

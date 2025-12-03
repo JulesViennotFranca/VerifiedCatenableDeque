@@ -24,6 +24,8 @@ let to_string_data (t, n) = sprintf "%f,%d" t n
 
 let of_string t n = (float_of_string t, int_of_string n)
 
+let get_time = fst
+
 let base = (0., 0)
 
 let format (f, n) = (1_000_000. *. f, n)
@@ -43,17 +45,17 @@ let steps = pow2 (buffers - 1)
 let uconstant_steps _ = steps
 let bconstant_steps _ _ = steps
 
-let pos_length a = max 1 (WithLength.length a)
+let pos_length len = max 1 len
 
-let ulinear_steps a = steps / (pos_length a)
-let blinearmin_steps a b = steps / min (pos_length a) (pos_length b)
-let blinearfst_steps a _ = steps / (pos_length a)
+let ulinear_steps len1 = steps / (pos_length len1)
+let blinearmin_steps len1 len2 = steps / min (pos_length len1) (pos_length len2)
+let blinearfst_steps len1 _ = steps / (pos_length len1)
 
 (* =============================== operations =============================== *)
 
-let wrap_uop f steps a =
+let wrap_uop f steps (a, len) =
   try
-    let steps = steps a in
+    let steps = steps len in
     let t1 = Unix.gettimeofday () in
     for _ = 1 to steps do
       ignore (f a)
@@ -62,12 +64,12 @@ let wrap_uop f steps a =
     (t2 -. t1, steps)
   with _ -> (0., 0)
 
-let wrap_bop f steps a b =
+let wrap_bop f steps (a1, len1) (a2, len2) =
   try
-    let steps = steps a b in
+    let steps = steps len1 len2 in
     let t1 = Unix.gettimeofday () in
     for _ = 1 to steps do
-      ignore (f a b)
+      ignore (f a1 a2)
     done;
     let t2 = Unix.gettimeofday () in
     (t2 -. t1, steps)

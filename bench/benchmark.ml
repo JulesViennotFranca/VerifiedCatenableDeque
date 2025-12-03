@@ -1,170 +1,306 @@
 open Database
 open Measure
 
-(* =============================== benchmarks =============================== *)
-
-let bench_unary db operation data_structure f steps =
-  let datas = Array.make (Array.length db) Measure.base in
-  let f (a, _) = (f a, 0) in
-  let f = Measure.wrap_uop f steps in
-  let pb = progress_bar operation (Array.length db) in
-  for i = 0 to Array.length db - 1 do
-    let f a = datas.(i) <- Measure.add datas.(i) (Measure.format (f a)) in
-    let s = get db i in
-    Slice.iter f s;
-    pb (i + 1)
-  done;
-  CSV.write operation data_structure datas
-
-let bench_binary db operation data_structure f steps =
-  let len = Array.length db in
-  let datas = Array.make (len * len) Measure.base in
-  let f (a, _) (b, _) = (f a b, 0) in
-  let f = Measure.wrap_bop f steps in
-  let pb = progress_bar operation (len * len) in
-  for i = 0 to len - 1 do
-    for j = 0 to len - 1 do
-      let k = i * len + j in
-      let f a b = datas.(k) <- Measure.add datas.(k) (Measure.format (f a b)) in
-      let s1 = get db i in
-      let s2 = get db j in
-      Slice.iter2 f s1 s2;
-      pb (k + 1)
-    done;
-  done;
-  CSV.write operation data_structure datas
-
 (* ============================ data structures ============================= *)
 
 open Deques
 open Sek
 
-module List = struct
-  let make n = fold_left (List.cons 0) [] n
+module type Structure  = sig
+  type t
+
+  val name : string
+
+  val empty : t
+  val push : t -> t
+  val push_steps : int -> int
+  val pop : t -> t
+  val pop_steps : int -> int
+  val inject : t -> t
+  val inject_steps : int -> int
+  val eject : t -> t
+  val eject_steps : int -> int
+  val concat : t -> t -> t
+  val concat_steps : int -> int -> int
+
+  val to_string : t -> string
+end
+
+let string_of_list l = "[" ^ String.concat ", " (List.map string_of_int l) ^ "]"
+
+module BList : Structure = struct
+  type t = int list
+
+  let name = "List"
+
+  let empty = []
   let push = List.cons 0
-  let pop = function
-    | [] -> []
-    | _ :: l -> l
+  let push_steps = uconstant_steps
+  let pop = function [] -> [] | _ :: l -> l
+  let pop_steps = uconstant_steps
   let inject l = List.rev (0 :: List.rev l)
-  let eject l = match List.rev l with
-    | [] -> []
-    | _ :: l -> List.rev l
-  let concat = List.append
-  let rev_concat l1 l2 = List.rev_append (List.rev l1) l2
+  let inject_steps = ulinear_steps
+  let eject l = match List.rev l with [] -> [] | _ :: l -> List.rev l
+  let eject_steps = ulinear_steps
+  let concat l1 l2 = List.rev_append (List.rev l1) l2
+  let concat_steps = blinearfst_steps
 
-  let bench () =
-    print_endline "========================== list ===========================";
-    let operations = [|Push push; Pop pop|] in
-    let ldb = Database.build ~buffers ~size ~make:make ~operations in
-    bench_unary ldb "push" "List" push uconstant_steps;
-    bench_unary ldb "pop" "List" pop uconstant_steps;
-    bench_unary ldb "inject" "List" inject ulinear_steps;
-    bench_unary ldb "eject" "List" eject ulinear_steps;
-    bench_binary ldb "concat" "List" concat blinearfst_steps;
-    bench_binary ldb "concat" "ListRev" rev_concat blinearfst_steps;
-    print_endline "===========================================================";
-    print_endline "";
+  let to_string = string_of_list
 end
 
-module PSek = struct
-  let make n = P.make 0 n 0
+module BSek : Structure = struct
+  type t = int P.t
+
+  let name = "Sek"
+
+  let empty = P.create 0
   let push s = P.push front s 0
+  let push_steps = uconstant_steps
   let pop s = snd (P.pop_opt front s)
+  let pop_steps = uconstant_steps
   let inject s = P.push back s 0
+  let inject_steps = uconstant_steps
   let eject s = snd (P.pop_opt back s)
+  let eject_steps = uconstant_steps
   let concat = P.concat
+  let concat_steps = bconstant_steps
 
-  let bench () =
-    print_endline "=========================== sek ===========================";
-    let operations =
-      [|Push push; Pop pop; Inject inject; Eject eject; Concat concat|]
-    in
-    let sdb = Database.build ~buffers ~size ~make:make ~operations in
-    bench_unary sdb "push" "Sek" push uconstant_steps;
-    bench_unary sdb "pop" "Sek" pop uconstant_steps;
-    bench_unary sdb "inject" "Sek" inject uconstant_steps;
-    bench_unary sdb "eject" "Sek" eject uconstant_steps;
-    bench_binary sdb "concat" "Sek" concat bconstant_steps;
-    print_endline "===========================================================";
-    print_endline "";
+  let to_string s = string_of_list (P.to_list s)
 end
 
-module Deque = struct
-  let make n = Deque.make n 0
-  let push d = Deque.push 0 d
+module BDeque : Structure = struct
+  type t = int Deque.t
+
+  let name = "Deque"
+
+  let empty = Deque.empty
+  let push = Deque.push 0
+  let push_steps = uconstant_steps
   let pop d = match Deque.pop d with
     | None -> Deque.empty
     | Some (_, d) -> d
+  let pop_steps = uconstant_steps
   let inject d = Deque.inject d 0
+  let inject_steps = uconstant_steps
   let eject d = match Deque.eject d with
     | None -> Deque.empty
     | Some (d, _) -> d
+  let eject_steps = uconstant_steps
+  let concat = Deque.append
+  let concat_steps = blinearmin_steps
 
-  let bench () =
-    print_endline "========================== deque ==========================";
-    let operations = [|Push push; Pop pop; Inject inject; Eject eject|] in
-    let ddb = Database.build ~buffers ~size ~make:make ~operations in
-    bench_unary ddb "push" "Deque" push uconstant_steps;
-    bench_unary ddb "pop" "Deque" pop uconstant_steps;
-    bench_unary ddb "inject" "Deque" inject uconstant_steps;
-    bench_unary ddb "eject" "Deque" eject uconstant_steps;
-    print_endline "===========================================================";
-    print_endline "";
+  let to_string s = string_of_list (Deque.to_list s)
 end
 
-module Steque = struct
-  let make n = Steque.make n 0
-  let push d = Steque.push 0 d
-  let pop d = match Steque.pop d with
+module BSteque : Structure = struct
+  type t = int Steque.t
+
+  let name = "Steque"
+
+  let empty = Steque.empty
+  let push = Steque.push 0
+  let push_steps = uconstant_steps
+  let pop s = match Steque.pop s with
     | None -> Steque.empty
-    | Some (_, d) -> d
-  let inject d = Steque.inject d 0
+    | Some (_, s) -> s
+  let pop_steps = uconstant_steps
+  let inject s = Steque.inject s 0
+  let inject_steps = uconstant_steps
+  let eject s = Steque.rev (pop (Steque.rev s))
+  let eject_steps = ulinear_steps
   let concat = Steque.append
+  let concat_steps = blinearmin_steps
 
-  let bench () =
-    print_endline "========================= steque ==========================";
-    let operations = [|Push push; Pop pop; Inject inject; Concat concat|] in
-    let sdb = Database.build ~buffers ~size ~make:make ~operations in
-    bench_unary sdb "push" "Steque" push uconstant_steps;
-    bench_unary sdb "pop" "Steque" pop uconstant_steps;
-    bench_unary sdb "inject" "Steque" inject uconstant_steps;
-    bench_binary sdb "concat" "Steque" concat bconstant_steps;
-    print_endline "===========================================================";
-    print_endline "";
+  let to_string s = string_of_list (Steque.to_list s)
 end
 
-module Cadeque = struct
-  let make n = Cadeque.make n 0
-  let push d = Cadeque.push 0 d
+module BCadeque : Structure = struct
+  type t = int Cadeque.t
+
+  let name = "Cadeque"
+
+  let empty = Cadeque.empty
+  let push = Cadeque.push 0
+  let push_steps = uconstant_steps
   let pop d = match Cadeque.pop d with
     | None -> Cadeque.empty
     | Some (_, d) -> d
+  let pop_steps = uconstant_steps
   let inject d = Cadeque.inject d 0
+  let inject_steps = uconstant_steps
   let eject d = match Cadeque.eject d with
     | None -> Cadeque.empty
     | Some (d, _) -> d
+  let eject_steps = uconstant_steps
   let concat = Cadeque.append
+  let concat_steps = bconstant_steps
 
-  let bench () =
-    print_endline "========================= cadeque =========================";
-    let operations =
-      [|Push push; Pop pop; Inject inject; Eject eject; Concat concat|]
-    in
-    let cdb = Database.build ~buffers ~size ~make:make ~operations in
-    bench_unary cdb "push" "Cadeque" push uconstant_steps;
-    bench_unary cdb "pop" "Cadeque" pop uconstant_steps;
-    bench_unary cdb "inject" "Cadeque" inject uconstant_steps;
-    bench_unary cdb "eject" "Cadeque" eject uconstant_steps;
-    bench_binary cdb "concat" "Cadeque" concat bconstant_steps;
-    print_endline "===========================================================";
-    print_endline ""
+  let to_string s = string_of_list (Cadeque.to_list s)
 end
 
-(* =============================== execution ================================ *)
+(* ================================ database ================================ *)
+
+let rec insert_sort jop = function
+  | [] -> [jop]
+  | kop :: l ->
+    if fst jop < fst kop then jop :: kop :: l else kop :: (insert_sort jop l)
+
+let rec pile q = function
+  | [] -> ()
+  | (j, op) :: l -> q := insert_sort (j, op) !q; pile q l
+
+let depile q = match !q with [] -> assert false | x :: q' -> q := q'; x
+
+let to_depile q = not (List.is_empty !q)
+
+let construct :
+type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
+= fun rdb (module S) ->
+  let pb = progress_bar "Database construction" (rdb.elements.length - 1) in
+  let idx = ref 1 in
+  let aelements = Array.make rdb.elements.length None in
+  aelements.(0) <- Some S.empty;
+  let q = ref [] in
+  pile q rdb.traces.(0);
+  while to_depile q do
+    let (j, op) = depile q in
+    if Option.is_none aelements.(j) then begin
+      let elem = match op with
+        | Push i -> S.push (Option.get aelements.(i))
+        | Pop i -> S.pop (Option.get aelements.(i))
+        | Inject i -> S.inject (Option.get aelements.(i))
+        | Eject i -> S.eject (Option.get aelements.(i))
+        | Concat (i1, i2) ->
+          S.concat (Option.get aelements.(i1)) (Option.get aelements.(i2))
+      in
+      aelements.(j) <- Some elem;
+      pile q rdb.traces.(j);
+      idx := !idx + 1;
+      pb !idx
+    end
+  done;
+  assert (Array.for_all Option.is_some aelements);
+  let elements = Slice.create ~size:(rdb.elements.length) ~dummy:S.empty in
+  Array.iter (fun oe -> Slice.add elements (Option.get oe)) aelements;
+  {elements; ranges = rdb.ranges; traces = rdb.traces}
+
+(* =============================== benchmarks =============================== *)
+
+let with_length rdb db i = (Slice.get db.elements i, Slice.get rdb.elements i)
+
+let bench_unary rdb db operation_name structure_name f steps =
+  let datas = Array.make (Array.length db.ranges) Measure.base in
+  let f = Measure.wrap_uop f steps in
+  let pb = progress_bar operation_name db.elements.length in
+  let idx = ref 0 in
+  for i = 0 to Array.length db.ranges - 1 do
+    let f j =
+      datas.(i) <-
+        Measure.add datas.(i) (Measure.format (f (with_length rdb db j)));
+      idx := !idx + 1;
+      pb !idx
+    in
+    let s = snd db.ranges.(i) in
+    Slice.iter f s
+  done;
+  CSV.write operation_name structure_name datas
+
+let bench_binary rdb db operation_name structure_name f steps =
+  let len = Array.length db.ranges in
+  let datas = Array.make (len * len) Measure.base in
+  let f = Measure.wrap_bop f steps in
+  let pb =
+    progress_bar operation_name (db.elements.length * db.elements.length) in
+  let idx = ref 0 in
+  for i = 0 to len - 1 do
+    for j = 0 to len - 1 do
+      let k = i * len + j in
+      let f ix iy =
+        if Random.int (len * len) < len then begin
+          let x = with_length rdb db ix in
+          let y = with_length rdb db iy in
+          datas.(k) <- Measure.add datas.(k) (Measure.format (f x y)) end;
+        idx := !idx + 1;
+        pb !idx
+      in
+      let s1 = snd db.ranges.(i) in
+      let s2 = snd db.ranges.(j) in
+      Slice.iter2 f s1 s2
+    done;
+  done;
+  CSV.write operation_name structure_name datas
+
+let bench_traces :
+type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
+= fun rdb db (module S) ->
+  let datas = Array.make db.elements.length None in
+  datas.(0) <- Some Measure.base;
+  let pb = progress_bar "traces" db.elements.length in
+  let idx = ref 1 in
+  let q = ref [] in
+  pile q db.traces.(0);
+  while to_depile q do
+    let (j, op) = depile q in
+    if Option.is_none datas.(j) then begin
+      let d = match op with
+        | Push i ->
+          let id = Option.get datas.(i) in
+          let m = wrap_uop S.push (Fun.const 1) (with_length rdb db i) in
+          Measure.add id m
+        | Pop i ->
+          let id = Option.get datas.(i) in
+          let m = wrap_uop S.pop (Fun.const 1) (with_length rdb db i) in
+          Measure.add id m
+        | Inject i ->
+          let id = Option.get datas.(i) in
+          let m = wrap_uop S.inject (Fun.const 1) (with_length rdb db i)
+          in
+          Measure.add id m
+        | Eject i ->
+          let id = Option.get datas.(i) in
+          let m = wrap_uop S.eject (Fun.const 1) (with_length rdb db i) in
+          Measure.add id m
+        | Concat (i1, i2) ->
+          let i1d = Option.get datas.(i1) in
+          let i2d = Option.get datas.(i2) in
+          let x1 = with_length rdb db i1 in
+          let x2 = with_length rdb db i2 in
+          let m = wrap_bop S.concat (Fun.const @@ Fun.const 1) x1 x2 in
+          Measure.add i1d (Measure.add i2d m)
+      in
+      datas.(j) <- Some d;
+      pile q rdb.traces.(j);
+      idx := !idx + 1;
+      pb !idx
+    end
+  done;
+  assert (Array.for_all Option.is_some datas);
+  let datas = Array.map (fun (_, s) ->
+    Slice.to_list s |>
+    List.map (fun i -> Option.get datas.(i)) |>
+    List.map (fun d -> (Measure.get_time d, 1)) |>
+    List.fold_left Measure.add Measure.base
+  ) db.ranges
+  in
+  CSV.write "traces" S.name datas
+
+let bench rdb (module S : Structure) =
+  (* TODO: set random seed at the beginning with the time of the day *)
+  print_endline ("==================== " ^ S.name ^ " ====================");
+  let db = construct rdb (module S) in
+  bench_unary rdb db "push" S.name S.push S.push_steps;
+  bench_unary rdb db "pop" S.name S.pop S.pop_steps;
+  bench_unary rdb db "inject" S.name S.inject S.inject_steps;
+  bench_unary rdb db "eject" S.name S.eject S.eject_steps;
+  bench_binary rdb db "concat" S.name S.concat S.concat_steps;
+  bench_traces rdb db (module S);
+  ()
 
 let () =
-  List.bench ();
-  PSek.bench ();
-  Deque.bench ();
-  Steque.bench ();
-  Cadeque.bench ()
+  let rdb = raw_construct ~buffers ~size in
+  bench rdb (module BList);
+  bench rdb (module BSek);
+  bench rdb (module BDeque);
+  bench rdb (module BSteque);
+  bench rdb (module BCadeque);
+  ()
