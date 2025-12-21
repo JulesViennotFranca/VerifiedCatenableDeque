@@ -140,18 +140,15 @@ end
 
 (* ================================ database ================================ *)
 
-let rec insert_sort jop = function
-  | [] -> [jop]
-  | kop :: l ->
-    if fst jop < fst kop then jop :: kop :: l else kop :: (insert_sort jop l)
-
-let rec pile q = function
-  | [] -> ()
-  | (j, op) :: l -> q := insert_sort (j, op) !q; pile q l
-
-let depile q = match !q with [] -> assert false | x :: q' -> q := q'; x
-
-let to_depile q = !q <> []
+module PQ = struct
+  (* This requires OCaml 5.4. *)
+  include Pqueue.MakeMin(struct
+    type t = int * operation
+    let compare (j1, _op1) (j2, _op2) = Int.compare j1 j2
+  end)
+  let add_list q xs =
+    add_iter q List.iter xs
+end
 
 let construct :
 type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
@@ -163,10 +160,10 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
   and set i x = aelements.(i) <- Some x
   and is_unset i = Option.is_none aelements.(i) in
   set 0 S.empty;
-  let q = ref [] in
-  pile q rdb.traces.(0);
-  while to_depile q do
-    let (j, op) = depile q in
+  let q = PQ.create() in
+  PQ.add_list q rdb.traces.(0);
+  while not (PQ.is_empty q) do
+    let (j, op) = Option.get (PQ.pop_min q) in
     if is_unset j then
       let elem = match op with
         | Push i -> S.push (get i)
@@ -176,7 +173,7 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
         | Concat (i1, i2) -> S.concat (get i1) (get i2)
       in
       set j elem;
-      pile q rdb.traces.(j);
+      PQ.add_list q rdb.traces.(j);
       idx := !idx + 1;
       pb !idx
   done;
@@ -238,10 +235,10 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
   datas.(0) <- Some Measure.base;
   let pb = progress_bar "traces" db.elements.length in
   let idx = ref 1 in
-  let q = ref [] in
-  pile q db.traces.(0);
-  while to_depile q do
-    let (j, op) = depile q in
+  let q = PQ.create() in
+  PQ.add_list q db.traces.(0);
+  while not (PQ.is_empty q) do
+    let (j, op) = Option.get (PQ.pop_min q) in
     if Option.is_none datas.(j) then begin
       let d = match op with
         | Push i ->
@@ -270,7 +267,7 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
           Measure.add i1d (Measure.add i2d m)
       in
       datas.(j) <- Some d;
-      pile q rdb.traces.(j);
+      PQ.add_list q rdb.traces.(j);
       idx := !idx + 1;
       pb !idx
     end
