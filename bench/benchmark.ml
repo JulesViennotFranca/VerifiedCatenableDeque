@@ -138,6 +138,31 @@ module BCadeque : Structure = struct
   let to_string s = string_of_list (Cadeque.to_list s)
 end
 
+module BKOT : Structure = struct
+  type t = int Kot.Deque.t
+
+  let name = "KOT"
+
+  let empty = Kot.Deque.empty
+  let push = Kot.Deque.push 0
+  let push_steps = uconstant_steps
+  let pop d = match Kot.Deque.pop_opt d with
+    | None -> Kot.Deque.empty
+    | Some (_, d) -> d
+  let pop_steps = uconstant_steps
+  let inject d = Kot.Deque.inject d 0
+  let inject_steps = uconstant_steps
+  let eject d = match Kot.Deque.eject_opt d with
+    | None -> Kot.Deque.empty
+    | Some (d, _) -> d
+  let eject_steps = uconstant_steps
+  let concat = Kot.Deque.concat
+  let concat_steps = bconstant_steps
+
+  let to_list s = Kot.Deque.fold_right (fun x xs -> x :: xs) s []
+  let to_string s = string_of_list (to_list s)
+end
+
 (* ================================ database ================================ *)
 
 module PQ = struct
@@ -301,4 +326,5 @@ let () =
   bench rdb (module BDeque);
   bench rdb (module BSteque);
   bench rdb (module BCadeque);
+  bench rdb (module BKOT);
   ()
