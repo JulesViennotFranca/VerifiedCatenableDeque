@@ -151,7 +151,7 @@ let rec pile q = function
 
 let depile q = match !q with [] -> assert false | x :: q' -> q := q'; x
 
-let to_depile q = not (List.is_empty !q)
+let to_depile q = !q <> []
 
 let construct :
 type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
