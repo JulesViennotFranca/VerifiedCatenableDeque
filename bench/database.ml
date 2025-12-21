@@ -8,11 +8,11 @@ let rec pow2 = function
   | n when n <= 0 -> 1
   | n -> 2 * pow2 (n-1)
 
-(** [choose_bellow min n] selects randomly an integer between [min] and [n].
+(** [choose_below min n] selects randomly an integer between [min] and [n].
     It follows a geometric distribution of parameter [1/2]. *)
-let rec choose_bellow min = function
+let rec choose_below min = function
   | n when n <= min -> min
-  | n -> if Random.bool () then n else choose_bellow min (n-1)
+  | n -> if Random.bool () then n else choose_below min (n-1)
 
 (** [choose_above max n] selects randomly an integer between [n] and [max].
     It follows a geometric distribution of parameter [1/2]. *)
