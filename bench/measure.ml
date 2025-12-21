@@ -79,12 +79,17 @@ let wrap_bop f steps (a1, len1) (a2, len2) =
 
 module CSV = struct
 
+  let csvdir = "./tmp"
+
   (** Retrieve all datas already computed. *)
   let get () =
     let res = Hashtbl.create 5 in
+    (* Create the data directory if it does not exist. *)
+    if not (Sys.file_exists csvdir) then
+      Sys.mkdir csvdir 0o755;
     (* List all the possible data files. *)
     let list_file =
-      Sys.readdir "./bench/tmp" |>
+      Sys.readdir csvdir |>
       Array.to_list |>
       List.filter (fun x -> Filename.extension x = ".csv")
     in
@@ -125,7 +130,7 @@ module CSV = struct
     (* Read a file. *)
     let read_file filename =
       let lines = ref [] in
-      let chan = open_in ("./bench/tmp/" ^ filename) in
+      let chan = open_in (sprintf "%s/%s" csvdir filename) in
       begin try
         while true; do
           lines := input_line chan :: !lines
@@ -185,7 +190,7 @@ module CSV = struct
     in
     (* Write an operation datas. *)
     let write_operation name datas =
-      let file = "bench/tmp/" ^ name ^ ".csv" in
+      let file = sprintf "%s/%s.csv" csvdir name in
       let oc = open_out file in
       let datas = List.of_seq (Hashtbl.to_seq datas) in
       let (name, data), datas = List.hd datas, List.tl datas in
