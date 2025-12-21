@@ -159,25 +159,26 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
   let pb = progress_bar "Database construction" (rdb.elements.length - 1) in
   let idx = ref 1 in
   let aelements = Array.make rdb.elements.length None in
-  aelements.(0) <- Some S.empty;
+  let get i = Option.get aelements.(i)
+  and set i x = aelements.(i) <- Some x
+  and is_unset i = Option.is_none aelements.(i) in
+  set 0 S.empty;
   let q = ref [] in
   pile q rdb.traces.(0);
   while to_depile q do
     let (j, op) = depile q in
-    if Option.is_none aelements.(j) then begin
+    if is_unset j then
       let elem = match op with
-        | Push i -> S.push (Option.get aelements.(i))
-        | Pop i -> S.pop (Option.get aelements.(i))
-        | Inject i -> S.inject (Option.get aelements.(i))
-        | Eject i -> S.eject (Option.get aelements.(i))
-        | Concat (i1, i2) ->
-          S.concat (Option.get aelements.(i1)) (Option.get aelements.(i2))
+        | Push i -> S.push (get i)
+        | Pop i -> S.pop (get i)
+        | Inject i -> S.inject (get i)
+        | Eject i -> S.eject (get i)
+        | Concat (i1, i2) -> S.concat (get i1) (get i2)
       in
-      aelements.(j) <- Some elem;
+      set j elem;
       pile q rdb.traces.(j);
       idx := !idx + 1;
       pb !idx
-    end
   done;
   assert (Array.for_all Option.is_some aelements);
   let elements = Slice.create ~size:(rdb.elements.length) ~dummy:S.empty in
