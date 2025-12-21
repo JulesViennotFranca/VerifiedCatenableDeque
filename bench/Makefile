@@ -1,9 +1,8 @@
-.PHONY: run
-run:
-	@ dune exec list_like_benchmark && dune exec benchmark
+.PHONY: all
+all:
+	@ dune build ./benchmark.exe ./listLike.exe
 
-.PHONY: list_like_benchmark benchmark
-list_like_benchmark:
-	@ dune exec list_like_benchmark
-benchmark:
-	@ dune exec benchmark
+.PHONY: run
+run: all
+#	@ dune exec ./listLike.exe
+	@ dune exec ./benchmark.exe

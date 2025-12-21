@@ -1,14 +1,10 @@
 (executable
   (name benchmark)
-  (public_name benchmark)
-  (package deques)
   (modules Benchmark Measure Database)
   (libraries deques unix sek)
   (flags (:standard -w -26-32-33)))
 
 (executable
   (name listLike)
-  (public_name list_like_benchmark)
-  (package deques)
   (modules ListLike)
   (libraries deques unix))
