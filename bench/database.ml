@@ -4,9 +4,11 @@
 let fold_left f a n = List.fold_left (fun a _ -> f a) a (List.init n Fun.id)
 
 (** [pow2 n] computes 2 to the power of [n]. *)
-let rec pow2 = function
-  | n when n <= 0 -> 1
-  | n -> 2 * pow2 (n-1)
+let pow2 n =
+  if n < Sys.word_size - 2 then
+    1 lsl n
+  else
+    failwith (Printf.sprintf "Cannot compute 2^%d" n)
 
 (** [choose_below min n] selects randomly an integer between [min] and [n].
     It follows a geometric distribution of parameter [1/2]. *)
