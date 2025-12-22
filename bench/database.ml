@@ -10,7 +10,8 @@ let pow2 n =
 (**[log2 n] is the base 2 logarithm of [n]. *)
 let rec log2 accu n =
   if n <= 1 then accu else log2 (accu + 1) (n / 2)
-let log2 n = log2 0 n
+let log2 n =
+  if n = 0 then -1 else log2 0 n
 
 (* 50 square block characters (3 bytes each). *)
 let blocks = List.init 50 (fun _ -> "█") |> String.concat ""
@@ -87,18 +88,21 @@ end
 
 (* ================================= ranges ================================= *)
 
+(* A range represents an interval [a, b). *)
+
 module Range = struct
+
   type t = int * int
 
   let make a b = (a, b)
 
-  let inf = fst
-  let middle (a, b) = (a + b) / 2
-  let sup r = snd r - 1
+  let inf (a, _) = a
+  let sup (_, b) = b - 1
 
-  let is_in r i = fst r <= i && i < snd r
+  let is_in (a, b) i = a <= i && i < b
 
   let to_string (i, j) = "[" ^ string_of_int i ^ ", " ^ string_of_int j ^ "["
+
 end
 
 (* ================================= traces ================================= *)
@@ -174,14 +178,34 @@ end
 
 (* ============================= Raw databases ============================== *)
 
-(** A database stores elements, along with their respective range, and the traces leading to the creation of the elements. *)
+(**A database stores a collection of elements of type ['a]. An element is
+   some kind of sequence data structure (a list, a deque, etc.), so it has
+   a length. The database keeps track of a histogram of elements (that is,
+   it stores elements in bins, based on their length). It also records the
+   trace that allows creating these elements. *)
 type 'a t = {
-  elements : 'a Vector.t ;
-  ranges : (Range.t * int Vector.t) array ;
-  trace : Trace.t ;
+
+  elements : 'a Vector.t;
+  (**The elements. The index of an element in this vector is its identifier,
+     that is, its creation date. *)
+
+  bin : bin array;
+  (**The histogram, an array of bins, whose ranges form a partition of the
+     interval of permitted lengths. *)
+
+  trace : Trace.t;
+  (**The trace that allows creating these elements. *)
+
 }
 
-(** A raw database stores lengths of elements, along with their respective range, and the traces leading to the creation of the elements. So no elements is created. *)
+(**A bin is a pair of a range and a set of elements (identifiers) which
+   inhabit this bin. That is, for each element [x] in this vector, the
+   length of [x] is a member of this range. *)
+and bin =
+  Range.t * var Vector.t
+
+(** A raw database stores just length information. That is, a sequence data
+    structure is summarized by just its length. *)
 type raw_t = int t
 
 let string_of_database db string_of_a =
@@ -189,27 +213,35 @@ let string_of_database db string_of_a =
   String.concat "\n" (List.mapi (fun i a ->
     string_of_int i ^ ": " ^ string_of_a a)
   (Vector.to_list db.elements)) ^
-  "\n\nRanges:\n" ^
+  "\n\nBins:\n" ^
   String.concat "\n" (
     List.map (fun (r, s) ->
       Range.to_string r ^ " " ^
         String.concat ", " (List.map string_of_int (Vector.to_list s))
-    ) (Array.to_list db.ranges)
+    ) (Array.to_list db.bin)
   ) ^
   "\n\nTrace:\n" ^
   Trace.to_string db.trace
 
-(** [raw_add_element rdb len p op] adds [len] to the raw database [rdb]. [len] is the length of an element obtained by applying [op] on an element whose size is stored at the index [p] in [rdb]. *)
-let raw_add_element rdb len op =
+(** [raw_add_element rdb op len] adds the operation [op] to the raw database
+    [rdb] and records that the length of its result is [len]. *)
+let raw_add_element rdb op len =
   assert (not (Vector.is_full rdb.elements));
-  let idx = rdb.elements.length in
-  let ridx = ref 0 in
-  while not (Range.is_in (fst rdb.ranges.(!ridx)) len) do
-    ridx := !ridx + 1
+  (* Find out in which bin the length [len] falls. Linear search is used,
+     as performance is not critical here. *)
+  let b = ref 0 in
+  while not (Range.is_in (fst rdb.bin.(!b)) len) do
+    b := !b + 1
   done;
+  (* We could also use this formula. *)
+  assert (!b = log2 len + 1);
+  (* This new element receives the identifier [i]. *)
+  let i = rdb.elements.length in
   Vector.add rdb.elements len;
-  Vector.add (snd rdb.ranges.(!ridx)) idx;
-  Trace.save rdb.trace (idx, op)
+  let _, bin_inhabitants = rdb.bin.(!b) in
+  Vector.add bin_inhabitants i;
+  let assignment = (i, op) in
+  Trace.save rdb.trace assignment
 
 (** Create a raw database with only the length of the empty elements stored. *)
 let raw_create ~bins ~binhabitants =
@@ -217,30 +249,30 @@ let raw_create ~bins ~binhabitants =
     | 0 -> Array.of_list accu
     | _ -> aux ((Range.make (n/2) n, Vector.create ~size:binhabitants ~dummy:(-1)) :: accu) (n/2)
   in
-  let ranges = aux [] (pow2 (bins - 1)) in
+  let bin = aux [] (pow2 (bins - 1)) in
   let rdb = {
     elements = Vector.create ~size:(bins * binhabitants) ~dummy:(-1) ;
-    ranges = ranges ;
+    bin = bin ;
     trace = Trace.create (bins * binhabitants) ;
   } in
-  raw_add_element rdb 0 (Push (-1));
+  raw_add_element rdb (Push (-1)) 0;
   rdb
 
 (** Is the given range of the raw database full ? *)
-let is_range_full rdb ridx = Vector.is_full (snd rdb.ranges.(ridx))
+let is_range_full rdb ridx = Vector.is_full (snd rdb.bin.(ridx))
 
 (** Has the given range of the raw database some space available ? *)
 let is_range_avail rdb ridx = not (is_range_full rdb ridx)
 
 (** Has the given range of the raw database some space available ? *)
 let is_next_range_avail rdb ridx =
-  ridx < Array.length rdb.ranges - 1 && is_range_avail rdb (ridx + 1)
+  ridx < Array.length rdb.bin - 1 && is_range_avail rdb (ridx + 1)
 
 (** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for a decreasing operation ? *)
 let is_possible_decr rdb i ridx =
   (ridx <> 0) && (
     let len = Vector.get rdb.elements i in
-    let inf = Range.inf (fst rdb.ranges.(ridx)) in
+    let inf = Range.inf (fst rdb.bin.(ridx)) in
     if inf == len then is_range_avail rdb (ridx - 1)
     else is_range_avail rdb ridx
   )
@@ -248,7 +280,7 @@ let is_possible_decr rdb i ridx =
 (** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for an increasing operation ? *)
 let is_possible_incr rdb i ridx =
   let len = Vector.get rdb.elements i in
-  let sup = Range.sup (fst rdb.ranges.(ridx)) in
+  let sup = Range.sup (fst rdb.bin.(ridx)) in
   if len == sup then is_next_range_avail rdb ridx
   else is_range_avail rdb ridx
 
@@ -256,13 +288,13 @@ let is_possible_incr rdb i ridx =
 let possible_ucandidates rdb =
   let res = ref [] in
   let a2res x = res := x :: !res in
-  for ridx = 0 to Array.length rdb.ranges - 1 do
+  for ridx = 0 to Array.length rdb.bin - 1 do
     Vector.iter (fun i ->
       if is_possible_decr rdb i ridx then
         begin a2res (Pop i); a2res (Eject i) end;
       if is_possible_incr rdb i ridx then
         begin a2res (Push i); a2res (Inject i) end
-    ) (snd rdb.ranges.(ridx))
+    ) (snd rdb.bin.(ridx))
     done;
   Array.of_list !res
 
@@ -272,19 +304,19 @@ let is_possible_add rdb i1 i2 ridx1 ridx2 =
   else
     let ridx = if ridx1 < ridx2 then ridx2 else ridx1 in
     let len = Vector.get rdb.elements i1 + Vector.get rdb.elements i2 in
-    if Range.is_in (fst rdb.ranges.(ridx)) len then is_range_avail rdb ridx
+    if Range.is_in (fst rdb.bin.(ridx)) len then is_range_avail rdb ridx
     else is_next_range_avail rdb ridx
 
 (** Return indices of elements whose lengths permit some binary operation to be performed to obtain a new element in the raw database. The authorized operations are returned along the indices. *)
 let possible_bcandidates rdb =
   let res = ref [] in
   let a2res x = res := x :: !res in
-  for ridx1 = 1 to Array.length rdb.ranges - 1 do
-    for ridx2 = ridx1 to Array.length rdb.ranges - 1 do
+  for ridx1 = 1 to Array.length rdb.bin - 1 do
+    for ridx2 = ridx1 to Array.length rdb.bin - 1 do
       Vector.iter2 (fun i1 i2 ->
         if i1 <= i2 && is_possible_add rdb i1 i2 ridx1 ridx2 then
           a2res (Concat (i1, i2))
-      ) (snd rdb.ranges.(ridx1)) (snd rdb.ranges.(ridx2))
+      ) (snd rdb.bin.(ridx1)) (snd rdb.bin.(ridx2))
       done;
     done;
   Array.of_list !res
@@ -294,7 +326,7 @@ let choose_candidate candidates =
   let len = Array.length candidates in
   candidates.(Random.int len)
 
-(** Construct randomly a raw database with [bins] ranges, each of size [size]. *)
+(** Construct randomly a raw database with [bins] bins, each of size [size]. *)
 let raw_construct ~bins ~binhabitants  =
   let rdb = raw_create ~bins ~binhabitants in
   let ucandidates = ref (possible_ucandidates rdb) in
@@ -309,14 +341,14 @@ let raw_construct ~bins ~binhabitants  =
     begin match op with
       | Push i | Inject i ->
         let len = Vector.get rdb.elements i in
-        raw_add_element rdb (len + 1) op
+        raw_add_element rdb op (len + 1)
       | Pop i | Eject i ->
         let len = Vector.get rdb.elements i in
-        raw_add_element rdb (len - 1) op
+        raw_add_element rdb op (len - 1)
       | Concat (i1, i2) ->
         let len1 = Vector.get rdb.elements i1 in
         let len2 = Vector.get rdb.elements i2 in
-        raw_add_element rdb (len1 + len2) op
+        raw_add_element rdb op (len1 + len2)
     end;
     ucandidates := possible_ucandidates rdb;
     bcandidates := possible_bcandidates rdb

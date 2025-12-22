@@ -273,31 +273,31 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
   assert (Array.for_all Option.is_some aelements);
   let elements = Vector.create ~size:(rdb.elements.length) ~dummy:S.empty in
   Array.iter (fun oe -> Vector.add elements (Option.get oe)) aelements;
-  {elements; ranges = rdb.ranges; trace = rdb.trace}
+  {elements; bin = rdb.bin; trace = rdb.trace}
 
 (* =============================== benchmarks =============================== *)
 
 let with_length rdb db i = (Vector.get db.elements i, Vector.get rdb.elements i)
 
 let bench_unary rdb db operation_name structure_name f steps =
-  let datas = Array.make (Array.length db.ranges) Measure.base in
+  let datas = Array.make (Array.length db.bin) Measure.base in
   let f = Measure.wrap_uop f steps in
   let pb = progress_bar operation_name db.elements.length in
   let idx = ref 0 in
-  for i = 0 to Array.length db.ranges - 1 do
+  for i = 0 to Array.length db.bin - 1 do
     let f j =
       datas.(i) <-
         Measure.add datas.(i) (Measure.format (f (with_length rdb db j)));
       idx := !idx + 1;
       pb !idx
     in
-    let s = snd db.ranges.(i) in
+    let s = snd db.bin.(i) in
     Vector.iter f s
   done;
   CSV.write operation_name structure_name datas
 
 let bench_binary rdb db operation_name structure_name f steps =
-  let len = Array.length db.ranges in
+  let len = Array.length db.bin in
   let datas = Array.make (len * len) Measure.base in
   let f = Measure.wrap_bop f steps in
   let pb =
@@ -314,8 +314,8 @@ let bench_binary rdb db operation_name structure_name f steps =
         idx := !idx + 1;
         pb !idx
       in
-      let s1 = snd db.ranges.(i) in
-      let s2 = snd db.ranges.(j) in
+      let s1 = snd db.bin.(i) in
+      let s2 = snd db.bin.(j) in
       Vector.iter2 f s1 s2
     done;
   done;
@@ -371,7 +371,7 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
     List.map (fun i -> Option.get datas.(i)) |>
     List.map (fun d -> (Measure.get_time d, 1)) |>
     List.fold_left Measure.add Measure.base
-  ) db.ranges
+  ) db.bin
   in
   CSV.write "traces" S.name datas
 
