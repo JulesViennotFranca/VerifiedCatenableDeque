@@ -169,22 +169,26 @@ let string_of_database db string_of_a =
   "\n\nHistory:\n" ^
   show_history db.history
 
-(** [raw_add_element rdb op len] adds the operation [op] to the raw database
-    [rdb] and records that the length of its result is [len]. *)
-let raw_add_element rdb op len =
-  assert (not (Vector.is_full rdb.elements));
-  (* Find out in which bin the length [len] falls. Linear search is used,
-     as performance is not critical here. *)
+(**[find_bin rdb len] translates the length [len] to a bin index.
+   That is, it finds out in which bin the length [len] falls. *)
+let find_bin rdb len =
+  (* Linear search is used, as performance is not critical here. *)
   let b = ref 0 in
   while not (Range.is_in (fst rdb.bin.(!b)) len) do
     b := !b + 1
   done;
   (* We could also use this formula. *)
   assert (!b = log2 len + 1);
+  !b
+
+(** [raw_add_element rdb op len] adds the operation [op] to the raw database
+    [rdb] and records that the length of its result is [len]. *)
+let raw_add_element rdb op len =
+  let b = find_bin rdb len in
   (* This new element receives the identifier [i]. *)
   let i = rdb.elements.length in
   Vector.push rdb.elements len;
-  let _, bin_inhabitants = rdb.bin.(!b) in
+  let _, bin_inhabitants = rdb.bin.(b) in
   Vector.push bin_inhabitants i;
   rdb.history.(i) <- op
 
