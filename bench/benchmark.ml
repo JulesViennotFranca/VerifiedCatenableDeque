@@ -286,10 +286,13 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
   and set i x = aelements.(i) <- Some x
   and is_unset i = Option.is_none aelements.(i) in
   set 0 S.empty;
+  let c = ref 0 in
   let q = PQ.create() in
   PQ.add_list q rdb.trace.(0);
   while not (PQ.is_empty q) do
     let (j, op) = PQ.extract q in
+    assert (j = !idx);
+    assert (op = rdb.history.(j));
     assert (is_unset j);
     let elem = match op with
       | Push i -> S.push (get i)
@@ -306,7 +309,7 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
   assert (Array.for_all Option.is_some aelements);
   let elements = Vector.create ~size:(rdb.elements.length) ~dummy:S.empty in
   Array.iter (fun oe -> Vector.push elements (Option.get oe)) aelements;
-  {elements; bin = rdb.bin; trace = rdb.trace}
+  { rdb with elements }
 
 (* =============================== benchmarks =============================== *)
 

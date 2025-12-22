@@ -1,3 +1,5 @@
+open Printf
+
 module Vector =
   FixedCapacityVector
 
@@ -8,7 +10,7 @@ let pow2 n =
   if n < Sys.word_size - 2 then
     1 lsl n
   else
-    failwith (Printf.sprintf "Cannot compute 2^%d" n)
+    failwith (sprintf "Cannot compute 2^%d" n)
 
 (**[log2 n] is the base 2 logarithm of [n]. *)
 let rec log2 accu n =
@@ -34,12 +36,12 @@ let progress_bar title maxN =
       let percentage = (curN * 100 / maxN) in
       let blocks = blocks (percentage / 2) in
       let dots = dots (50 - percentage / 2) in
-      Printf.printf "\r%s: |%s%s|%d%% " title blocks dots percentage;
+      printf "\r%s: |%s%s|%d%% " title blocks dots percentage;
       flush stdout;
       memN := curN;
       if curN >= maxN then begin
         let white_spaces = String.make (50 + 2 + 4 - 5) ' ' in
-        Printf.printf "\r%s: DONE.%s\n" title white_spaces;
+        printf "\r%s: DONE.%s\n" title white_spaces;
         finished := true
       end
     end
@@ -86,16 +88,15 @@ let max_operand = function
   | Concat (i1, i2) ->
       max i1 i2
 
-let string_of_operation = function
-  | Push i -> "Push " ^ string_of_int i
-  | Pop i -> "Pop " ^ string_of_int i
-  | Inject i -> "Inject " ^ string_of_int i
-  | Eject i -> "Eject " ^ string_of_int i
-  | Concat (i1, i2) -> "Concat " ^ string_of_int i1 ^ " " ^ string_of_int i2
+let show_var =
+  string_of_int
 
-(* A length. *)
-type length =
-  int
+let show_op = function
+  | Push i -> "Push " ^ show_var i
+  | Pop i -> "Pop " ^ show_var i
+  | Inject i -> "Inject " ^ show_var i
+  | Eject i -> "Eject " ^ show_var i
+  | Concat (i1, i2) -> "Concat " ^ show_var i1 ^ " " ^ show_var i2
 
 (* An assignment is a pair of a target variable and an operation. *)
 type assignment =
@@ -104,6 +105,9 @@ type assignment =
 (* A trace (or trace segment) is a list of assignments. *)
 type trace =
   assignment list
+
+let show_assignment j op =
+  sprintf "%s := %s\n" (show_var j) (show_op op)
 
 module Trace = struct
 
@@ -126,15 +130,23 @@ module Trace = struct
     if i >= 0 then t.(i) <- assignment :: t.(i)
 
   let to_string t = String.concat "\n" (List.map (fun (i, l) ->
-    string_of_int i ^ " [" ^
+    show_var i ^ " [" ^
     String.concat ", " (List.map (fun (j, op) ->
-      "(" ^ string_of_int j ^ ", " ^ string_of_operation op ^ ")"
+      "(" ^ show_var j ^ ", " ^ show_op op ^ ")"
     ) l) ^ "]"
   ) (Array.to_list (Array.mapi (fun i l -> (i, l)) t)))
 
 end
 
 (* ============================= Raw databases ============================== *)
+
+(**A history is a sequence of operations. The target of the operation at
+   index [i] is the variable [i]. *)
+type history =
+  operation array
+
+let show_history h =
+  h |> Array.to_list |> List.mapi show_assignment |> String.concat ""
 
 (**A database stores a collection of elements of type ['a]. An element is
    some kind of sequence data structure (a list, a deque, etc.), so it has
@@ -154,6 +166,9 @@ type 'a t = {
   trace : Trace.t;
   (**The trace that allows creating these elements. *)
 
+  history : history;
+  (**The history that allows creating these elements. *)
+
 }
 
 (**A bin is a pair of a range and a set of elements (identifiers) which
@@ -169,17 +184,19 @@ type raw_t = int t
 let string_of_database db string_of_a =
   "Elements:\n" ^
   String.concat "\n" (List.mapi (fun i a ->
-    string_of_int i ^ ": " ^ string_of_a a)
+    show_var i ^ ": " ^ string_of_a a)
   (Vector.to_list db.elements)) ^
   "\n\nBins:\n" ^
   String.concat "\n" (
     List.map (fun (r, s) ->
       Range.to_string r ^ " " ^
-        String.concat ", " (List.map string_of_int (Vector.to_list s))
+        String.concat ", " (List.map show_var (Vector.to_list s))
     ) (Array.to_list db.bin)
   ) ^
   "\n\nTrace:\n" ^
-  Trace.to_string db.trace
+  Trace.to_string db.trace ^
+  "\n\nHistory:\n" ^
+  show_history db.history
 
 (** [raw_add_element rdb op len] adds the operation [op] to the raw database
     [rdb] and records that the length of its result is [len]. *)
@@ -199,7 +216,8 @@ let raw_add_element rdb op len =
   let _, bin_inhabitants = rdb.bin.(!b) in
   Vector.push bin_inhabitants i;
   let assignment = (i, op) in
-  Trace.save rdb.trace assignment
+  Trace.save rdb.trace assignment;
+  rdb.history.(i) <- op
 
 (**[raw_create ~bins ~binhabitants] creates a raw database where the number of
    bins is [bins] and the number of inhabitants per bin is [binhabitants]. *)
@@ -208,12 +226,12 @@ let raw_create ~bins ~binhabitants =
     | 0 -> Array.of_list accu
     | _ -> aux ((Range.make (n/2) n, Vector.create ~size:binhabitants ~dummy:(-1)) :: accu) (n/2)
   in
-  let bin = aux [] (pow2 (bins - 1)) in
-  let rdb = {
-    elements = Vector.create ~size:(bins * binhabitants) ~dummy:(-1) ;
-    bin = bin ;
-    trace = Trace.create (bins * binhabitants) ;
-  } in
+  let population = bins * binhabitants in
+  let elements = Vector.create ~size:population ~dummy:(-1)
+  and bin = aux [] (pow2 (bins - 1))
+  and trace = Trace.create population
+  and history = Array.make population (Push (-1)) in
+  let rdb = { elements; bin; trace; history } in
   raw_add_element rdb (Push (-1)) 0;
   rdb
 
