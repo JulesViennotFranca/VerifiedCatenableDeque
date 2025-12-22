@@ -1,6 +1,27 @@
 open Database
 open Measure
 
+(* ========================== benchmark variables =========================== *)
+
+(* We group our data structures in bins. *)
+let bins = 21
+
+(* This is the number of inhabitants of each bin. *)
+let binhabitants = 10
+
+(* ================================= steps ================================== *)
+
+let steps = pow2 (bins - 1)
+
+let uconstant_steps _ = steps
+let bconstant_steps _ _ = steps
+
+let pos_length len = max 1 len
+
+let ulinear_steps len1 = steps / (pos_length len1)
+let blinearmin_steps len1 len2 = steps / min (pos_length len1) (pos_length len2)
+let blinearfst_steps len1 _ = steps / (pos_length len1)
+
 (* ============================ data structures ============================= *)
 
 open Deques
