@@ -80,17 +80,6 @@ type operation =
   | Eject of var
   | Concat of var * var
 
-let max_operand = function
-  | Empty ->
-      (-1)
-  | Push i
-  | Pop i
-  | Inject i
-  | Eject i ->
-      i
-  | Concat (i1, i2) ->
-      max i1 i2
-
 let show_var =
   string_of_int
 
