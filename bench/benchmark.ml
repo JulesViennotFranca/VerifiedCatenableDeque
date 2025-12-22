@@ -279,7 +279,7 @@ module PQ =
 let construct :
 type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
 = fun rdb (module S) ->
-  let pb = progress_bar "Database construction" (rdb.elements.length - 1) in
+  let pb = progress_bar "Database construction" rdb.elements.length in
   let idx = ref 1 in
   let aelements = Array.make rdb.elements.length None in
   let get i = Option.get aelements.(i)
