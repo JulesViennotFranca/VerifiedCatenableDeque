@@ -295,6 +295,7 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
     assert (op = rdb.history.(j));
     assert (is_unset j);
     let elem = match op with
+      | Empty -> S.empty
       | Push i -> S.push (get i)
       | Pop i -> S.pop (get i)
       | Inject i -> S.inject (get i)
@@ -370,30 +371,31 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
     let (j, op) = PQ.extract q in
     assert (Option.is_none datas.(j));
     let d = match op with
+      | Empty ->
+          Measure.base
       | Push i ->
-        let id = Option.get datas.(i) in
-        let m = wrap_uop S.push (Fun.const 1) (with_length rdb db i) in
-        Measure.add id m
+          let id = Option.get datas.(i) in
+          let m = wrap_uop S.push (Fun.const 1) (with_length rdb db i) in
+          Measure.add id m
       | Pop i ->
-        let id = Option.get datas.(i) in
-        let m = wrap_uop S.pop (Fun.const 1) (with_length rdb db i) in
-        Measure.add id m
+          let id = Option.get datas.(i) in
+          let m = wrap_uop S.pop (Fun.const 1) (with_length rdb db i) in
+          Measure.add id m
       | Inject i ->
-        let id = Option.get datas.(i) in
-        let m = wrap_uop S.inject (Fun.const 1) (with_length rdb db i)
-        in
-        Measure.add id m
+          let id = Option.get datas.(i) in
+          let m = wrap_uop S.inject (Fun.const 1) (with_length rdb db i) in
+          Measure.add id m
       | Eject i ->
-        let id = Option.get datas.(i) in
-        let m = wrap_uop S.eject (Fun.const 1) (with_length rdb db i) in
-        Measure.add id m
+          let id = Option.get datas.(i) in
+          let m = wrap_uop S.eject (Fun.const 1) (with_length rdb db i) in
+          Measure.add id m
       | Concat (i1, i2) ->
-        let i1d = Option.get datas.(i1) in
-        let i2d = Option.get datas.(i2) in
-        let x1 = with_length rdb db i1 in
-        let x2 = with_length rdb db i2 in
-        let m = wrap_bop S.concat (Fun.const @@ Fun.const 1) x1 x2 in
-        Measure.add i1d (Measure.add i2d m)
+          let i1d = Option.get datas.(i1) in
+          let i2d = Option.get datas.(i2) in
+          let x1 = with_length rdb db i1 in
+          let x2 = with_length rdb db i2 in
+          let m = wrap_bop S.concat (Fun.const @@ Fun.const 1) x1 x2 in
+          Measure.add i1d (Measure.add i2d m)
     in
     datas.(j) <- Some d;
     PQ.add_list q rdb.trace.(j);

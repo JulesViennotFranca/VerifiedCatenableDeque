@@ -71,8 +71,9 @@ end
 type var =
   int
 
-(* An operation carries its operands, one or two variables. *)
+(* An operation carries its operands: zero, one, or two variables. *)
 type operation =
+  | Empty
   | Push of var
   | Pop of var
   | Inject of var
@@ -80,6 +81,8 @@ type operation =
   | Concat of var * var
 
 let max_operand = function
+  | Empty ->
+      (-1)
   | Push i
   | Pop i
   | Inject i
@@ -92,11 +95,12 @@ let show_var =
   string_of_int
 
 let show_op = function
-  | Push i -> "Push " ^ show_var i
-  | Pop i -> "Pop " ^ show_var i
-  | Inject i -> "Inject " ^ show_var i
-  | Eject i -> "Eject " ^ show_var i
-  | Concat (i1, i2) -> "Concat " ^ show_var i1 ^ " " ^ show_var i2
+  | Empty -> "empty"
+  | Push i -> "push " ^ show_var i
+  | Pop i -> "pop " ^ show_var i
+  | Inject i -> "inject " ^ show_var i
+  | Eject i -> "eject " ^ show_var i
+  | Concat (i1, i2) -> "concat " ^ show_var i1 ^ " " ^ show_var i2
 
 (* An assignment is a pair of a target variable and an operation. *)
 type assignment =
@@ -319,16 +323,18 @@ let raw_construct ~bins ~binhabitants  =
     in
     let op = choose_candidate candidates in
     begin match op with
+      | Empty ->
+          raw_add_element rdb op 0
       | Push i | Inject i ->
-        let len = Vector.get rdb.elements i in
-        raw_add_element rdb op (len + 1)
+          let len = Vector.get rdb.elements i in
+          raw_add_element rdb op (len + 1)
       | Pop i | Eject i ->
-        let len = Vector.get rdb.elements i in
-        raw_add_element rdb op (len - 1)
+          let len = Vector.get rdb.elements i in
+          raw_add_element rdb op (len - 1)
       | Concat (i1, i2) ->
-        let len1 = Vector.get rdb.elements i1 in
-        let len2 = Vector.get rdb.elements i2 in
-        raw_add_element rdb op (len1 + len2)
+          let len1 = Vector.get rdb.elements i1 in
+          let len2 = Vector.get rdb.elements i2 in
+          raw_add_element rdb op (len1 + len2)
     end;
     ucandidates := possible_ucandidates rdb;
     bcandidates := possible_bcandidates rdb
