@@ -19,10 +19,10 @@ let () =
 (* ========================== benchmark variables =========================== *)
 
 (* We group our data structures in bins. *)
-let bins = 21
+let bins = 24
 
 (* This is the number of inhabitants of each bin. *)
-let binhabitants = 20
+let binhabitants = 50
 
 (* ================================= steps ================================== *)
 
