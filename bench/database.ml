@@ -12,30 +12,6 @@ let rec log2 accu n =
   if n <= 1 then accu else log2 (accu + 1) (n / 2)
 let log2 n = log2 0 n
 
-(** [choose_below min n] selects randomly an integer between [min] and [n].
-    It follows a geometric distribution of parameter [1/2]. *)
-let rec choose_below min = function
-  | n when n <= min -> min
-  | n -> if Random.bool () then n else choose_below min (n-1)
-
-(** [choose_above max n] selects randomly an integer between [n] and [max].
-    It follows a geometric distribution of parameter [1/2]. *)
-let rec choose_above max = function
-  | n when n >= max -> max
-  | n -> if Random.bool () then n else choose_above max (n+1)
-
-(** [merge_flatten merge l] returns a list where pairs of consecutive elements
-    [[a1; a2]] of [l] have been replaced by the value [merge a1 a2].
-
-    @raise Failure if the list has an odd number of elements. *)
-let merge_flatten merge l =
-  let rec aux accu = function
-    | [] -> List.rev accu
-    | [_] -> raise (Failure "merge_flatten")
-    | a :: b :: l -> aux (merge a b :: accu) l
-  in
-  aux [] l
-
 (* 50 square block characters (3 bytes each). *)
 let blocks = List.init 50 (fun _ -> "█") |> String.concat ""
 (* A string of [n] square block characters, where [n] is at most 50. *)
