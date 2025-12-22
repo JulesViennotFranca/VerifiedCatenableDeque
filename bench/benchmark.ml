@@ -320,7 +320,7 @@ let bench rdb (module S : Structure) =
   ()
 
 let () =
-  let rdb = raw_construct ~buffers ~size in
+  let rdb = raw_construct ~bins ~binhabitants in
   bench rdb (module BList);
   bench rdb (module BSek);
   bench rdb (module BDeque);

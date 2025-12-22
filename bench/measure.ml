@@ -34,13 +34,15 @@ let add (f1, n1) (f2, n2) = (f1 +. f2, n1 + n2)
 
 (* ========================== benchmark variables =========================== *)
 
-let buffers = 21
+(* We group our data structures in bins. *)
+let bins = 21
 
-let size = 10
+(* This is the number of inhabitants of each bin. *)
+let binhabitants = 10
 
 (* ================================= steps ================================== *)
 
-let steps = pow2 (buffers - 1)
+let steps = pow2 (bins - 1)
 
 let uconstant_steps _ = steps
 let bconstant_steps _ _ = steps

@@ -179,16 +179,16 @@ let raw_add_element rdb len p op =
   Traces.save rdb.traces p op idx
 
 (** Create a raw database with only the length of the empty elements stored. *)
-let raw_create ~buffers ~size =
+let raw_create ~bins ~binhabitants =
   let rec aux accu n = match n with
     | 0 -> Array.of_list accu
-    | _ -> aux ((Range.make (n/2) n, Slice.create ~size ~dummy:(-1)) :: accu) (n/2)
+    | _ -> aux ((Range.make (n/2) n, Slice.create ~size:binhabitants ~dummy:(-1)) :: accu) (n/2)
   in
-  let ranges = aux [] (pow2 (buffers - 1)) in
+  let ranges = aux [] (pow2 (bins - 1)) in
   let rdb = {
-    elements = Slice.create ~size:(buffers * size) ~dummy:(-1) ;
+    elements = Slice.create ~size:(bins * binhabitants) ~dummy:(-1) ;
     ranges = ranges ;
-    traces = Traces.create (buffers * size) ;
+    traces = Traces.create (bins * binhabitants) ;
   } in
   raw_add_element rdb 0 (-1) (Push (-1));
   rdb
@@ -261,9 +261,9 @@ let choose_candidate candidates =
   let len = Array.length candidates in
   candidates.(Random.int len)
 
-(** Construct randomly a raw database with [buffers] ranges, each of size [size]. *)
-let raw_construct ~buffers ~size  =
-  let rdb = raw_create ~buffers ~size in
+(** Construct randomly a raw database with [bins] ranges, each of size [size]. *)
+let raw_construct ~bins ~binhabitants  =
+  let rdb = raw_create ~bins ~binhabitants in
   let ucandidates = ref (possible_ucandidates rdb) in
   let bcandidates = ref (possible_bcandidates rdb) in
   while Array.length !ucandidates + Array.length !bcandidates > 0 do
