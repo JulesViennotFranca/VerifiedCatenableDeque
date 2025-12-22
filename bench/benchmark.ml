@@ -323,56 +323,6 @@ let bench_binary rdb db operation_name structure_name f steps =
   done;
   CSV.write operation_name structure_name datas
 
-let bench_traces :
-type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
-= fun rdb db (module S) ->
-  let n = db.elements.length in
-  let datas = Array.make n None in
-  let pb = progress_bar "traces" n in
-  let () =
-    rdb.history |> Array.iteri @@ fun j op ->
-    assert (Option.is_none datas.(j));
-    let d = match op with
-      | Empty ->
-          Measure.base
-      | Push i ->
-          let id = Option.get datas.(i) in
-          let m = wrap_uop S.push S.push_steps (with_length rdb db i) in
-          Measure.add id m
-      | Pop i ->
-          let id = Option.get datas.(i) in
-          let m = wrap_uop S.pop S.pop_steps (with_length rdb db i) in
-          Measure.add id m
-      | Inject i ->
-          let id = Option.get datas.(i) in
-          let m = wrap_uop S.inject S.inject_steps (with_length rdb db i) in
-          Measure.add id m
-      | Eject i ->
-          let id = Option.get datas.(i) in
-          let m = wrap_uop S.eject S.eject_steps (with_length rdb db i) in
-          Measure.add id m
-      | Concat (i1, i2) ->
-          let i1d = Option.get datas.(i1) in
-          let i2d = Option.get datas.(i2) in
-          let x1 = with_length rdb db i1 in
-          let x2 = with_length rdb db i2 in
-          let m = wrap_bop S.concat S.concat_steps x1 x2 in
-          Measure.add i1d (Measure.add i2d m)
-    in
-    datas.(j) <- Some d;
-    pb j
-  in
-  pb n;
-  assert (Array.for_all Option.is_some datas);
-  let datas = Array.map (fun (_, s) ->
-    Vector.to_list s |>
-    List.map (fun i -> Option.get datas.(i)) |>
-    List.map (fun d -> (Measure.get_time d, 1)) |>
-    List.fold_left Measure.add Measure.base
-  ) db.bin
-  in
-  CSV.write "traces" S.name datas
-
 let bench rdb (module S : Structure) =
   (* TODO: set random seed at the beginning with the time of the day *)
   print_endline ("==================== " ^ S.name ^ " ====================");
@@ -388,8 +338,6 @@ let bench rdb (module S : Structure) =
   bench_unary rdb db "eject" S.name S.eject S.eject_steps;
   Gc.major();
   bench_binary rdb db "concat" S.name S.concat S.concat_steps;
-  Gc.major();
-  bench_traces rdb db (module S);
   Gc.major();
   let elapsed = Unix.gettimeofday() -. start in
   printf "%s: %.2f seconds\n" S.name elapsed;
