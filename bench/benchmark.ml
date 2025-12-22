@@ -250,34 +250,31 @@ end
 
 (* ================================ database ================================ *)
 
+let interpret :
+type a. (module Structure with type t = a) -> (var -> a) -> operation -> a
+= fun (module S) get op ->
+  match op with
+  | Empty -> S.empty
+  | Push i -> S.push (get i)
+  | Pop i -> S.pop (get i)
+  | Inject i -> S.inject (get i)
+  | Eject i -> S.eject (get i)
+  | Concat (i1, i2) -> S.concat (get i1) (get i2)
+
 let construct :
 type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
 = fun rdb (module S) ->
   let n = rdb.elements.length in
   let pb = progress_bar "Database construction" n in
-  let aelements = Array.make n None in
-  let get i = Option.get aelements.(i)
-  and set i x = aelements.(i) <- Some x
-  and is_unset i = Option.is_none aelements.(i) in
+  let elements = Vector.create ~size:n ~dummy:S.empty in
+  let get i = Vector.get elements i in
   let () =
     rdb.history |> Array.iteri @@ fun j op ->
-    assert (is_unset j);
-    let elem =
-      match op with
-      | Empty -> S.empty
-      | Push i -> S.push (get i)
-      | Pop i -> S.pop (get i)
-      | Inject i -> S.inject (get i)
-      | Eject i -> S.eject (get i)
-      | Concat (i1, i2) -> S.concat (get i1) (get i2)
-    in
-    set j elem;
+    let elem = interpret (module S) (Vector.get elements) op in
+    Vector.push elements elem;
     pb j
   in
   pb n;
-  assert (Array.for_all Option.is_some aelements);
-  let elements = Vector.create ~size:(rdb.elements.length) ~dummy:S.empty in
-  Array.iter (fun oe -> Vector.push elements (Option.get oe)) aelements;
   { rdb with elements }
 
 (* =============================== benchmarks =============================== *)
@@ -340,26 +337,26 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
           Measure.base
       | Push i ->
           let id = Option.get datas.(i) in
-          let m = wrap_uop S.push (Fun.const 1) (with_length rdb db i) in
+          let m = wrap_uop S.push S.push_steps (with_length rdb db i) in
           Measure.add id m
       | Pop i ->
           let id = Option.get datas.(i) in
-          let m = wrap_uop S.pop (Fun.const 1) (with_length rdb db i) in
+          let m = wrap_uop S.pop S.pop_steps (with_length rdb db i) in
           Measure.add id m
       | Inject i ->
           let id = Option.get datas.(i) in
-          let m = wrap_uop S.inject (Fun.const 1) (with_length rdb db i) in
+          let m = wrap_uop S.inject S.inject_steps (with_length rdb db i) in
           Measure.add id m
       | Eject i ->
           let id = Option.get datas.(i) in
-          let m = wrap_uop S.eject (Fun.const 1) (with_length rdb db i) in
+          let m = wrap_uop S.eject S.eject_steps (with_length rdb db i) in
           Measure.add id m
       | Concat (i1, i2) ->
           let i1d = Option.get datas.(i1) in
           let i2d = Option.get datas.(i2) in
           let x1 = with_length rdb db i1 in
           let x2 = with_length rdb db i2 in
-          let m = wrap_bop S.concat (Fun.const @@ Fun.const 1) x1 x2 in
+          let m = wrap_bop S.concat S.concat_steps x1 x2 in
           Measure.add i1d (Measure.add i2d m)
     in
     datas.(j) <- Some d;
