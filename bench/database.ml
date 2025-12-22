@@ -1,8 +1,5 @@
 (* ============================ useful functions ============================ *)
 
-(** [fold_left f a n] applies [n] times [f] on [a]. *)
-let fold_left f a n = List.fold_left (fun a _ -> f a) a (List.init n Fun.id)
-
 (** [pow2 n] computes 2 to the power of [n]. *)
 let pow2 n =
   if n < Sys.word_size - 2 then
@@ -39,6 +36,13 @@ let merge_flatten merge l =
   in
   aux [] l
 
+(* 50 square block characters (3 bytes each). *)
+let blocks = List.init 50 (fun _ -> "█") |> String.concat ""
+(* A string of [n] square block characters, where [n] is at most 50. *)
+let blocks n = String.sub blocks 0 (3 * n)
+(* A string of [n] dot characters. *)
+let dots n = String.make n '.'
+
 (** [progress_bar title maxN curN] updates a progress bar showing the
     percentage [curN / maxN]. If [title] is specified, the progress bar is
     prefixed with the title. *)
@@ -48,8 +52,8 @@ let progress_bar title maxN =
   fun curN ->
     if curN <> !memN && not !finished then begin
       let percentage = (curN * 100 / maxN) in
-      let blocks = fold_left (fun s -> "█" ^ s) "" (percentage / 2) in
-      let dots = String.make (50 - percentage / 2) '.' in
+      let blocks = blocks (percentage / 2) in
+      let dots = dots (50 - percentage / 2) in
       Printf.printf "\r%s: |%s%s|%d%% " title blocks dots percentage;
       flush stdout;
       memN := curN;
@@ -92,7 +96,6 @@ module Slice = struct
 
   let sample t = t.array.(Random.int t.length)
 
-  let sample_n t n = fold_left (fun l -> sample t :: l) [] n
 end
 
 (* ================================= ranges ================================= *)
