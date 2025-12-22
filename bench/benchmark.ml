@@ -380,12 +380,19 @@ let bench rdb (module S : Structure) =
   print_endline ("==================== " ^ S.name ^ " ====================");
   let start = Unix.gettimeofday() in
   let db = construct rdb (module S) in
+  Gc.major();
   bench_unary rdb db "push" S.name S.push S.push_steps;
+  Gc.major();
   bench_unary rdb db "pop" S.name S.pop S.pop_steps;
+  Gc.major();
   bench_unary rdb db "inject" S.name S.inject S.inject_steps;
+  Gc.major();
   bench_unary rdb db "eject" S.name S.eject S.eject_steps;
+  Gc.major();
   bench_binary rdb db "concat" S.name S.concat S.concat_steps;
+  Gc.major();
   bench_traces rdb db (module S);
+  Gc.major();
   let elapsed = Unix.gettimeofday() -. start in
   Printf.printf "%s: %.2f seconds\n" S.name elapsed;
   ()
