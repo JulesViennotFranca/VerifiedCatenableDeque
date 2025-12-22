@@ -48,13 +48,13 @@ let progress_bar title maxN =
   fun curN ->
     if curN <> !memN && not !finished then begin
       let percentage = (curN * 100 / maxN) in
-      let blocks = fold_left (fun s -> "█" ^ s) "" percentage in
-      let dots = String.make (100 - percentage) '.' in
+      let blocks = fold_left (fun s -> "█" ^ s) "" (percentage / 2) in
+      let dots = String.make (50 - percentage / 2) '.' in
       Printf.printf "\r%s: |%s%s|%d%% " title blocks dots percentage;
       flush stdout;
       memN := curN;
       if curN >= maxN then begin
-        let white_spaces = String.make (100 + 2 + 4 - 5) ' ' in
+        let white_spaces = String.make (50 + 2 + 4 - 5) ' ' in
         Printf.printf "\r%s: DONE.%s\n" title white_spaces;
         finished := true
       end
