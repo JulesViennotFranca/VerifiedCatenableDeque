@@ -106,43 +106,8 @@ let show_op = function
 type assignment =
   var * operation
 
-(* A trace (or trace segment) is a list of assignments. *)
-type trace =
-  assignment list
-
 let show_assignment j op =
   sprintf "%s := %s\n" (show_var j) (show_op op)
-
-module Trace = struct
-
-  (**A trace is an array of trace segments. An assignment whose maximum
-     operand is [i] is stored at level [i] in this array. Thus the trace
-     segments can be executed in order, [trace.(0)], [trace.(1)], etc. *)
-  type t =
-    trace array
-
-  (** Allocate space for a trace that can define [n] variables. *)
-  let create n =
-    Array.make n []
-
-  (** [save t assignment] records the assignment [assignment] in the trace
-      database [t]. *)
-  let save t assignment =
-    let _, op = assignment in
-    let i = max_operand op in
-    (* If [i] is the special value [-1] then do nothing. *)
-    if i >= 0 then t.(i) <- assignment :: t.(i)
-
-  let to_string t = String.concat "\n" (List.map (fun (i, l) ->
-    show_var i ^ " [" ^
-    String.concat ", " (List.map (fun (j, op) ->
-      "(" ^ show_var j ^ ", " ^ show_op op ^ ")"
-    ) l) ^ "]"
-  ) (Array.to_list (Array.mapi (fun i l -> (i, l)) t)))
-
-end
-
-(* ============================= Raw databases ============================== *)
 
 (**A history is a sequence of operations. The target of the operation at
    index [i] is the variable [i]. *)
@@ -152,11 +117,13 @@ type history =
 let show_history h =
   h |> Array.to_list |> List.mapi show_assignment |> String.concat ""
 
+(* ============================= Raw databases ============================== *)
+
 (**A database stores a collection of elements of type ['a]. An element is
    some kind of sequence data structure (a list, a deque, etc.), so it has
    a length. The database keeps track of a histogram of elements (that is,
    it stores elements in bins, based on their length). It also records the
-   trace that allows creating these elements. *)
+   history that allows creating these elements. *)
 type 'a t = {
 
   elements : 'a Vector.t;
@@ -166,9 +133,6 @@ type 'a t = {
   bin : bin array;
   (**The histogram, an array of bins, whose ranges form a partition of the
      interval of permitted lengths. *)
-
-  trace : Trace.t;
-  (**The trace that allows creating these elements. *)
 
   history : history;
   (**The history that allows creating these elements. *)
@@ -197,8 +161,6 @@ let string_of_database db string_of_a =
         String.concat ", " (List.map show_var (Vector.to_list s))
     ) (Array.to_list db.bin)
   ) ^
-  "\n\nTrace:\n" ^
-  Trace.to_string db.trace ^
   "\n\nHistory:\n" ^
   show_history db.history
 
@@ -219,8 +181,6 @@ let raw_add_element rdb op len =
   Vector.push rdb.elements len;
   let _, bin_inhabitants = rdb.bin.(!b) in
   Vector.push bin_inhabitants i;
-  let assignment = (i, op) in
-  Trace.save rdb.trace assignment;
   rdb.history.(i) <- op
 
 (**[raw_create ~bins ~binhabitants] creates a raw database where the number of
@@ -233,9 +193,8 @@ let raw_create ~bins ~binhabitants =
   let population = bins * binhabitants in
   let elements = Vector.create ~size:population ~dummy:(-1)
   and bin = aux [] (pow2 (bins - 1))
-  and trace = Trace.create population
   and history = Array.make population Empty in
-  let rdb = { elements; bin; trace; history } in
+  let rdb = { elements; bin; history } in
   raw_add_element rdb Empty 0;
   rdb
 
