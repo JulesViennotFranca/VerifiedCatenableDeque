@@ -105,17 +105,21 @@ module BList : Structure = struct
   let name = "List"
 
   let empty = []
-  let push = List.cons 0
+  let push xs = 0 :: xs
   let push_steps = u_cheap_constant
-  let pop = function [] -> [] | _ :: l -> l
+  let pop = function [] -> [] | _ :: xs -> xs
   let pop_steps = u_cheap_constant
-  let inject l = List.rev (0 :: List.rev l)
+  (* let inject l = List.rev (0 :: List.rev l) *)
+  let[@tail_mod_cons] rec inject xs =
+    match xs with [] -> [0] | x :: xs -> x :: inject xs
   let inject_steps = u_linear
-  let eject l = match List.rev l with [] -> [] | _ :: l -> List.rev l
+  (* let eject l = match List.rev l with [] -> [] | _ :: l -> List.rev l *)
+  let[@tail_mod_cons] rec eject xs =
+    match xs with [] | [_] -> [] | x :: xs -> x :: eject xs
   let eject_steps = u_linear
   (* This definition of [concat] runs in constant stack space.
      In OCaml 4, it appears to be about twice faster than [@]. *)
-  let concat l1 l2 = List.rev_append (List.rev l1) l2
+  (* let concat l1 l2 = List.rev_append (List.rev l1) l2 *)
   (* In OCaml 5, [@] is faster. *)
   let concat = (@)
   let concat_steps = b_linear_fst
