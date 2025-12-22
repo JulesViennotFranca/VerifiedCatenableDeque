@@ -274,7 +274,7 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
   done;
   assert (Array.for_all Option.is_some aelements);
   let elements = Vector.create ~size:(rdb.elements.length) ~dummy:S.empty in
-  Array.iter (fun oe -> Vector.add elements (Option.get oe)) aelements;
+  Array.iter (fun oe -> Vector.push elements (Option.get oe)) aelements;
   {elements; bin = rdb.bin; trace = rdb.trace}
 
 (* =============================== benchmarks =============================== *)

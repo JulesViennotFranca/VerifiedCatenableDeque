@@ -54,35 +54,35 @@ module Vector = struct
   let create ~size ~dummy =
     { array = Array.make size dummy ; length = 0 }
 
-  let get t i =
-    assert (0 <= i && i < t.length);
-    t.array.(i)
+  let get v i =
+    assert (0 <= i && i < v.length);
+    v.array.(i)
 
-  let add t a =
-    assert (t.length < Array.length t.array);
-    t.array.(t.length) <- a;
-    t.length <- t.length + 1
+  let push v x =
+    assert (v.length < Array.length v.array);
+    v.array.(v.length) <- x;
+    v.length <- v.length + 1
 
-  let is_full t =
-    Array.length t.array = t.length
+  let is_full v =
+    Array.length v.array = v.length
 
-  let iter f t =
-    for i = 0 to t.length - 1 do
-      f t.array.(i)
+  let iter f v =
+    for i = 0 to v.length - 1 do
+      f v.array.(i)
     done
 
-  let iter2 f t1 t2 =
-    for i = 0 to t1.length - 1 do
-      for j = 0 to t2.length - 1 do
-        f t1.array.(i) t2.array.(j)
+  let iter2 f v1 v2 =
+    for i = 0 to v1.length - 1 do
+      for j = 0 to v2.length - 1 do
+        f v1.array.(i) v2.array.(j)
       done;
     done
 
-  let to_list t =
-    List.init t.length (Array.get t.array)
+  let to_list v =
+    List.init v.length (Array.get v.array)
 
-  let sample t =
-    t.array.(Random.int t.length)
+  let sample v =
+    v.array.(Random.int v.length)
 
 end
 
@@ -237,13 +237,14 @@ let raw_add_element rdb op len =
   assert (!b = log2 len + 1);
   (* This new element receives the identifier [i]. *)
   let i = rdb.elements.length in
-  Vector.add rdb.elements len;
+  Vector.push rdb.elements len;
   let _, bin_inhabitants = rdb.bin.(!b) in
-  Vector.add bin_inhabitants i;
+  Vector.push bin_inhabitants i;
   let assignment = (i, op) in
   Trace.save rdb.trace assignment
 
-(** Create a raw database with only the length of the empty elements stored. *)
+(**[raw_create ~bins ~binhabitants] creates a raw database where the number of
+   bins is [bins] and the number of inhabitants per bin is [binhabitants]. *)
 let raw_create ~bins ~binhabitants =
   let rec aux accu n = match n with
     | 0 -> Array.of_list accu
@@ -259,22 +260,25 @@ let raw_create ~bins ~binhabitants =
   rdb
 
 (** Is the given range of the raw database full ? *)
-let is_range_full rdb ridx = Vector.is_full (snd rdb.bin.(ridx))
+let bin_is_full rdb b =
+  let _, inhabitants = rdb.bin.(b) in
+  Vector.is_full inhabitants
 
 (** Has the given range of the raw database some space available ? *)
-let is_range_avail rdb ridx = not (is_range_full rdb ridx)
+let bin_is_not_full rdb b =
+  not (bin_is_full rdb b)
 
 (** Has the given range of the raw database some space available ? *)
 let is_next_range_avail rdb ridx =
-  ridx < Array.length rdb.bin - 1 && is_range_avail rdb (ridx + 1)
+  ridx < Array.length rdb.bin - 1 && bin_is_not_full rdb (ridx + 1)
 
 (** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for a decreasing operation ? *)
 let is_possible_decr rdb i ridx =
   (ridx <> 0) && (
     let len = Vector.get rdb.elements i in
     let inf = Range.inf (fst rdb.bin.(ridx)) in
-    if inf == len then is_range_avail rdb (ridx - 1)
-    else is_range_avail rdb ridx
+    if inf == len then bin_is_not_full rdb (ridx - 1)
+    else bin_is_not_full rdb ridx
   )
 
 (** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for an increasing operation ? *)
@@ -282,7 +286,7 @@ let is_possible_incr rdb i ridx =
   let len = Vector.get rdb.elements i in
   let sup = Range.sup (fst rdb.bin.(ridx)) in
   if len == sup then is_next_range_avail rdb ridx
-  else is_range_avail rdb ridx
+  else bin_is_not_full rdb ridx
 
 (** Return indices of elements whose lengths permit some unary operation to be performed to obtain a new element in the raw database. *)
 let possible_ucandidates rdb =
@@ -304,7 +308,7 @@ let is_possible_add rdb i1 i2 ridx1 ridx2 =
   else
     let ridx = if ridx1 < ridx2 then ridx2 else ridx1 in
     let len = Vector.get rdb.elements i1 + Vector.get rdb.elements i2 in
-    if Range.is_in (fst rdb.bin.(ridx)) len then is_range_avail rdb ridx
+    if Range.is_in (fst rdb.bin.(ridx)) len then bin_is_not_full rdb ridx
     else is_next_range_avail rdb ridx
 
 (** Return indices of elements whose lengths permit some binary operation to be performed to obtain a new element in the raw database. The authorized operations are returned along the indices. *)
