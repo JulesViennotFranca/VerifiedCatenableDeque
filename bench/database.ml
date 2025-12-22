@@ -194,9 +194,7 @@ let raw_create ~bins ~binhabitants =
   let elements = Vector.create ~size:population ~dummy:(-1)
   and bin = aux [] (pow2 (bins - 1))
   and history = Array.make population Empty in
-  let rdb = { elements; bin; history } in
-  raw_add_element rdb Empty 0;
-  rdb
+  { elements; bin; history }
 
 (** Is the given range of the raw database full ? *)
 let bin_is_full rdb b =
@@ -272,6 +270,7 @@ let choose_candidate candidates =
 (** Construct randomly a raw database with [bins] bins, each of size [size]. *)
 let raw_construct ~bins ~binhabitants  =
   let rdb = raw_create ~bins ~binhabitants in
+  raw_add_element rdb Empty 0;
   let ucandidates = ref (possible_ucandidates rdb) in
   let bcandidates = ref (possible_bcandidates rdb) in
   while Array.length !ucandidates + Array.length !bcandidates > 0 do
