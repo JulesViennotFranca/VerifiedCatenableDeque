@@ -434,8 +434,8 @@ let () =
   let rdb = raw_construct ~bins ~binhabitants in
   bench rdb (module BList);
   bench rdb (module BSek);
-  bench rdb (module BDeque);
-  bench rdb (module BSteque);
+  (* bench rdb (module BDeque);  *)
+  (* bench rdb (module BSteque); *)
   bench rdb (module BCadeque);
   bench rdb (module BKOT);
   ()
