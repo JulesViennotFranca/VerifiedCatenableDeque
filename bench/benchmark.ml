@@ -285,8 +285,9 @@ module PQ =
 let construct :
 type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
 = fun rdb (module S) ->
-  let pb = progress_bar "Database construction" rdb.elements.length in
-  let aelements = Array.make rdb.elements.length None in
+  let n = rdb.elements.length in
+  let pb = progress_bar "Database construction" n in
+  let aelements = Array.make n None in
   let get i = Option.get aelements.(i)
   and set i x = aelements.(i) <- Some x
   and is_unset i = Option.is_none aelements.(i) in
@@ -305,6 +306,7 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
     set j elem;
     pb j
   in
+  pb n;
   assert (Array.for_all Option.is_some aelements);
   let elements = Vector.create ~size:(rdb.elements.length) ~dummy:S.empty in
   Array.iter (fun oe -> Vector.push elements (Option.get oe)) aelements;
@@ -359,14 +361,11 @@ let bench_binary rdb db operation_name structure_name f steps =
 let bench_traces :
 type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
 = fun rdb db (module S) ->
-  let datas = Array.make db.elements.length None in
-  datas.(0) <- Some Measure.base;
-  let pb = progress_bar "traces" db.elements.length in
-  let idx = ref 1 in
-  let q = PQ.create() in
-  PQ.add_list q db.trace.(0);
-  while not (PQ.is_empty q) do
-    let (j, op) = PQ.extract q in
+  let n = db.elements.length in
+  let datas = Array.make n None in
+  let pb = progress_bar "traces" n in
+  let () =
+    rdb.history |> Array.iteri @@ fun j op ->
     assert (Option.is_none datas.(j));
     let d = match op with
       | Empty ->
@@ -396,10 +395,9 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
           Measure.add i1d (Measure.add i2d m)
     in
     datas.(j) <- Some d;
-    PQ.add_list q rdb.trace.(j);
-    idx := !idx + 1;
-    pb !idx
-  done;
+    pb j
+  in
+  pb n;
   assert (Array.for_all Option.is_some datas);
   let datas = Array.map (fun (_, s) ->
     Vector.to_list s |>
