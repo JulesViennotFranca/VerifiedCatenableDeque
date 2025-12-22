@@ -3,14 +3,16 @@ open Measure
 
 (* ============================= GC parameters ============================== *)
 
-(* With OCaml 5.4, setting a large minor heap size makes the benchmark about
-   3x faster and changes the slope of the "list" benchmark from approximately
-   4/3 back to approximately 1. This seems to show that (with the default heap
-   size setting) the GC cost is very high. *)
+(* With OCaml 5.4, setting a large minor heap size makes the List benchmark
+   about 10 times faster and changes the slope of this benchmark from
+   approximately 4/3 back to approximately 1. This seems to show that (with
+   the default heap size setting) the GC cost is very high. The benchmarks
+   other than List are not affected in such a dramatic manner. *)
 
 let () =
   Gc.set { (Gc.get()) with
-    minor_heap_size = 512 * (1 lsl 20) (* megabytes *);
+    minor_heap_size = 512 * (1 lsl 20) (* megawords *);
+      (* 512 megawords is 4Gb *)
   }
 
 (* ========================== benchmark variables =========================== *)
