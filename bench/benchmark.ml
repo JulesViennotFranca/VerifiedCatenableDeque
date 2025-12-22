@@ -290,18 +290,18 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
   PQ.add_list q rdb.trace.(0);
   while not (PQ.is_empty q) do
     let (j, op) = PQ.extract q in
-    if is_unset j then
-      let elem = match op with
-        | Push i -> S.push (get i)
-        | Pop i -> S.pop (get i)
-        | Inject i -> S.inject (get i)
-        | Eject i -> S.eject (get i)
-        | Concat (i1, i2) -> S.concat (get i1) (get i2)
-      in
-      set j elem;
-      PQ.add_list q rdb.trace.(j);
-      idx := !idx + 1;
-      pb !idx
+    assert (is_unset j);
+    let elem = match op with
+      | Push i -> S.push (get i)
+      | Pop i -> S.pop (get i)
+      | Inject i -> S.inject (get i)
+      | Eject i -> S.eject (get i)
+      | Concat (i1, i2) -> S.concat (get i1) (get i2)
+    in
+    set j elem;
+    PQ.add_list q rdb.trace.(j);
+    idx := !idx + 1;
+    pb !idx
   done;
   assert (Array.for_all Option.is_some aelements);
   let elements = Vector.create ~size:(rdb.elements.length) ~dummy:S.empty in
@@ -365,38 +365,37 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
   PQ.add_list q db.trace.(0);
   while not (PQ.is_empty q) do
     let (j, op) = PQ.extract q in
-    if Option.is_none datas.(j) then begin
-      let d = match op with
-        | Push i ->
-          let id = Option.get datas.(i) in
-          let m = wrap_uop S.push (Fun.const 1) (with_length rdb db i) in
-          Measure.add id m
-        | Pop i ->
-          let id = Option.get datas.(i) in
-          let m = wrap_uop S.pop (Fun.const 1) (with_length rdb db i) in
-          Measure.add id m
-        | Inject i ->
-          let id = Option.get datas.(i) in
-          let m = wrap_uop S.inject (Fun.const 1) (with_length rdb db i)
-          in
-          Measure.add id m
-        | Eject i ->
-          let id = Option.get datas.(i) in
-          let m = wrap_uop S.eject (Fun.const 1) (with_length rdb db i) in
-          Measure.add id m
-        | Concat (i1, i2) ->
-          let i1d = Option.get datas.(i1) in
-          let i2d = Option.get datas.(i2) in
-          let x1 = with_length rdb db i1 in
-          let x2 = with_length rdb db i2 in
-          let m = wrap_bop S.concat (Fun.const @@ Fun.const 1) x1 x2 in
-          Measure.add i1d (Measure.add i2d m)
-      in
-      datas.(j) <- Some d;
-      PQ.add_list q rdb.trace.(j);
-      idx := !idx + 1;
-      pb !idx
-    end
+    assert (Option.is_none datas.(j));
+    let d = match op with
+      | Push i ->
+        let id = Option.get datas.(i) in
+        let m = wrap_uop S.push (Fun.const 1) (with_length rdb db i) in
+        Measure.add id m
+      | Pop i ->
+        let id = Option.get datas.(i) in
+        let m = wrap_uop S.pop (Fun.const 1) (with_length rdb db i) in
+        Measure.add id m
+      | Inject i ->
+        let id = Option.get datas.(i) in
+        let m = wrap_uop S.inject (Fun.const 1) (with_length rdb db i)
+        in
+        Measure.add id m
+      | Eject i ->
+        let id = Option.get datas.(i) in
+        let m = wrap_uop S.eject (Fun.const 1) (with_length rdb db i) in
+        Measure.add id m
+      | Concat (i1, i2) ->
+        let i1d = Option.get datas.(i1) in
+        let i2d = Option.get datas.(i2) in
+        let x1 = with_length rdb db i1 in
+        let x2 = with_length rdb db i2 in
+        let m = wrap_bop S.concat (Fun.const @@ Fun.const 1) x1 x2 in
+        Measure.add i1d (Measure.add i2d m)
+    in
+    datas.(j) <- Some d;
+    PQ.add_list q rdb.trace.(j);
+    idx := !idx + 1;
+    pb !idx
   done;
   assert (Array.for_all Option.is_some datas);
   let datas = Array.map (fun (_, s) ->
