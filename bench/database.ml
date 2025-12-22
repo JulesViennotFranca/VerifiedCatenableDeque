@@ -10,6 +10,11 @@ let pow2 n =
   else
     failwith (Printf.sprintf "Cannot compute 2^%d" n)
 
+(**[log2 n] is the base 2 logarithm of [n]. *)
+let rec log2 accu n =
+  if n <= 1 then accu else log2 (accu + 1) (n / 2)
+let log2 n = log2 0 n
+
 (** [choose_below min n] selects randomly an integer between [min] and [n].
     It follows a geometric distribution of parameter [1/2]. *)
 let rec choose_below min = function
