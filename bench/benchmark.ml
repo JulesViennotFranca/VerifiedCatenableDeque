@@ -366,6 +366,7 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
 let bench rdb (module S : Structure) =
   (* TODO: set random seed at the beginning with the time of the day *)
   print_endline ("==================== " ^ S.name ^ " ====================");
+  let start = Unix.gettimeofday() in
   let db = construct rdb (module S) in
   bench_unary rdb db "push" S.name S.push S.push_steps;
   bench_unary rdb db "pop" S.name S.pop S.pop_steps;
@@ -373,6 +374,8 @@ let bench rdb (module S : Structure) =
   bench_unary rdb db "eject" S.name S.eject S.eject_steps;
   bench_binary rdb db "concat" S.name S.concat S.concat_steps;
   bench_traces rdb db (module S);
+  let elapsed = Unix.gettimeofday() -. start in
+  Printf.printf "%s: %.2f seconds\n" S.name elapsed;
   ()
 
 let () =
