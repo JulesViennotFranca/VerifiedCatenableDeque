@@ -103,12 +103,26 @@ end
 
 (* ================================= traces ================================= *)
 
+(* A variable is a de Bruijn level, that is, a creation time. *)
+type var =
+  int
+
+(* An operation carries its operands, one or two variables. *)
 type operation =
-  | Push of int
-  | Pop of int
-  | Inject of int
-  | Eject of int
-  | Concat of int * int
+  | Push of var
+  | Pop of var
+  | Inject of var
+  | Eject of var
+  | Concat of var * var
+
+let max_operand = function
+  | Push i
+  | Pop i
+  | Inject i
+  | Eject i ->
+      i
+  | Concat (i1, i2) ->
+      max i1 i2
 
 let string_of_operation = function
   | Push i -> "Push " ^ string_of_int i
@@ -117,14 +131,37 @@ let string_of_operation = function
   | Eject i -> "Eject " ^ string_of_int i
   | Concat (i1, i2) -> "Concat " ^ string_of_int i1 ^ " " ^ string_of_int i2
 
-module Traces = struct
-  type t = (int * operation) list array
+(* A length. *)
+type length =
+  int
 
-  (** Create a traces database with n elements. *)
-  let create n = Array.make n []
+(* An assignment is a pair of a target variable and an operation. *)
+type assignment =
+  var * operation
 
-  (** [save t i op j] saves that [j] is obtained by applying operation [op] on [i] in the trace database [t]. *)
-  let save t i op j = if i >= 0 then t.(i) <- (j, op) :: t.(i)
+(* A trace (or trace segment) is a list of assignments. *)
+type trace =
+  assignment list
+
+module Trace = struct
+
+  (**A trace is an array of trace segments. An assignment whose maximum
+     operand is [i] is stored at level [i] in this array. Thus the trace
+     segments can be executed in order, [trace.(0)], [trace.(1)], etc. *)
+  type t =
+    trace array
+
+  (** Allocate space for a trace that can define [n] variables. *)
+  let create n =
+    Array.make n []
+
+  (** [save t assignment] records the assignment [assignment] in the trace
+      database [t]. *)
+  let save t assignment =
+    let _, op = assignment in
+    let i = max_operand op in
+    (* If [i] is the special value [-1] then do nothing. *)
+    if i >= 0 then t.(i) <- assignment :: t.(i)
 
   let to_string t = String.concat "\n" (List.map (fun (i, l) ->
     string_of_int i ^ " [" ^
@@ -132,6 +169,7 @@ module Traces = struct
       "(" ^ string_of_int j ^ ", " ^ string_of_operation op ^ ")"
     ) l) ^ "]"
   ) (Array.to_list (Array.mapi (fun i l -> (i, l)) t)))
+
 end
 
 (* ============================= Raw databases ============================== *)
@@ -140,7 +178,7 @@ end
 type 'a t = {
   elements : 'a Vector.t ;
   ranges : (Range.t * int Vector.t) array ;
-  traces : Traces.t ;
+  trace : Trace.t ;
 }
 
 (** A raw database stores lengths of elements, along with their respective range, and the traces leading to the creation of the elements. So no elements is created. *)
@@ -158,11 +196,11 @@ let string_of_database db string_of_a =
         String.concat ", " (List.map string_of_int (Vector.to_list s))
     ) (Array.to_list db.ranges)
   ) ^
-  "\n\nTraces:\n" ^
-  Traces.to_string db.traces
+  "\n\nTrace:\n" ^
+  Trace.to_string db.trace
 
 (** [raw_add_element rdb len p op] adds [len] to the raw database [rdb]. [len] is the length of an element obtained by applying [op] on an element whose size is stored at the index [p] in [rdb]. *)
-let raw_add_element rdb len p op =
+let raw_add_element rdb len op =
   assert (not (Vector.is_full rdb.elements));
   let idx = rdb.elements.length in
   let ridx = ref 0 in
@@ -171,7 +209,7 @@ let raw_add_element rdb len p op =
   done;
   Vector.add rdb.elements len;
   Vector.add (snd rdb.ranges.(!ridx)) idx;
-  Traces.save rdb.traces p op idx
+  Trace.save rdb.trace (idx, op)
 
 (** Create a raw database with only the length of the empty elements stored. *)
 let raw_create ~bins ~binhabitants =
@@ -183,9 +221,9 @@ let raw_create ~bins ~binhabitants =
   let rdb = {
     elements = Vector.create ~size:(bins * binhabitants) ~dummy:(-1) ;
     ranges = ranges ;
-    traces = Traces.create (bins * binhabitants) ;
+    trace = Trace.create (bins * binhabitants) ;
   } in
-  raw_add_element rdb 0 (-1) (Push (-1));
+  raw_add_element rdb 0 (Push (-1));
   rdb
 
 (** Is the given range of the raw database full ? *)
@@ -271,14 +309,14 @@ let raw_construct ~bins ~binhabitants  =
     begin match op with
       | Push i | Inject i ->
         let len = Vector.get rdb.elements i in
-        raw_add_element rdb (len + 1) i op
+        raw_add_element rdb (len + 1) op
       | Pop i | Eject i ->
         let len = Vector.get rdb.elements i in
-        raw_add_element rdb (len - 1) i op
+        raw_add_element rdb (len - 1) op
       | Concat (i1, i2) ->
         let len1 = Vector.get rdb.elements i1 in
         let len2 = Vector.get rdb.elements i2 in
-        raw_add_element rdb (len1 + len2) (max i1 i2) op
+        raw_add_element rdb (len1 + len2) op
     end;
     ucandidates := possible_ucandidates rdb;
     bcandidates := possible_bcandidates rdb

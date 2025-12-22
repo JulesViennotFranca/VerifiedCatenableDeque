@@ -254,7 +254,7 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
   and is_unset i = Option.is_none aelements.(i) in
   set 0 S.empty;
   let q = PQ.create() in
-  PQ.add_list q rdb.traces.(0);
+  PQ.add_list q rdb.trace.(0);
   while not (PQ.is_empty q) do
     let (j, op) = Option.get (PQ.pop_min q) in
     if is_unset j then
@@ -266,14 +266,14 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
         | Concat (i1, i2) -> S.concat (get i1) (get i2)
       in
       set j elem;
-      PQ.add_list q rdb.traces.(j);
+      PQ.add_list q rdb.trace.(j);
       idx := !idx + 1;
       pb !idx
   done;
   assert (Array.for_all Option.is_some aelements);
   let elements = Vector.create ~size:(rdb.elements.length) ~dummy:S.empty in
   Array.iter (fun oe -> Vector.add elements (Option.get oe)) aelements;
-  {elements; ranges = rdb.ranges; traces = rdb.traces}
+  {elements; ranges = rdb.ranges; trace = rdb.trace}
 
 (* =============================== benchmarks =============================== *)
 
@@ -329,7 +329,7 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
   let pb = progress_bar "traces" db.elements.length in
   let idx = ref 1 in
   let q = PQ.create() in
-  PQ.add_list q db.traces.(0);
+  PQ.add_list q db.trace.(0);
   while not (PQ.is_empty q) do
     let (j, op) = Option.get (PQ.pop_min q) in
     if Option.is_none datas.(j) then begin
@@ -360,7 +360,7 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
           Measure.add i1d (Measure.add i2d m)
       in
       datas.(j) <- Some d;
-      PQ.add_list q rdb.traces.(j);
+      PQ.add_list q rdb.trace.(j);
       idx := !idx + 1;
       pb !idx
     end
