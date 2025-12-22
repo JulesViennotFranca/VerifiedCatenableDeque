@@ -233,17 +233,39 @@ module BKOT : Structure = struct
   let to_string s = string_of_list (to_list s)
 end
 
-(* ================================ database ================================ *)
+(* ============================ priority queue ============================== *)
 
+module Assignment =struct
+  type t = assignment
+  let compare (j1, _op1) (j2, _op2) = Int.compare j1 j2
+end
+
+(* In OCaml 5.4 one can use this:
 module PQ = struct
-  (* This requires OCaml 5.4. *)
-  include Pqueue.MakeMin(struct
-    type t = int * operation
-    let compare (j1, _op1) (j2, _op2) = Int.compare j1 j2
-  end)
+  include Pqueue.MakeMin(Assignment)
   let add_list q xs =
     add_iter q List.iter xs
+  let extract q =
+    Option.get (pop_min q)
 end
+ *)
+
+(* To avoid a dependency on OCaml 5.4, we provide our own PriorityQueue
+   module. We let the priority queue inhabit a fixed-capacity vector. *)
+
+module V = struct
+  include Vector
+  type element = assignment
+  type vector = assignment t
+  let size = bins * binhabitants
+  let dummy = (-1, Push (-1))
+  let create() = create ~size ~dummy
+end
+
+module PQ =
+  PriorityQueue.Make(Assignment)(V)
+
+(* ================================ database ================================ *)
 
 let construct :
 type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
@@ -258,7 +280,7 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
   let q = PQ.create() in
   PQ.add_list q rdb.trace.(0);
   while not (PQ.is_empty q) do
-    let (j, op) = Option.get (PQ.pop_min q) in
+    let (j, op) = PQ.extract q in
     if is_unset j then
       let elem = match op with
         | Push i -> S.push (get i)
@@ -333,7 +355,7 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
   let q = PQ.create() in
   PQ.add_list q db.trace.(0);
   while not (PQ.is_empty q) do
-    let (j, op) = Option.get (PQ.pop_min q) in
+    let (j, op) = PQ.extract q in
     if Option.is_none datas.(j) then begin
       let d = match op with
         | Push i ->

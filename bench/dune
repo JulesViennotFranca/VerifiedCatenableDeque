@@ -1,6 +1,6 @@
 (executable
   (name benchmark)
-  (modules Benchmark Measure Database)
+  (modules PriorityQueue Benchmark Measure Database)
   (libraries deques unix sek kot)
   (flags (:standard -w -26-32-33)))
 
