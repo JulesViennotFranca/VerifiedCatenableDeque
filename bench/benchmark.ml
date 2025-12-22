@@ -283,37 +283,40 @@ let with_length rdb db i =
   (Vector.get db.elements i, Vector.get rdb.elements i)
 
 let bench_unary rdb db operation_name structure_name f steps =
-  let datas = Array.make (Array.length db.bin) Measure.base in
+  let bins = Array.length db.bin in
+  let measurements = Array.make bins Measure.base in
   let f = Measure.wrap_uop f steps in
-  let pb = progress_bar operation_name db.elements.length in
+  let n = db.elements.length in
+  let pb = progress_bar operation_name n in
   let idx = ref 0 in
-  for i = 0 to Array.length db.bin - 1 do
-    let f j =
-      datas.(i) <-
-        Measure.add datas.(i) (Measure.format (f (with_length rdb db j)));
+  for i = 0 to bins - 1 do
+    let f ix =
+      measurements.(i) <- Measure.add measurements.(i)
+        (Measure.format (f (with_length rdb db ix)));
       idx := !idx + 1;
       pb !idx
     in
-    let s = snd db.bin.(i) in
-    Vector.iter f s
+    let _, inhabitants = db.bin.(i) in
+    Vector.iter f inhabitants
   done;
-  CSV.write operation_name structure_name datas
+  CSV.write operation_name structure_name measurements
 
 let bench_binary rdb db operation_name structure_name f steps =
-  let len = Array.length db.bin in
-  let datas = Array.make (len * len) Measure.base in
+  let bins = Array.length db.bin in
+  let datas = Array.make (bins * bins) Measure.base in
   let f = Measure.wrap_bop f steps in
-  let pb =
-    progress_bar operation_name (db.elements.length * db.elements.length) in
+  let n = db.elements.length in
+  let pb = progress_bar operation_name (n * n) in
   let idx = ref 0 in
-  for i = 0 to len - 1 do
-    for j = 0 to len - 1 do
-      let k = i * len + j in
+  for i = 0 to bins - 1 do
+    for j = 0 to bins - 1 do
+      let k = i * bins + j in
       let f ix iy =
-        if Random.int (len * len) < len then begin
+        if Random.int (bins * bins) < bins then begin
           let x = with_length rdb db ix in
           let y = with_length rdb db iy in
-          datas.(k) <- Measure.add datas.(k) (Measure.format (f x y)) end;
+          datas.(k) <- Measure.add datas.(k) (Measure.format (f x y))
+        end;
         idx := !idx + 1;
         pb !idx
       in
@@ -321,6 +324,28 @@ let bench_binary rdb db operation_name structure_name f steps =
       let s2 = snd db.bin.(j) in
       Vector.iter2 f s1 s2
     done;
+  done;
+  CSV.write operation_name structure_name datas
+
+let bench_binary_diagonal rdb db operation_name structure_name f steps =
+  let bins = Array.length db.bin in
+  let datas = Array.make bins Measure.base in
+  let f = Measure.wrap_bop f steps in
+  let n = db.elements.length in
+  let pb = progress_bar operation_name n in
+  let idx = ref 0 in
+  for i = 0 to bins - 1 do
+    let j = i in
+    let k = i in
+    let f ix iy =
+      let x = with_length rdb db ix in
+      let y = with_length rdb db iy in
+      datas.(k) <- Measure.add datas.(k) (Measure.format (f x y));
+      idx := !idx + 1;
+      pb !idx
+    in
+    let _, inhabitants = db.bin.(i) in
+    Vector.iter2 f inhabitants inhabitants
   done;
   CSV.write operation_name structure_name datas
 
@@ -339,6 +364,8 @@ let bench rdb (module S : Structure) =
   bench_unary rdb db "eject" S.name S.eject S.eject_steps;
   Gc.major();
   bench_binary rdb db "concat" S.name S.concat S.concat_steps;
+  Gc.major();
+  bench_binary_diagonal rdb db "concat-diagonal" S.name S.concat S.concat_steps;
   Gc.major();
   let elapsed = Unix.gettimeofday() -. start in
   printf "%s: %.2f seconds\n" S.name elapsed;
