@@ -170,7 +170,8 @@ let string_of_database db string_of_a =
   show_history db.history
 
 (**[find_bin rdb len] translates the length [len] to a bin index.
-   That is, it finds out in which bin the length [len] falls. *)
+   That is, it finds out in which bin the length [len] falls.
+   We assume that [len] does fall within an existing bin. *)
 let find_bin rdb len =
   (* Linear search is used, as performance is not critical here. *)
   let b = ref 0 in
@@ -214,39 +215,31 @@ let bin_is_full rdb b =
 let bin_is_not_full rdb b =
   not (bin_is_full rdb b)
 
+(**[is_permitted rdb len] determines whether the length [len] falls within an
+   existing bin and this bin is not full. *)
+let is_permitted rdb len =
+  0 <= len &&
+  let bins = Array.length rdb.bin in
+  let bound = Range.sup (fst rdb.bin.(bins - 1)) in
+  len <= bound &&
+  let b = find_bin rdb len in
+  bin_is_not_full rdb b
+
 (** Has the given range of the raw database some space available ? *)
 let is_next_range_avail rdb ridx =
   ridx < Array.length rdb.bin - 1 && bin_is_not_full rdb (ridx + 1)
 
-(** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for a decreasing operation ? *)
-let is_possible_decr rdb i ridx =
-  (ridx <> 0) && (
-    let len = Vector.get rdb.elements i in
-    let inf = Range.inf (fst rdb.bin.(ridx)) in
-    if inf == len then bin_is_not_full rdb (ridx - 1)
-    else bin_is_not_full rdb ridx
-  )
-
-(** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for an increasing operation ? *)
-let is_possible_incr rdb i ridx =
-  let len = Vector.get rdb.elements i in
-  let sup = Range.sup (fst rdb.bin.(ridx)) in
-  if len == sup then is_next_range_avail rdb ridx
-  else bin_is_not_full rdb ridx
-
 (** Return indices of elements whose lengths permit some unary operation to be performed to obtain a new element in the raw database. *)
-let possible_ucandidates rdb =
-  let res = ref [] in
-  let a2res x = res := x :: !res in
-  for ridx = 0 to Array.length rdb.bin - 1 do
-    Vector.iter (fun i ->
-      if is_possible_decr rdb i ridx then
-        begin a2res (Pop i); a2res (Eject i) end;
-      if is_possible_incr rdb i ridx then
-        begin a2res (Push i); a2res (Inject i) end
-    ) (snd rdb.bin.(ridx))
-    done;
-  Array.of_list !res
+let possible_ucandidates rdb : operation array =
+  let candidates = ref [] in
+  let retain op = candidates := op :: !candidates in
+  let get i = Vector.get rdb.elements i in
+  let is_permitted op = is_permitted rdb (raw_interpret get op) in
+  let retain_if_permitted op = if is_permitted op then retain op in
+  for j = 0 to Vector.length rdb.elements - 1 do
+    List.iter retain_if_permitted [Pop j; Eject j; Push j; Inject j]
+  done;
+  Array.of_list !candidates
 
 (** Does the length of an element contained in range [ridx] in [rdb], allow for a doubling operation ? *)
 let is_possible_add rdb i1 i2 ridx1 ridx2 =
