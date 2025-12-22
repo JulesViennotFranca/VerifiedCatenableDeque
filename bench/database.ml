@@ -91,6 +91,22 @@ let show_op = function
   | Eject i -> "eject " ^ show_var i
   | Concat (i1, i2) -> "concat " ^ show_var i1 ^ " " ^ show_var i2
 
+(* [raw_interpret len op] computes the length of the result of the operation
+   [op], under the assumption that the function [len] provides access to the
+   length of the operands. *)
+let raw_interpret len op =
+  match op with
+  | Empty ->
+      0
+  | Push i
+  | Inject i ->
+      len i + 1
+  | Pop i
+  | Eject i ->
+      len i - 1
+  | Concat (i1, i2) ->
+      len i1 + len i2
+
 (* An assignment is a pair of a target variable and an operation. *)
 type assignment =
   var * operation
@@ -269,20 +285,7 @@ let raw_construct ~bins ~binhabitants  =
       else if Random.int 5 < 4 then !ucandidates else !bcandidates
     in
     let op = choose_candidate candidates in
-    begin match op with
-      | Empty ->
-          raw_add_element rdb op 0
-      | Push i | Inject i ->
-          let len = Vector.get rdb.elements i in
-          raw_add_element rdb op (len + 1)
-      | Pop i | Eject i ->
-          let len = Vector.get rdb.elements i in
-          raw_add_element rdb op (len - 1)
-      | Concat (i1, i2) ->
-          let len1 = Vector.get rdb.elements i1 in
-          let len2 = Vector.get rdb.elements i2 in
-          raw_add_element rdb op (len1 + len2)
-    end;
+    raw_add_element rdb op (raw_interpret (Vector.get rdb.elements) op);
     ucandidates := possible_ucandidates rdb;
     bcandidates := possible_bcandidates rdb
   done;
