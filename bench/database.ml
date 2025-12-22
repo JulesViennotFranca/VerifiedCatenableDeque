@@ -42,19 +42,28 @@ let progress_bar title maxN =
 
 (* ================================= slices ================================= *)
 
-module Slice = struct
-  type 'a t = { array : 'a array ; mutable length : int }
+(* A vector is an array that we intend to progressively fill. In other words,
+   it is a vector (in the usual sense) whose capacity is fixed ahead of time. *)
 
-  let create ~size ~dummy = { array = Array.make size dummy ; length = 0 }
-  (* let create_diff ~size ~dummy = { array = Array.init size (fun _ -> dummy ()) ; length = 0 } *)
+module Vector = struct
 
-  let get t i = assert (0 <= i && i < t.length); t.array.(i)
+  type 'a t =
+    { array : 'a array; mutable length : int }
+
+  let create ~size ~dummy =
+    { array = Array.make size dummy ; length = 0 }
+
+  let get t i =
+    assert (0 <= i && i < t.length);
+    t.array.(i)
 
   let add t a =
+    assert (t.length < Array.length t.array);
     t.array.(t.length) <- a;
     t.length <- t.length + 1
 
-  let is_full t = Array.length t.array <= t.length
+  let is_full t =
+    Array.length t.array = t.length
 
   let iter f t =
     for i = 0 to t.length - 1 do
@@ -68,9 +77,11 @@ module Slice = struct
       done;
     done
 
-  let to_list t = List.init t.length (Array.get t.array)
+  let to_list t =
+    List.init t.length (Array.get t.array)
 
-  let sample t = t.array.(Random.int t.length)
+  let sample t =
+    t.array.(Random.int t.length)
 
 end
 
@@ -127,8 +138,8 @@ end
 
 (** A database stores elements, along with their respective range, and the traces leading to the creation of the elements. *)
 type 'a t = {
-  elements : 'a Slice.t ;
-  ranges : (Range.t * int Slice.t) array ;
+  elements : 'a Vector.t ;
+  ranges : (Range.t * int Vector.t) array ;
   traces : Traces.t ;
 }
 
@@ -139,12 +150,12 @@ let string_of_database db string_of_a =
   "Elements:\n" ^
   String.concat "\n" (List.mapi (fun i a ->
     string_of_int i ^ ": " ^ string_of_a a)
-  (Slice.to_list db.elements)) ^
+  (Vector.to_list db.elements)) ^
   "\n\nRanges:\n" ^
   String.concat "\n" (
     List.map (fun (r, s) ->
       Range.to_string r ^ " " ^
-        String.concat ", " (List.map string_of_int (Slice.to_list s))
+        String.concat ", " (List.map string_of_int (Vector.to_list s))
     ) (Array.to_list db.ranges)
   ) ^
   "\n\nTraces:\n" ^
@@ -152,25 +163,25 @@ let string_of_database db string_of_a =
 
 (** [raw_add_element rdb len p op] adds [len] to the raw database [rdb]. [len] is the length of an element obtained by applying [op] on an element whose size is stored at the index [p] in [rdb]. *)
 let raw_add_element rdb len p op =
-  assert (not (Slice.is_full rdb.elements));
+  assert (not (Vector.is_full rdb.elements));
   let idx = rdb.elements.length in
   let ridx = ref 0 in
   while not (Range.is_in (fst rdb.ranges.(!ridx)) len) do
     ridx := !ridx + 1
   done;
-  Slice.add rdb.elements len;
-  Slice.add (snd rdb.ranges.(!ridx)) idx;
+  Vector.add rdb.elements len;
+  Vector.add (snd rdb.ranges.(!ridx)) idx;
   Traces.save rdb.traces p op idx
 
 (** Create a raw database with only the length of the empty elements stored. *)
 let raw_create ~bins ~binhabitants =
   let rec aux accu n = match n with
     | 0 -> Array.of_list accu
-    | _ -> aux ((Range.make (n/2) n, Slice.create ~size:binhabitants ~dummy:(-1)) :: accu) (n/2)
+    | _ -> aux ((Range.make (n/2) n, Vector.create ~size:binhabitants ~dummy:(-1)) :: accu) (n/2)
   in
   let ranges = aux [] (pow2 (bins - 1)) in
   let rdb = {
-    elements = Slice.create ~size:(bins * binhabitants) ~dummy:(-1) ;
+    elements = Vector.create ~size:(bins * binhabitants) ~dummy:(-1) ;
     ranges = ranges ;
     traces = Traces.create (bins * binhabitants) ;
   } in
@@ -178,7 +189,7 @@ let raw_create ~bins ~binhabitants =
   rdb
 
 (** Is the given range of the raw database full ? *)
-let is_range_full rdb ridx = Slice.is_full (snd rdb.ranges.(ridx))
+let is_range_full rdb ridx = Vector.is_full (snd rdb.ranges.(ridx))
 
 (** Has the given range of the raw database some space available ? *)
 let is_range_avail rdb ridx = not (is_range_full rdb ridx)
@@ -190,7 +201,7 @@ let is_next_range_avail rdb ridx =
 (** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for a decreasing operation ? *)
 let is_possible_decr rdb i ridx =
   (ridx <> 0) && (
-    let len = Slice.get rdb.elements i in
+    let len = Vector.get rdb.elements i in
     let inf = Range.inf (fst rdb.ranges.(ridx)) in
     if inf == len then is_range_avail rdb (ridx - 1)
     else is_range_avail rdb ridx
@@ -198,7 +209,7 @@ let is_possible_decr rdb i ridx =
 
 (** Does the length of an element stored at index [i] in [rdb], contained in range [ridx], allow for an increasing operation ? *)
 let is_possible_incr rdb i ridx =
-  let len = Slice.get rdb.elements i in
+  let len = Vector.get rdb.elements i in
   let sup = Range.sup (fst rdb.ranges.(ridx)) in
   if len == sup then is_next_range_avail rdb ridx
   else is_range_avail rdb ridx
@@ -208,7 +219,7 @@ let possible_ucandidates rdb =
   let res = ref [] in
   let a2res x = res := x :: !res in
   for ridx = 0 to Array.length rdb.ranges - 1 do
-    Slice.iter (fun i ->
+    Vector.iter (fun i ->
       if is_possible_decr rdb i ridx then
         begin a2res (Pop i); a2res (Eject i) end;
       if is_possible_incr rdb i ridx then
@@ -222,7 +233,7 @@ let is_possible_add rdb i1 i2 ridx1 ridx2 =
   if ridx1 == ridx2 then is_next_range_avail rdb ridx1
   else
     let ridx = if ridx1 < ridx2 then ridx2 else ridx1 in
-    let len = Slice.get rdb.elements i1 + Slice.get rdb.elements i2 in
+    let len = Vector.get rdb.elements i1 + Vector.get rdb.elements i2 in
     if Range.is_in (fst rdb.ranges.(ridx)) len then is_range_avail rdb ridx
     else is_next_range_avail rdb ridx
 
@@ -232,7 +243,7 @@ let possible_bcandidates rdb =
   let a2res x = res := x :: !res in
   for ridx1 = 1 to Array.length rdb.ranges - 1 do
     for ridx2 = ridx1 to Array.length rdb.ranges - 1 do
-      Slice.iter2 (fun i1 i2 ->
+      Vector.iter2 (fun i1 i2 ->
         if i1 <= i2 && is_possible_add rdb i1 i2 ridx1 ridx2 then
           a2res (Concat (i1, i2))
       ) (snd rdb.ranges.(ridx1)) (snd rdb.ranges.(ridx2))
@@ -259,14 +270,14 @@ let raw_construct ~bins ~binhabitants  =
     let op = choose_candidate candidates in
     begin match op with
       | Push i | Inject i ->
-        let len = Slice.get rdb.elements i in
+        let len = Vector.get rdb.elements i in
         raw_add_element rdb (len + 1) i op
       | Pop i | Eject i ->
-        let len = Slice.get rdb.elements i in
+        let len = Vector.get rdb.elements i in
         raw_add_element rdb (len - 1) i op
       | Concat (i1, i2) ->
-        let len1 = Slice.get rdb.elements i1 in
-        let len2 = Slice.get rdb.elements i2 in
+        let len1 = Vector.get rdb.elements i1 in
+        let len2 = Vector.get rdb.elements i2 in
         raw_add_element rdb (len1 + len2) (max i1 i2) op
     end;
     ucandidates := possible_ucandidates rdb;

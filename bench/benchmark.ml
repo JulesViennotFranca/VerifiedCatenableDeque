@@ -271,13 +271,13 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
       pb !idx
   done;
   assert (Array.for_all Option.is_some aelements);
-  let elements = Slice.create ~size:(rdb.elements.length) ~dummy:S.empty in
-  Array.iter (fun oe -> Slice.add elements (Option.get oe)) aelements;
+  let elements = Vector.create ~size:(rdb.elements.length) ~dummy:S.empty in
+  Array.iter (fun oe -> Vector.add elements (Option.get oe)) aelements;
   {elements; ranges = rdb.ranges; traces = rdb.traces}
 
 (* =============================== benchmarks =============================== *)
 
-let with_length rdb db i = (Slice.get db.elements i, Slice.get rdb.elements i)
+let with_length rdb db i = (Vector.get db.elements i, Vector.get rdb.elements i)
 
 let bench_unary rdb db operation_name structure_name f steps =
   let datas = Array.make (Array.length db.ranges) Measure.base in
@@ -292,7 +292,7 @@ let bench_unary rdb db operation_name structure_name f steps =
       pb !idx
     in
     let s = snd db.ranges.(i) in
-    Slice.iter f s
+    Vector.iter f s
   done;
   CSV.write operation_name structure_name datas
 
@@ -316,7 +316,7 @@ let bench_binary rdb db operation_name structure_name f steps =
       in
       let s1 = snd db.ranges.(i) in
       let s2 = snd db.ranges.(j) in
-      Slice.iter2 f s1 s2
+      Vector.iter2 f s1 s2
     done;
   done;
   CSV.write operation_name structure_name datas
@@ -367,7 +367,7 @@ type a. raw_t -> a Database.t -> (module Structure with type t = a) -> unit
   done;
   assert (Array.for_all Option.is_some datas);
   let datas = Array.map (fun (_, s) ->
-    Slice.to_list s |>
+    Vector.to_list s |>
     List.map (fun i -> Option.get datas.(i)) |>
     List.map (fun d -> (Measure.get_time d, 1)) |>
     List.fold_left Measure.add Measure.base
