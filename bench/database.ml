@@ -211,10 +211,6 @@ let bin_is_full rdb b =
   let _, inhabitants = rdb.bin.(b) in
   Vector.is_full inhabitants
 
-(** Has the given range of the raw database some space available ? *)
-let bin_is_not_full rdb b =
-  not (bin_is_full rdb b)
-
 (**[is_permitted rdb len] determines whether the length [len] falls within an
    existing bin and this bin is not full. *)
 let is_permitted rdb len =
@@ -223,13 +219,11 @@ let is_permitted rdb len =
   let bound = Range.sup (fst rdb.bin.(bins - 1)) in
   len <= bound &&
   let b = find_bin rdb len in
-  bin_is_not_full rdb b
+  not (bin_is_full rdb b)
 
-(** Has the given range of the raw database some space available ? *)
-let is_next_range_avail rdb ridx =
-  ridx < Array.length rdb.bin - 1 && bin_is_not_full rdb (ridx + 1)
-
-(** Return indices of elements whose lengths permit some unary operation to be performed to obtain a new element in the raw database. *)
+(** Return the unary operations that could be performed to construct a new
+    element. An operation is permitted if the length of its result falls
+    within a valid non-full bin. *)
 let possible_ucandidates rdb : operation array =
   let candidates = ref [] in
   let retain op = candidates := op :: !candidates in
@@ -241,35 +235,29 @@ let possible_ucandidates rdb : operation array =
   done;
   Array.of_list !candidates
 
-(** Does the length of an element contained in range [ridx] in [rdb], allow for a doubling operation ? *)
-let is_possible_add rdb i1 i2 ridx1 ridx2 =
-  if ridx1 == ridx2 then is_next_range_avail rdb ridx1
-  else
-    let ridx = if ridx1 < ridx2 then ridx2 else ridx1 in
-    let len = Vector.get rdb.elements i1 + Vector.get rdb.elements i2 in
-    if Range.is_in (fst rdb.bin.(ridx)) len then bin_is_not_full rdb ridx
-    else is_next_range_avail rdb ridx
-
-(** Return indices of elements whose lengths permit some binary operation to be performed to obtain a new element in the raw database. The authorized operations are returned along the indices. *)
+(** Return the binary operations that could be performed to construct a new
+    element. An operation is permitted if the length of its result falls
+    within a valid non-full bin. *)
 let possible_bcandidates rdb =
-  let res = ref [] in
-  let a2res x = res := x :: !res in
-  for ridx1 = 1 to Array.length rdb.bin - 1 do
-    for ridx2 = ridx1 to Array.length rdb.bin - 1 do
-      Vector.iter2 (fun i1 i2 ->
-        if i1 <= i2 && is_possible_add rdb i1 i2 ridx1 ridx2 then
-          a2res (Concat (i1, i2))
-      ) (snd rdb.bin.(ridx1)) (snd rdb.bin.(ridx2))
-      done;
+  let candidates = ref [] in
+  let retain op = candidates := op :: !candidates in
+  let get i = Vector.get rdb.elements i in
+  let is_permitted op = is_permitted rdb (raw_interpret get op) in
+  let retain_if_permitted op = if is_permitted op then retain op in
+  for i1 = 0 to Vector.length rdb.elements - 1 do
+    for i2 = 0 to Vector.length rdb.elements - 1 do
+      retain_if_permitted (Concat (i1, i2))
     done;
-  Array.of_list !res
+  done;
+  Array.of_list !candidates
 
 (** Choose a candidate among several. *)
 let choose_candidate candidates =
   let len = Array.length candidates in
   candidates.(Random.int len)
 
-(** Construct randomly a raw database with [bins] bins, each of size [size]. *)
+(** Construct randomly a raw database with [bins] bins, each of which has
+    [binhabitants] inhabitants. *)
 let raw_construct ~bins ~binhabitants  =
   let rdb = raw_create ~bins ~binhabitants in
   raw_add_element rdb Empty 0;
@@ -280,9 +268,12 @@ let raw_construct ~bins ~binhabitants  =
       if Array.length !ucandidates == 0 then !bcandidates
       else if Array.length !bcandidates == 0 then !ucandidates
       else if Random.int 5 < 4 then !ucandidates else !bcandidates
+          (* if both unary and binary operations are permitted,
+             we choose a unary operation with 80% probability. *)
     in
     let op = choose_candidate candidates in
-    raw_add_element rdb op (raw_interpret (Vector.get rdb.elements) op);
+    let len = raw_interpret (Vector.get rdb.elements) op in
+    raw_add_element rdb op len;
     ucandidates := possible_ucandidates rdb;
     bcandidates := possible_bcandidates rdb
   done;

@@ -279,7 +279,8 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
 
 (* =============================== benchmarks =============================== *)
 
-let with_length rdb db i = (Vector.get db.elements i, Vector.get rdb.elements i)
+let with_length rdb db i =
+  (Vector.get db.elements i, Vector.get rdb.elements i)
 
 let bench_unary rdb db operation_name structure_name f steps =
   let datas = Array.make (Array.length db.bin) Measure.base in
