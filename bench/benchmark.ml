@@ -23,7 +23,7 @@ let () =
 let bins = 24
 
 (* This is the number of inhabitants of each bin. *)
-let binhabitants = 5
+let binhabitants = 25
 
 (* ================================= steps ================================== *)
 
