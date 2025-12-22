@@ -1,6 +1,6 @@
 (executable
   (name benchmark)
-  (modules FixedCapacityVector PriorityQueue Benchmark Measure Database)
+  (modules FixedCapacityVector Benchmark Measure Database)
   (libraries deques unix sek kot)
   (flags (:standard -w -26-32-33)))
 

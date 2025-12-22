@@ -248,38 +248,6 @@ module BKOT : Structure = struct
   let to_string s = string_of_list (to_list s)
 end
 
-(* ============================ priority queue ============================== *)
-
-module Assignment =struct
-  type t = assignment
-  let compare (j1, _op1) (j2, _op2) = Int.compare j1 j2
-end
-
-(* In OCaml 5.4 one can use this:
-module PQ = struct
-  include Pqueue.MakeMin(Assignment)
-  let add_list q xs =
-    add_iter q List.iter xs
-  let extract q =
-    Option.get (pop_min q)
-end
- *)
-
-(* To avoid a dependency on OCaml 5.4, we provide our own PriorityQueue
-   module. We let the priority queue inhabit a fixed-capacity vector. *)
-
-module V = struct
-  include Vector
-  type element = assignment
-  type vector = assignment t
-  let size = bins * binhabitants
-  let dummy = (-1, Push (-1))
-  let create() = create ~size ~dummy
-end
-
-module PQ =
-  PriorityQueue.Make(Assignment)(V)
-
 (* ================================ database ================================ *)
 
 let construct :
