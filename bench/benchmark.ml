@@ -1,3 +1,4 @@
+open Printf
 open Database
 open Measure
 
@@ -22,7 +23,7 @@ let () =
 let bins = 24
 
 (* This is the number of inhabitants of each bin. *)
-let binhabitants = 50
+let binhabitants = 5
 
 (* ================================= steps ================================== *)
 
@@ -73,9 +74,6 @@ open struct
 end
 
 (* ============================ data structures ============================= *)
-
-open Deques
-open Sek
 
 module type Structure  = sig
   type t
@@ -128,6 +126,8 @@ module BList : Structure = struct
 end
 
 module BSek : Structure = struct
+  open Sek
+
   type t = int P.t
 
   let name = "Sek"
@@ -148,6 +148,8 @@ module BSek : Structure = struct
 end
 
 module BDeque : Structure = struct
+  open Deques
+
   type t = int Deque.t
 
   let name = "Deque"
@@ -172,6 +174,8 @@ module BDeque : Structure = struct
 end
 
 module BSteque : Structure = struct
+  open Deques
+
   type t = int Steque.t
 
   let name = "Steque"
@@ -194,6 +198,8 @@ module BSteque : Structure = struct
 end
 
 module BCadeque : Structure = struct
+  open Deques
+
   type t = int Cadeque.t
 
   let name = "Cadeque"
@@ -280,21 +286,15 @@ let construct :
 type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
 = fun rdb (module S) ->
   let pb = progress_bar "Database construction" rdb.elements.length in
-  let idx = ref 1 in
   let aelements = Array.make rdb.elements.length None in
   let get i = Option.get aelements.(i)
   and set i x = aelements.(i) <- Some x
   and is_unset i = Option.is_none aelements.(i) in
-  set 0 S.empty;
-  let c = ref 0 in
-  let q = PQ.create() in
-  PQ.add_list q rdb.trace.(0);
-  while not (PQ.is_empty q) do
-    let (j, op) = PQ.extract q in
-    assert (j = !idx);
-    assert (op = rdb.history.(j));
+  let () =
+    rdb.history |> Array.iteri @@ fun j op ->
     assert (is_unset j);
-    let elem = match op with
+    let elem =
+      match op with
       | Empty -> S.empty
       | Push i -> S.push (get i)
       | Pop i -> S.pop (get i)
@@ -303,10 +303,8 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
       | Concat (i1, i2) -> S.concat (get i1) (get i2)
     in
     set j elem;
-    PQ.add_list q rdb.trace.(j);
-    idx := !idx + 1;
-    pb !idx
-  done;
+    pb j
+  in
   assert (Array.for_all Option.is_some aelements);
   let elements = Vector.create ~size:(rdb.elements.length) ~dummy:S.empty in
   Array.iter (fun oe -> Vector.push elements (Option.get oe)) aelements;
@@ -431,7 +429,7 @@ let bench rdb (module S : Structure) =
   bench_traces rdb db (module S);
   Gc.major();
   let elapsed = Unix.gettimeofday() -. start in
-  Printf.printf "%s: %.2f seconds\n" S.name elapsed;
+  printf "%s: %.2f seconds\n" S.name elapsed;
   ()
 
 let () =

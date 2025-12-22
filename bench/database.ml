@@ -234,9 +234,9 @@ let raw_create ~bins ~binhabitants =
   let elements = Vector.create ~size:population ~dummy:(-1)
   and bin = aux [] (pow2 (bins - 1))
   and trace = Trace.create population
-  and history = Array.make population (Push (-1)) in
+  and history = Array.make population Empty in
   let rdb = { elements; bin; trace; history } in
-  raw_add_element rdb (Push (-1)) 0;
+  raw_add_element rdb Empty 0;
   rdb
 
 (** Is the given range of the raw database full ? *)
