@@ -1,13 +1,25 @@
 open Database
 open Measure
 
+(* ============================= GC parameters ============================== *)
+
+(* With OCaml 5.4, setting a large minor heap size makes the benchmark about
+   3x faster and changes the slope of the "list" benchmark from approximately
+   4/3 back to approximately 1. This seems to show that (with the default heap
+   size setting) the GC cost is very high. *)
+
+let () =
+  Gc.set { (Gc.get()) with
+    minor_heap_size = 512 * (1 lsl 20) (* megabytes *);
+  }
+
 (* ========================== benchmark variables =========================== *)
 
 (* We group our data structures in bins. *)
 let bins = 21
 
 (* This is the number of inhabitants of each bin. *)
-let binhabitants = 10
+let binhabitants = 20
 
 (* ================================= steps ================================== *)
 
@@ -17,7 +29,7 @@ let binhabitants = 10
    operation is expected to be cheap then we repeat it many times; if it is
    expected to be expensive then we repeat it only a few times. *)
 
-let min_repetitions = 5
+let min_repetitions = 3
 let max_repetitions = 1000
 let trim n          = max min_repetitions (min max_repetitions n)
 
@@ -40,14 +52,14 @@ open struct
   let (/) x y = x / max 1 y
 
   (* Logarithmic-time operations. *)
-  let basis = pow2 ((bins - 1) / 2)
+  let basis = max_repetitions
   let u_logarithmic n =
     trim (basis / log2 n)
   let b_logarithmic_min n1 n2 =
     u_logarithmic (min n1 n2)
 
   (* Linear-time operations. *)
-  let basis = pow2 (bins - 1)
+  let basis = max_repetitions / 10
   let u_linear n =
     trim (basis / n)
   let b_linear_min n1 n2 =
