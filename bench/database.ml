@@ -295,6 +295,10 @@ let raw_construct ~bins ~binhabitants =
     raw_add_element rdb op len;
     tick()
   in
+  let apply_if_permitted op =
+    if is_permitted rdb op then
+      apply op
+  in
   apply Empty;
   let ucandidates = ref (possible_ucandidates rdb)
   and bcandidates = ref (possible_bcandidates rdb) in
@@ -304,20 +308,16 @@ let raw_construct ~bins ~binhabitants =
        (cubic time). To save time, we pick several candidates, which are
        likely to be independent. (They might conflict with each other only if
        the destination bin is near full.) *)
-    let k = 10 in
+    let k = 12 in
     let u = Array.length !ucandidates
     and b = Array.length !bcandidates in
     let n = u + b in
     let () =
-      if false (*  k * k <= n *) then
-        let ops =
-          (* Pick 80% of unary operations. *)
-          Array.append (sample k !ucandidates) (sample (k/4) !bcandidates)
-        in
-        Array.iter (fun op ->
-          if is_permitted rdb op then
-            apply op
-        ) ops;
+      if k <= u && k / 4 <= b then begin
+        (* Pick 80% of unary operations. *)
+        Array.iter apply_if_permitted (sample k !ucandidates);
+        Array.iter apply_if_permitted (sample (k/4) !bcandidates)
+      end
       else
         let candidates =
           if u = 0 then bcandidates
