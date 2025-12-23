@@ -271,34 +271,66 @@ let choose candidates =
   let len = Array.length candidates in
   candidates.(Random.int len)
 
-(** Choose a candidate operation among an array of unary operations
-    and an array of binary operations. *)
-let choose ucandidates bcandidates =
-  (* If either array is empty, choose from the other array. *)
-  if Array.length ucandidates == 0 then
-    choose bcandidates
-  else if Array.length bcandidates == 0 then
-    choose ucandidates
-  else
-    (* If both unary and binary operations are permitted,
-       we choose a unary operation with 80% probability. *)
-    if Random.int 5 < 4 then
-      choose ucandidates
-    else
-      choose bcandidates
+(**[sample k candidates] chooses [k] distinct elements out of the array
+   [candidates]. The length of this array must be at least [k]. The time
+   complexity of this operation is linear in [n]. *)
+let sample k candidates =
+  let n = Array.length candidates in
+  assert (k <= n);
+  let reservoir = Array.sub candidates 0 k in
+  for i = k to n-1 do
+    let j = Random.int i in
+    if j < k then
+      reservoir.(j) <- candidates.(i)
+  done;
+  reservoir
 
 (** Construct randomly a raw database with [bins] bins, each of which has
     [binhabitants] inhabitants. *)
-let raw_construct ~bins ~binhabitants  =
+let raw_construct ~bins ~binhabitants =
+  with_progress_bar "raw database" (bins * binhabitants) @@ fun tick ->
   let rdb = raw_create ~bins ~binhabitants in
-  raw_add_element rdb Empty 0;
-  let ucandidates = ref (possible_ucandidates rdb) in
-  let bcandidates = ref (possible_bcandidates rdb) in
-  while Array.length !ucandidates + Array.length !bcandidates > 0 do
-    let op = choose !ucandidates !bcandidates in
-    assert (is_permitted rdb op);
+  let apply op =
     let len = raw_interpret (Vector.get rdb.elements) op in
     raw_add_element rdb op len;
+    tick()
+  in
+  apply Empty;
+  let ucandidates = ref (possible_ucandidates rdb)
+  and bcandidates = ref (possible_bcandidates rdb) in
+  while Array.length !ucandidates + Array.length !bcandidates > 0 do
+    (* A naive algorithm picks one candidate, applies this operation, then
+       re-computes the set of all candidates. However, this is very costly
+       (cubic time). To save time, we pick several candidates, which are
+       likely to be independent. (They might conflict with each other only if
+       the destination bin is near full.) *)
+    let k = 10 in
+    let u = Array.length !ucandidates
+    and b = Array.length !bcandidates in
+    let n = u + b in
+    let () =
+      if false (*  k * k <= n *) then
+        let ops =
+          (* Pick 80% of unary operations. *)
+          Array.append (sample k !ucandidates) (sample (k/4) !bcandidates)
+        in
+        Array.iter (fun op ->
+          if is_permitted rdb op then
+            apply op
+        ) ops;
+      else
+        let candidates =
+          if u = 0 then bcandidates
+          else if b = 0 then ucandidates
+          else
+          (* If both unary and binary operations are permitted,
+             we choose a unary operation with 80% probability. *)
+          if Random.int 5 < 4 then ucandidates else bcandidates
+        in
+        let op = choose !candidates in
+        assert (is_permitted rdb op);
+        apply op
+    in
     ucandidates := possible_ucandidates rdb;
     bcandidates := possible_bcandidates rdb
   done;
