@@ -2,6 +2,55 @@ open Printf
 open Database
 open Measure
 
+(* ============================== command line ============================== *)
+
+let bins =
+  ref 13
+
+let binhabitants =
+  ref 10
+
+let minor_heap_size =
+  ref 512 (* megawords *)
+   (* 512 megawords is 4Gb *)
+
+let exclude : string list ref =
+  ref []
+
+let list () =
+  List.iter print_endline [
+    "List";
+    "Sek";
+    (* "Deque"; *)
+    (* "Steque"; *)
+    "Cadeque";
+    "KOT";
+  ];
+  exit 0
+
+let spec = Arg.align [
+  "--bins", Arg.Set_int bins,
+    sprintf "<int> Number of size bins (default: %d)" !bins;
+  "--exclude", Arg.String (fun s -> exclude := s :: !exclude),
+    sprintf "<string> Exclude this data structure";
+  "--inhabitants", Arg.Set_int binhabitants,
+    sprintf "<int> Number of inhabitants per bin (default: %d)" !binhabitants;
+  "--list", Arg.Unit list,
+    sprintf " List the known data structures and exit";
+  "--minor-heap-size", Arg.Set_int minor_heap_size,
+    sprintf "<int> Minor heap size (Mwords) (default: %d)" !minor_heap_size;
+]
+
+let anonymous arg =
+  eprintf "Error: do not know what to do with anonymous argument: %s\n%!" arg;
+  exit 1
+
+let usage =
+  sprintf "Usage: %s <options>\n" Sys.argv.(0)
+
+let () =
+  Arg.parse spec (fun _ -> ()) usage
+
 (* ============================= GC parameters ============================== *)
 
 (* With OCaml 5.4, setting a large minor heap size makes the List benchmark
@@ -13,22 +62,20 @@ open Measure
 
 let () =
   Gc.set { (Gc.get()) with
-    minor_heap_size = 512 * (1 lsl 20) (* megawords *);
-      (* 512 megawords is 4Gb *)
+    minor_heap_size = !minor_heap_size * (1 lsl 20) (* megawords *);
   }
 
 (* ========================== benchmark variables =========================== *)
 
 (* We group our data structures in bins. *)
-let bins = 24
+
+(* Although we stop benchmarking expensive operations at large sizes, we must
+   still build a "database" of data structures at all sizes, including large
+   sizes. Therefore the constant [bins] cannot be made very large. *)
+let bins = !bins
 
 (* This is the number of inhabitants of each bin. *)
-let binhabitants = 25
-
-(* This is the bin index at which we stop benchmarking linear-time
-   operations. *)
-let give_up_linear_time =
-  15
+let binhabitants = !binhabitants
 
 (* ================================= steps ================================== *)
 
@@ -74,10 +121,7 @@ open struct
   (* Linear-time operations. *)
   let basis = max_repetitions / 10
   let u_linear n =
-    if n < pow2 give_up_linear_time then
-      trim (basis / n)
-    else
-      0
+    trim (basis / n)
   let b_linear_min n1 n2 =
     u_linear (min n1 n2)
   let b_linear_fst n1 _n2 =
@@ -362,27 +406,29 @@ let bench_binary_diagonal rdb db operation_name structure_name f steps =
   CSV.write operation_name structure_name (Vector.to_array measurements)
 
 let bench rdb (module S : Structure) =
-  (* TODO: set random seed at the beginning with the time of the day *)
-  print_endline ("==================== " ^ S.name ^ " ====================");
-  let start = Unix.gettimeofday() in
-  let db = construct rdb (module S) in
-  Gc.major();
-  bench_unary rdb db "push" S.name S.push S.push_steps;
-  Gc.major();
-  bench_unary rdb db "pop" S.name S.pop S.pop_steps;
-  Gc.major();
-  bench_unary rdb db "inject" S.name S.inject S.inject_steps;
-  Gc.major();
-  bench_unary rdb db "eject" S.name S.eject S.eject_steps;
-  Gc.major();
-  if false then (* disabled; costly and difficult to visualize *)
-    bench_binary rdb db "concat" S.name S.concat S.concat_steps;
-  Gc.major();
-  bench_binary_diagonal rdb db "concat-diagonal" S.name S.concat S.concat_steps;
-  Gc.major();
-  let elapsed = Unix.gettimeofday() -. start in
-  printf "%s: %.2f seconds\n" S.name elapsed;
-  ()
+  if not (List.mem S.name !exclude) then begin
+    (* TODO: set random seed at the beginning with the time of the day *)
+    print_endline ("==================== " ^ S.name ^ " ====================");
+    let start = Unix.gettimeofday() in
+    let db = construct rdb (module S) in
+    Gc.major();
+    bench_unary rdb db "push" S.name S.push S.push_steps;
+    Gc.major();
+    bench_unary rdb db "pop" S.name S.pop S.pop_steps;
+    Gc.major();
+    bench_unary rdb db "inject" S.name S.inject S.inject_steps;
+    Gc.major();
+    bench_unary rdb db "eject" S.name S.eject S.eject_steps;
+    Gc.major();
+    if false then (* disabled; costly and difficult to visualize *)
+      bench_binary rdb db "concat" S.name S.concat S.concat_steps;
+    Gc.major();
+    bench_binary_diagonal rdb db "concat-diagonal" S.name S.concat S.concat_steps;
+    Gc.major();
+    let elapsed = Unix.gettimeofday() -. start in
+    printf "%s: %.2f seconds\n" S.name elapsed;
+    ()
+  end
 
 let construct_rdb () =
   print_endline ("==================== Raw database ====================");
@@ -395,10 +441,12 @@ let construct_rdb () =
 
 let () =
   let rdb = construct_rdb() in
-  bench rdb (module BList);
-  bench rdb (module BSek);
-  (* bench rdb (module BDeque);  *)
-  (* bench rdb (module BSteque); *)
-  bench rdb (module BCadeque);
-  bench rdb (module BKOT);
-  ()
+  let structures : (module Structure) list = [
+    (module BList);
+    (module BSek);
+    (* (module BDeque);  *)
+    (* (module BSteque); *)
+    (module BCadeque);
+    (module BKOT);
+  ] in
+  List.iter (bench rdb) structures
