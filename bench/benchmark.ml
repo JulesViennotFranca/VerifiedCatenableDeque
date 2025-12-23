@@ -266,7 +266,7 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
 = fun rdb (module S) ->
   let n = rdb.elements.length in
   let pb = progress_bar "Database construction" n in
-  let elements = Vector.create ~size:n ~dummy:S.empty in
+  let elements = Vector.create n S.empty in
   let get i = Vector.get elements i in
   let () =
     rdb.history |> Array.iteri @@ fun j op ->

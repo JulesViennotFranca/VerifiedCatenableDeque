@@ -198,10 +198,10 @@ let raw_add_element rdb op len =
 let raw_create ~bins ~binhabitants =
   let rec aux accu n = match n with
     | 0 -> Array.of_list accu
-    | _ -> aux ((Range.make (n/2) n, Vector.create ~size:binhabitants ~dummy:(-1)) :: accu) (n/2)
+    | _ -> aux ((Range.make (n/2) n, Vector.create binhabitants (-1)) :: accu) (n/2)
   in
   let population = bins * binhabitants in
-  let elements = Vector.create ~size:population ~dummy:(-1)
+  let elements = Vector.create population (-1)
   and bin = aux [] (pow2 (bins - 1))
   and history = Array.make population Empty in
   { elements; bin; history }

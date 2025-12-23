@@ -3,7 +3,7 @@
 type 'a t =
   { array : 'a array; mutable length : int }
 
-let[@inline] create ~size ~dummy =
+let[@inline] create size dummy =
   { array = Array.make size dummy; length = 0 }
 
 let[@inline] length v =
@@ -47,6 +47,9 @@ let[@inline] iter2 f v1 v2 =
       f v1.array.(i) v2.array.(j)
     done;
   done
+
+let[@inline] to_array v =
+  Array.init v.length (get v)
 
 let[@inline] to_list v =
   List.init v.length (get v)
