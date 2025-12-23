@@ -383,8 +383,16 @@ let bench rdb (module S : Structure) =
   printf "%s: %.2f seconds\n" S.name elapsed;
   ()
 
-let () =
+let construct_rdb () =
+  print_endline ("==================== Raw database ====================");
+  let start = Unix.gettimeofday() in
   let rdb = raw_construct ~bins ~binhabitants in
+  let elapsed = Unix.gettimeofday() -. start in
+  printf "Raw database: %.2f seconds\n" elapsed;
+  rdb
+
+let () =
+  let rdb = construct_rdb() in
   bench rdb (module BList);
   bench rdb (module BSek);
   (* bench rdb (module BDeque);  *)
