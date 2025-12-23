@@ -375,7 +375,8 @@ let bench rdb (module S : Structure) =
   Gc.major();
   bench_unary rdb db "eject" S.name S.eject S.eject_steps;
   Gc.major();
-  bench_binary rdb db "concat" S.name S.concat S.concat_steps;
+  if false then (* disabled; costly and difficult to visualize *)
+    bench_binary rdb db "concat" S.name S.concat S.concat_steps;
   Gc.major();
   bench_binary_diagonal rdb db "concat-diagonal" S.name S.concat S.concat_steps;
   Gc.major();
