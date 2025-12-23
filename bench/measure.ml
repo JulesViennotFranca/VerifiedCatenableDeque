@@ -66,17 +66,13 @@ module CSV = struct
 
   (** Writing measurements to disk in a [.csv] file. *)
   let write operation_name structure_name (measurements : t array) =
-    (* Create the data directory if it does not exist. *)
     if not (Sys.file_exists csvdir) then Sys.mkdir csvdir 0o755;
-    (* Write data lines. *)
-    let write_measurements oc measurements =
-      measurements |> Array.iter @@ fun m ->
-      fprintf oc "%s\n" (to_string_data m)
-    in
     let file = sprintf "%s/%s-%s.csv" csvdir structure_name operation_name in
     let oc = open_out file in
     fprintf oc "%s\n" (to_string_label structure_name);
-    write_measurements oc measurements;
+    Array.iter (fun m ->
+      fprintf oc "%s\n" (to_string_data m)
+    ) measurements;
     close_out oc
 
 end

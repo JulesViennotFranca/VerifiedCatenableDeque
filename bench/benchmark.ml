@@ -25,6 +25,11 @@ let bins = 24
 (* This is the number of inhabitants of each bin. *)
 let binhabitants = 25
 
+(* This is the bin index at which we stop benchmarking linear-time
+   operations. *)
+let give_up_linear_time =
+  15
+
 (* ================================= steps ================================== *)
 
 (* When measuring the cost of an operation, we repeat this operation several
@@ -32,6 +37,10 @@ let binhabitants = 25
    should be repeated depends on the predicted cost of this operation. If the
    operation is expected to be cheap then we repeat it many times; if it is
    expected to be expensive then we repeat it only a few times. *)
+
+(* A unary (binary) step function receives one (two) length(s) and determines
+   how many times an operation should be repeated. It can return 0 to indicate
+   that the operation should not be performed at all. *)
 
 let min_repetitions = 3
 let max_repetitions = 1000
@@ -65,7 +74,10 @@ open struct
   (* Linear-time operations. *)
   let basis = max_repetitions / 10
   let u_linear n =
-    trim (basis / n)
+    if n < pow2 give_up_linear_time then
+      trim (basis / n)
+    else
+      0
   let b_linear_min n1 n2 =
     u_linear (min n1 n2)
   let b_linear_fst n1 _n2 =
@@ -324,7 +336,7 @@ let bench_binary rdb db operation_name structure_name f steps =
       let s2 = snd db.bin.(j) in
       Vector.iter2 f s1 s2;
       Vector.push measurements !m
-    done;
+    done
   done;
   CSV.write operation_name structure_name (Vector.to_array measurements)
 

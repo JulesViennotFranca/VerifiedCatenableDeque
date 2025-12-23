@@ -50,6 +50,9 @@ let postincrement r =
   r := !r + 1;
   !r
 
+(* [with_progress_bar title maxN yield] creates a progress bar with title
+   [title] and maximum value [maxN] and applies [yield] to a function [tick]
+   which increments the value of the progress bar by one. *)
 let with_progress_bar title maxN yield =
   let pb = progress_bar title maxN in
   let c = ref 0 in
