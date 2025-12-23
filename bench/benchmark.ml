@@ -290,14 +290,12 @@ let bench_unary rdb db operation_name structure_name f steps =
   let measurements = Vector.create bins Measure.base in
   let f = Measure.wrap_uop f steps in
   let n = db.elements.length in
-  let pb = progress_bar operation_name n in
-  let idx = ref 0 in
+  with_progress_bar operation_name n @@ fun tick ->
   for i = 0 to bins - 1 do
     let m = ref Measure.base in
     let f ix =
       m += f (with_length rdb db ix);
-      idx := !idx + 1;
-      pb !idx
+      tick()
     in
     let _, inhabitants = db.bin.(i) in
     Vector.iter f inhabitants;
@@ -310,8 +308,7 @@ let bench_binary rdb db operation_name structure_name f steps =
   let measurements = Vector.create (bins * bins) Measure.base in
   let f = Measure.wrap_bop f steps in
   let n = db.elements.length in
-  let pb = progress_bar operation_name (n * n) in
-  let idx = ref 0 in
+  with_progress_bar operation_name (n * n) @@ fun tick ->
   for i = 0 to bins - 1 do
     for j = 0 to bins - 1 do
       let m = ref Measure.base in
@@ -321,8 +318,7 @@ let bench_binary rdb db operation_name structure_name f steps =
           let y = with_length rdb db iy in
           m += f x y
         end;
-        idx := !idx + 1;
-        pb !idx
+        tick()
       in
       let s1 = snd db.bin.(i) in
       let s2 = snd db.bin.(j) in
@@ -337,8 +333,7 @@ let bench_binary_diagonal rdb db operation_name structure_name f steps =
   let measurements = Vector.create bins Measure.base in
   let f = Measure.wrap_bop f steps in
   let n = db.elements.length in
-  let pb = progress_bar operation_name n in
-  let idx = ref 0 in
+  with_progress_bar operation_name n @@ fun tick ->
   for i = 0 to bins - 1 do
     let j = i in
     let m = ref Measure.base in
@@ -346,8 +341,7 @@ let bench_binary_diagonal rdb db operation_name structure_name f steps =
       let x = with_length rdb db ix in
       let y = with_length rdb db iy in
       m += f x y;
-      idx := !idx + 1;
-      pb !idx
+      tick()
     in
     let _, inhabitants = db.bin.(i) in
     Vector.iter2 f inhabitants inhabitants;

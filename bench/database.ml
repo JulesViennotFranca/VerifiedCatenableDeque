@@ -46,6 +46,16 @@ let progress_bar title maxN =
       end
     end
 
+let postincrement r =
+  r := !r + 1;
+  !r
+
+let with_progress_bar title maxN yield =
+  let pb = progress_bar title maxN in
+  let c = ref 0 in
+  let tick () = pb (postincrement c) in
+  yield tick
+
 (* ================================= ranges ================================= *)
 
 (* A range represents an interval [a, b). *)
