@@ -234,15 +234,19 @@ let is_permitted rdb len =
   let b = find_bin rdb len in
   not (bin_is_full rdb b)
 
+(**[is_permitted rdb top] determines whether the opereation [op] is permitted,
+   by applying [is_permitted rdb len] to the result length of this operation. *)
+let is_permitted rdb op =
+  let get i = Vector.get rdb.elements i in
+  is_permitted rdb (raw_interpret get op)
+
 (** Return the unary operations that could be performed to construct a new
     element. An operation is permitted if the length of its result falls
     within a valid non-full bin. *)
 let possible_ucandidates rdb : operation array =
   let candidates = ref [] in
   let retain op = candidates := op :: !candidates in
-  let get i = Vector.get rdb.elements i in
-  let is_permitted op = is_permitted rdb (raw_interpret get op) in
-  let retain_if_permitted op = if is_permitted op then retain op in
+  let retain_if_permitted op = if is_permitted rdb op then retain op in
   for j = 0 to Vector.length rdb.elements - 1 do
     List.iter retain_if_permitted [Pop j; Eject j; Push j; Inject j]
   done;
@@ -254,9 +258,7 @@ let possible_ucandidates rdb : operation array =
 let possible_bcandidates rdb =
   let candidates = ref [] in
   let retain op = candidates := op :: !candidates in
-  let get i = Vector.get rdb.elements i in
-  let is_permitted op = is_permitted rdb (raw_interpret get op) in
-  let retain_if_permitted op = if is_permitted op then retain op in
+  let retain_if_permitted op = if is_permitted rdb op then retain op in
   for i1 = 0 to Vector.length rdb.elements - 1 do
     for i2 = 0 to Vector.length rdb.elements - 1 do
       retain_if_permitted (Concat (i1, i2))
@@ -264,10 +266,26 @@ let possible_bcandidates rdb =
   done;
   Array.of_list !candidates
 
-(** Choose a candidate among several. *)
-let choose_candidate candidates =
+(** Choose a candidate among an array of candidates. *)
+let choose candidates =
   let len = Array.length candidates in
   candidates.(Random.int len)
+
+(** Choose a candidate operation among an array of unary operations
+    and an array of binary operations. *)
+let choose ucandidates bcandidates =
+  (* If either array is empty, choose from the other array. *)
+  if Array.length ucandidates == 0 then
+    choose bcandidates
+  else if Array.length bcandidates == 0 then
+    choose ucandidates
+  else
+    (* If both unary and binary operations are permitted,
+       we choose a unary operation with 80% probability. *)
+    if Random.int 5 < 4 then
+      choose ucandidates
+    else
+      choose bcandidates
 
 (** Construct randomly a raw database with [bins] bins, each of which has
     [binhabitants] inhabitants. *)
@@ -277,14 +295,8 @@ let raw_construct ~bins ~binhabitants  =
   let ucandidates = ref (possible_ucandidates rdb) in
   let bcandidates = ref (possible_bcandidates rdb) in
   while Array.length !ucandidates + Array.length !bcandidates > 0 do
-    let candidates =
-      if Array.length !ucandidates == 0 then !bcandidates
-      else if Array.length !bcandidates == 0 then !ucandidates
-      else if Random.int 5 < 4 then !ucandidates else !bcandidates
-          (* if both unary and binary operations are permitted,
-             we choose a unary operation with 80% probability. *)
-    in
-    let op = choose_candidate candidates in
+    let op = choose !ucandidates !bcandidates in
+    assert (is_permitted rdb op);
     let len = raw_interpret (Vector.get rdb.elements) op in
     raw_add_element rdb op len;
     ucandidates := possible_ucandidates rdb;
