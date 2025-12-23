@@ -285,6 +285,15 @@ let sample k candidates =
   done;
   reservoir
 
+(* round up to nearest multiple of 4 *)
+let round4 k =
+  match k mod 4 with
+  | 0 -> k
+  | 1 -> k+3
+  | 2 -> k+2
+  | 3 -> k+1
+  | _ -> assert false
+
 (** Construct randomly a raw database with [bins] bins, each of which has
     [binhabitants] inhabitants. *)
 let raw_construct ~bins ~binhabitants =
@@ -308,12 +317,11 @@ let raw_construct ~bins ~binhabitants =
        (cubic time). To save time, we pick several candidates, which are
        likely to be independent. (They might conflict with each other only if
        the destination bin is near full.) *)
-    let k = 12 in
     let u = Array.length !ucandidates
     and b = Array.length !bcandidates in
-    let n = u + b in
     let () =
-      if k <= u && k / 4 <= b then begin
+      let k = round4 (min (u / 4) b) in
+      if k / 4 >= 1 then begin
         (* Pick 80% of unary operations. *)
         Array.iter apply_if_permitted (sample k !ucandidates);
         Array.iter apply_if_permitted (sample (k/4) !bcandidates)
