@@ -282,72 +282,78 @@ type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
 let with_length rdb db i =
   (Vector.get db.elements i, Vector.get rdb.elements i)
 
+let (+=) (sum : Measure.t ref) (m : Measure.t) =
+  sum := Measure.add !sum (Measure.format m)
+
 let bench_unary rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
-  let measurements = Array.make bins Measure.base in
+  let measurements = Vector.create bins Measure.base in
   let f = Measure.wrap_uop f steps in
   let n = db.elements.length in
   let pb = progress_bar operation_name n in
   let idx = ref 0 in
   for i = 0 to bins - 1 do
+    let m = ref Measure.base in
     let f ix =
-      measurements.(i) <- Measure.add measurements.(i)
-        (Measure.format (f (with_length rdb db ix)));
+      m += f (with_length rdb db ix);
       idx := !idx + 1;
       pb !idx
     in
     let _, inhabitants = db.bin.(i) in
-    Vector.iter f inhabitants
+    Vector.iter f inhabitants;
+    Vector.push measurements !m
   done;
-  CSV.write operation_name structure_name measurements
+  CSV.write operation_name structure_name (Vector.to_array measurements)
 
 let bench_binary rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
-  let datas = Array.make (bins * bins) Measure.base in
+  let measurements = Vector.create (bins * bins) Measure.base in
   let f = Measure.wrap_bop f steps in
   let n = db.elements.length in
   let pb = progress_bar operation_name (n * n) in
   let idx = ref 0 in
   for i = 0 to bins - 1 do
     for j = 0 to bins - 1 do
-      let k = i * bins + j in
+      let m = ref Measure.base in
       let f ix iy =
         if Random.int (bins * bins) < bins then begin
           let x = with_length rdb db ix in
           let y = with_length rdb db iy in
-          datas.(k) <- Measure.add datas.(k) (Measure.format (f x y))
+          m += f x y
         end;
         idx := !idx + 1;
         pb !idx
       in
       let s1 = snd db.bin.(i) in
       let s2 = snd db.bin.(j) in
-      Vector.iter2 f s1 s2
+      Vector.iter2 f s1 s2;
+      Vector.push measurements !m
     done;
   done;
-  CSV.write operation_name structure_name datas
+  CSV.write operation_name structure_name (Vector.to_array measurements)
 
 let bench_binary_diagonal rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
-  let datas = Array.make bins Measure.base in
+  let measurements = Vector.create bins Measure.base in
   let f = Measure.wrap_bop f steps in
   let n = db.elements.length in
   let pb = progress_bar operation_name n in
   let idx = ref 0 in
   for i = 0 to bins - 1 do
     let j = i in
-    let k = i in
+    let m = ref Measure.base in
     let f ix iy =
       let x = with_length rdb db ix in
       let y = with_length rdb db iy in
-      datas.(k) <- Measure.add datas.(k) (Measure.format (f x y));
+      m += f x y;
       idx := !idx + 1;
       pb !idx
     in
     let _, inhabitants = db.bin.(i) in
-    Vector.iter2 f inhabitants inhabitants
+    Vector.iter2 f inhabitants inhabitants;
+    Vector.push measurements !m
   done;
-  CSV.write operation_name structure_name datas
+  CSV.write operation_name structure_name (Vector.to_array measurements)
 
 let bench rdb (module S : Structure) =
   (* TODO: set random seed at the beginning with the time of the day *)
