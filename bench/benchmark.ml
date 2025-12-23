@@ -390,6 +390,7 @@ let construct_rdb () =
   let rdb = raw_construct ~bins ~binhabitants in
   let elapsed = Unix.gettimeofday() -. start in
   printf "Raw database: %.2f seconds\n" elapsed;
+  printf "Number of elements: %d\n" (Vector.length rdb.elements);
   rdb
 
 let () =
