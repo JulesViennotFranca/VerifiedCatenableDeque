@@ -14,25 +14,25 @@ let minor_heap_size =
   ref 512 (* megawords *)
    (* 512 megawords is 4Gb *)
 
-let exclude : string list ref =
+let subjects : string list ref =
   ref []
 
+let known = [
+  "List";
+  "Sek";
+  "Deque";
+  "Steque";
+  "Cadeque";
+  "KOT";
+]
+
 let list () =
-  List.iter print_endline [
-    "List";
-    "Sek";
-    (* "Deque"; *)
-    (* "Steque"; *)
-    "Cadeque";
-    "KOT";
-  ];
+  List.iter print_endline known;
   exit 0
 
 let spec = Arg.align [
   "--bins", Arg.Set_int bins,
     sprintf "<int> Number of size bins (default: %d)" !bins;
-  "--exclude", Arg.String (fun s -> exclude := s :: !exclude),
-    sprintf "<string> Exclude this data structure";
   "--inhabitants", Arg.Set_int binhabitants,
     sprintf "<int> Number of inhabitants per bin (default: %d)" !binhabitants;
   "--list", Arg.Unit list,
@@ -41,15 +41,19 @@ let spec = Arg.align [
     sprintf "<int> Minor heap size (Mwords) (default: %d)" !minor_heap_size;
 ]
 
-let anonymous arg =
-  eprintf "Error: do not know what to do with anonymous argument: %s\n%!" arg;
-  exit 1
+let anonymous s =
+  if List.mem s known then
+    subjects := s :: !subjects
+  else begin
+    eprintf "Error: do not know what to do with '%s'.\n%!" s;
+    exit 1
+  end
 
 let usage =
   sprintf "Usage: %s <options>\n" Sys.argv.(0)
 
 let () =
-  Arg.parse spec (fun _ -> ()) usage
+  Arg.parse spec anonymous usage
 
 (* ============================= GC parameters ============================== *)
 
@@ -406,7 +410,7 @@ let bench_binary_diagonal rdb db operation_name structure_name f steps =
   CSV.write operation_name structure_name (Vector.to_array measurements)
 
 let bench rdb (module S : Structure) =
-  if not (List.mem S.name !exclude) then begin
+  if List.mem S.name !subjects then begin
     (* TODO: set random seed at the beginning with the time of the day *)
     print_endline ("==================== " ^ S.name ^ " ====================");
     let start = Unix.gettimeofday() in
@@ -444,8 +448,8 @@ let () =
   let structures : (module Structure) list = [
     (module BList);
     (module BSek);
-    (* (module BDeque);  *)
-    (* (module BSteque); *)
+    (module BDeque);
+    (module BSteque);
     (module BCadeque);
     (module BKOT);
   ] in
