@@ -24,7 +24,7 @@ module Data = struct
   (** The base data point [(0., 0)]. *)
   let base = (0., 0)
 
-  (** Change the time of a data point from secondes to micro-secondes. *)
+  (** Change the time of a data point from seconds to microseconds. *)
   let to_mus (f, n) = (1_000_000. *. f, n)
 
   (** Add two data points together. *)
@@ -36,39 +36,39 @@ end
 
 let pos_length len = max 1 len
 
-(** The steps functions for unary operations of constant complexity. *)
+(** The step function for unary operations of constant complexity. *)
 let uconstant_steps max_steps _ = max_steps
 
-(** The steps function for unary operations of linear complexity. *)
+(** The step function for unary operations of linear complexity. *)
 let ulinear_steps max_steps len1 = max_steps / (pos_length len1)
 
-(** The steps function for binary operations of constant complexity. *)
+(** The step function for binary operations of constant complexity. *)
 let bconstant_steps max_steps _ _ = max_steps
 
-(** The steps function for binary operations of squared logarithmic complexity
-    in the sum of the length of the two arguments. *)
+(** The step function for binary operations of squared logarithmic complexity
+    in the sum of the lengths of the two arguments. *)
 let blogsum_steps max_steps len1 len2 = int_of_float (
     float_of_int max_steps *. log 2. /.
     (log (float_of_int (pos_length len1 + pos_length len2)) ** 2.)
   )
 
-(** The steps function for binary operations of linear complexity in the
-    structure of minimum lenght. *)
+(** The step function for binary operations of linear complexity in the
+    structure of minimum length. *)
 let blinearmin_steps max_steps len1 len2 =
   max_steps / min (pos_length len1) (pos_length len2)
 
-(** The steps function for binary operations of linear complexity in the
+(** The step function for binary operations of linear complexity in the
     first structure. *)
 let blinearfst_steps max_steps len1 _ = max_steps / (pos_length len1)
 
 (* ================================ measure ================================= *)
 
-(** Wrap an unary opration on structures to measure its execution time.
+(** Wrap a unary operation on structures to measure its execution time.
     [wrap_uop f f_steps] returns a new function computing data points
     corresponding to executions of [f]. This new function takes a pair
-    [(s, len)] as argument where [s] is a structure, and [len] its length.
+    [(s, len)] as argument where [s] is a structure, and [len] is its length.
     Based on [len], [f_steps] computes the number of times [f] is applied on [s]
-    to obtain a new data point.  *)
+    to obtain a new data point. *)
 let wrap_uop f f_steps (s, len) =
   try
     let steps = f_steps len in
@@ -80,13 +80,13 @@ let wrap_uop f f_steps (s, len) =
     (t2 -. t1, steps)
   with _ -> (0., 0)
 
-(** Wrap an binary opration on structures to measure its execution time.
+(** Wrap a binary operation on structures to measure its execution time.
     [wrap_bop f f_steps] returns a new function computing data points
     corresponding to executions of [f]. This new function takes two pairs
     [(s1, len1)] and [(s2, len2)] as arguments where [s1] and [s2] are
-    structures, and [len1] and [len2] their corresponding lengths. Based on
+    structures, and [len1] and [len2] are their corresponding lengths. Based on
     [len1] and [len2], [f_steps] computes the number of times [f] is applied on
-    [s1] and [s2] to obtain a new data point.  *)
+    [s1] and [s2] to obtain a new data point. *)
 let wrap_bop f steps (s1, len1) (s2, len2) =
   try
     let steps = steps len1 len2 in
@@ -103,7 +103,7 @@ let wrap_bop f steps (s1, len1) (s2, len2) =
 (** Module providing some CSV files support. *)
 module CSV = struct
 
-  (** Return the csv labels associated to a structure. *)
+  (** Return the CSV labels associated with a structure. *)
   let to_string_label lbl = sprintf "%sT,%sN" lbl lbl
 
   (** Remove the last character of a string. *)
@@ -148,7 +148,7 @@ module CSV = struct
       let datas = aux (List.map (Fun.const []) labels) lines in
       List.map2 (fun l d -> (l, d)) labels datas
     in
-    (* Make an hashtbl of data values. *)
+    (* Make a hashtbl of data values. *)
     let make_hashtbl datas =
       let res = Hashtbl.create (List.length datas) in
       List.iter (fun (l, d) -> Hashtbl.add res l d) datas;
@@ -215,7 +215,7 @@ module CSV = struct
     let add_data_structure (names, datas) (name, data) =
       (name :: names, List.map2 List.cons (Array.to_list data) datas)
     in
-    (* Write an operation datas. *)
+    (* Write an operation's data. *)
     let write_operation name datas =
       let file = "bench/tmp/" ^ name ^ ".csv" in
       let oc = open_out file in

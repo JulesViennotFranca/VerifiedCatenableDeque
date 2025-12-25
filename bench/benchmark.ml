@@ -145,7 +145,7 @@ module type Structure  = sig
   (** The name of the data structure. *)
   val name : string
 
-  (* The empty structure, operations and corresponding steps functions are
+  (* The empty structure, operations, and corresponding step functions are
      given. *)
 
   val empty : t
@@ -337,7 +337,7 @@ type a. (module Structure with type t = a) -> (var -> a) -> operation -> a
   | Eject i -> S.eject (get i)
   | Concat (i1, i2) -> S.concat (get i1) (get i2)
 
-(** Construct a database containing structures and their length from a raw
+(** Construct a database containing structures and their lengths from a raw
     database and a structure module. *)
 let construct :
 type a.
@@ -364,11 +364,11 @@ let with_length rdb db i =
 let (+=) (sum : Data.t ref) (m : Data.t) =
   sum := Data.add !sum (Data.to_mus m)
 
-(** Perform the benchmarks for an unary operation on a database.
+(** Perform the benchmarks for a unary operation on a database.
 
     For each structure in the database, the unary operation is performed a
-    certain number of times, and the time it took to iteratevely call the unary
-    operation on the structure is saved. The results are summed for each groups
+    certain number of times, and the time it took to iteratively call the unary
+    operation on the structure is saved. The results are summed for each bin
     of the database to reduce the number of data points. *)
 let bench_unary rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
@@ -390,10 +390,10 @@ let bench_unary rdb db operation_name structure_name f steps =
 
 (** Perform the benchmarks for a binary operation on a database.
 
-    For each pair of a random subset of pairs of structures in the database,
-    the binary operation is performed a certain number of times, and the time
-    it took to iteratevely call the binary operation on the pair. The results
-    are summed for each pair of groups of the database to reduce the number of
+    For a random subset of pairs of structures in the database, the binary
+    operation is performed a certain number of times, and the time it took to
+    iteratively call the binary operation on each pair is saved. The results
+    are summed for each pair of bins of the database to reduce the number of
     data points. *)
 let bench_binary rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
@@ -420,13 +420,13 @@ let bench_binary rdb db operation_name structure_name f steps =
   done;
   CSV.write operation_name structure_name (Vector.to_array measurements)
 
-(** Perform the benchmarks for a binary operation on a database.
+(** Perform the benchmarks for a binary operation on a database (diagonal case).
 
-    For each pair of a random subset of pairs of structures in the database,
-    the binary operation is performed a certain number of times, and the time
-    it took to iteratevely call the binary operation on the pair. The results
-    are summed for each pair of groups of the database to reduce the number of
-    data points. *)
+    For each pair of structures from the same bin (diagonal of the bins matrix),
+    the binary operation is performed a certain number of times, and the time it
+    took to iteratively call the binary operation on each pair is saved. The
+    results are summed for each bin of the database to reduce the number of data
+    points. *)
 let bench_binary_diagonal rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
   let measurements = Vector.create bins Data.base in

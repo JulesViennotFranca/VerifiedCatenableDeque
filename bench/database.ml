@@ -15,7 +15,7 @@ let pow2 n =
   else
     failwith (sprintf "Cannot compute 2^%d" n)
 
-(**[log2 n] is the base 2 logarithm of [n]. *)
+(** [log2 n] is the base 2 logarithm of [n]. *)
 let rec log2 accu n =
   if n <= 1 then accu else log2 (accu + 1) (n / 2)
 let log2 n =
@@ -161,8 +161,8 @@ let show_history h =
     A database keeps track of a histogram of elements based on their length.
     Structures are divided into n bins, each holding m elements of similar
     length. The i-th bin stores elements whose lengths fall within the range
-    (2^(i-1), 2^i) (with the exception of the 0-th group, which only stores the
-    empty structure). The bins ranges form a partition of the interval of
+    [2^(i-1), 2^i)] (with the exception of the 0-th bin, which only stores the
+    empty structure). The bin ranges form a partition of the interval of
     permitted lengths. *)
 type 'a t = {
 
@@ -207,9 +207,9 @@ let string_of_database db string_of_a =
         String.concat ", " (List.map show_var (Vector.to_list s))
     ) (Array.to_list db.bin))
 
-(**[find_bin rdb len] translates the length [len] to a bin index.
-   That is, it finds out in which bin the length [len] falls.
-   We assume that [len] does fall within an existing bin. *)
+(** [find_bin rdb len] translates the length [len] to a bin index.
+    That is, it finds out in which bin the length [len] falls.
+    We assume that [len] does fall within an existing bin. *)
 let find_bin rdb len =
   (* Linear search is used, as performance is not critical here. *)
   let b = ref 0 in
@@ -231,8 +231,8 @@ let raw_add_element rdb op len =
   Vector.push bin_inhabitants i;
   rdb.history.(i) <- op
 
-(**[raw_create ~bins ~binhabitants] creates a raw database where the number of
-   bins is [bins] and the number of inhabitants per bin is [binhabitants]. *)
+(** [raw_create ~bins ~binhabitants] creates a raw database where the number of
+    bins is [bins] and the number of inhabitants per bin is [binhabitants]. *)
 let raw_create ~bins ~binhabitants =
   let rec aux accu n = match n with
     | 0 -> Array.of_list accu
@@ -244,13 +244,13 @@ let raw_create ~bins ~binhabitants =
   and history = Array.make population Empty in
   { elements; bin; history }
 
-(** Is the given range of the raw database full ? *)
+(** Is the given bin of the raw database full? *)
 let bin_is_full rdb b =
   let _, inhabitants = rdb.bin.(b) in
   Vector.is_full inhabitants
 
-(**[is_permitted rdb len] determines whether the length [len] falls within an
-   existing bin and this bin is not full. *)
+(** [is_permitted rdb len] determines whether the length [len] falls within an
+    existing bin and this bin is not full. *)
 let is_permitted rdb len =
   0 <= len &&
   let bins = Array.length rdb.bin in
@@ -259,8 +259,9 @@ let is_permitted rdb len =
   let b = find_bin rdb len in
   not (bin_is_full rdb b)
 
-(**[is_permitted rdb top] determines whether the opereation [op] is permitted,
-   by applying [is_permitted rdb len] to the result length of this operation. *)
+(** [is_permitted rdb op] determines whether the operation [op] is permitted,
+    by applying [is_permitted rdb len] to the result length of this
+    operation. *)
 let is_permitted rdb op =
   let get i = Vector.get rdb.elements i in
   is_permitted rdb (raw_interpret get op)
@@ -296,9 +297,9 @@ let choose candidates =
   let len = Array.length candidates in
   candidates.(Random.int len)
 
-(**[sample k candidates] chooses [k] distinct elements out of the array
-   [candidates]. The length of this array must be at least [k]. The time
-   complexity of this operation is linear in [n]. *)
+(** [sample k candidates] chooses [k] distinct elements out of the array
+    [candidates]. The length of this array must be at least [k]. The time
+    complexity of this operation is linear in the length of [candidates]. *)
 let sample k candidates =
   let n = Array.length candidates in
   assert (k <= n);
@@ -310,7 +311,7 @@ let sample k candidates =
   done;
   reservoir
 
-(* round up to nearest multiple of 4 *)
+(** Round up to the nearest multiple of 4. *)
 let round4 k =
   match k mod 4 with
   | 0 -> k
