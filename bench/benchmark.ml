@@ -341,7 +341,7 @@ type a. (module Structure with type t = a) -> (var -> a) -> operation -> a
     database and a structure module. *)
 let construct :
 type a.
-  Database.raw_t -> (module Structure with type t = a) -> (a * int) Database.t
+  Database.raw_t -> (module Structure with type t = a) -> a Database.t
 = fun rdb (module S) ->
   let n = rdb.elements.length in
   let pb = progress_bar "Database construction" n in
@@ -361,8 +361,8 @@ type a.
 let with_length rdb db i =
   (Vector.get db.elements i, Vector.get rdb.elements i)
 
-let (+=) (sum : Measure.t ref) (m : Measure.t) =
-  sum := Measure.add !sum (Measure.format m)
+let (+=) (sum : Data.t ref) (m : Data.t) =
+  sum := Data.add !sum (Data.to_mus m)
 
 (** Perform the benchmarks for an unary operation on a database.
 
@@ -372,12 +372,12 @@ let (+=) (sum : Measure.t ref) (m : Measure.t) =
     of the database to reduce the number of data points. *)
 let bench_unary rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
-  let measurements = Vector.create bins Measure.base in
+  let measurements = Vector.create bins Data.base in
   let f = Measure.wrap_uop f steps in
   let n = db.elements.length in
   with_progress_bar operation_name n @@ fun tick ->
   for i = 0 to bins - 1 do
-    let m = ref Measure.base in
+    let m = ref Data.base in
     let f ix =
       m += f (with_length rdb db ix);
       tick()
@@ -397,13 +397,13 @@ let bench_unary rdb db operation_name structure_name f steps =
     data points. *)
 let bench_binary rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
-  let measurements = Vector.create (bins * bins) Measure.base in
+  let measurements = Vector.create (bins * bins) Data.base in
   let f = Measure.wrap_bop f steps in
   let n = db.elements.length in
   with_progress_bar operation_name (n * n) @@ fun tick ->
   for i = 0 to bins - 1 do
     for j = 0 to bins - 1 do
-      let m = ref Measure.base in
+      let m = ref Data.base in
       let f ix iy =
         if Random.int (bins * bins) < bins then begin
           let x = with_length rdb db ix in
@@ -429,13 +429,13 @@ let bench_binary rdb db operation_name structure_name f steps =
     data points. *)
 let bench_binary_diagonal rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
-  let measurements = Vector.create bins Measure.base in
+  let measurements = Vector.create bins Data.base in
   let f = Measure.wrap_bop f steps in
   let n = db.elements.length in
   with_progress_bar operation_name n @@ fun tick ->
   for i = 0 to bins - 1 do
     let j = i in
-    let m = ref Measure.base in
+    let m = ref Data.base in
     let f ix iy =
       let x = with_length rdb db ix in
       let y = with_length rdb db iy in

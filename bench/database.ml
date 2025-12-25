@@ -205,7 +205,7 @@ let string_of_database db string_of_a =
     List.map (fun (r, s) ->
       Range.to_string r ^ " " ^
         String.concat ", " (List.map show_var (Vector.to_list s))
-    ) (Array.to_list db.bin)
+    ) (Array.to_list db.bin))
 
 (**[find_bin rdb len] translates the length [len] to a bin index.
    That is, it finds out in which bin the length [len] falls.
@@ -287,105 +287,6 @@ let possible_bcandidates rdb =
   for i1 = 0 to Vector.length rdb.elements - 1 do
     for i2 = 0 to Vector.length rdb.elements - 1 do
       retain_if_permitted (Concat (i1, i2))
-
-(* === *)
-
-(** [raw_add_length rdb len p op] adds [len] to the raw database [rdb]. [len]
-    is the length of a structure obtained by applying [op] on a structure whose
-    size is stored at the index [p] in [rdb]. *)
-let raw_add_length rdb len p op =
-  assert (not (Slice.is_full rdb.structures));
-  let idx = rdb.structures.length in
-  let gidx = ref 0 in
-  while not (Range.is_in (fst rdb.groups.(!gidx)) len) do
-    gidx := !gidx + 1
-  done;
-  Slice.add rdb.structures len;
-  Slice.add (snd rdb.groups.(!gidx)) idx;
-  Traces.save rdb.traces p op idx
-
-(** Create a raw database with only the length of the empty structure stored. *)
-let raw_create ~buffers ~size =
-  (* The groups of the raw database have powers of two as bounds for their
-     ranges. *)
-  let rec aux accu n = match n with
-    | 0 -> Array.of_list accu
-    | _ -> aux ((Range.make (n/2) n, Slice.create size) :: accu) (n/2)
-  in
-  let groups = aux [] (pow2 (buffers - 1)) in
-  let rdb = {
-    structures = Slice.create (buffers * size) ;
-    groups = groups ;
-    traces = Traces.create (buffers * size) ;
-  } in
-  (* The length 0 corresponding to the empty structure is added to the
-     database. *)
-  raw_add_length rdb 0 (-1) (Push (-1));
-  rdb
-
-(** Does the given group of the raw database have some space available ? *)
-let is_group_avail rdb gidx = not (Slice.is_full (snd rdb.groups.(gidx)))
-
-(** Does the group of the raw database following the given one have some space
-    available ? *)
-let is_next_group_avail rdb gidx =
-  gidx < Array.length rdb.groups - 1 && is_group_avail rdb (gidx + 1)
-
-(** Does the length of a structure stored at index [i] in [rdb], contained in
-    the group [gidx], allow for a decreasing operation ? *)
-let is_possible_decr rdb i gidx =
-  (gidx <> 0) && (
-    let len = Slice.get rdb.structures i in
-    let inf = Range.inf (fst rdb.groups.(gidx)) in
-    if inf == len then is_group_avail rdb (gidx - 1)
-    else is_group_avail rdb gidx
-  )
-
-(** Does the length of a structure stored at index [i] in [rdb], contained in
-    the group [gidx], allow for an increasing operation ? *)
-let is_possible_incr rdb i gidx =
-  let len = Slice.get rdb.structures i in
-  let sup = Range.sup (fst rdb.groups.(gidx)) in
-  if len == sup then is_next_group_avail rdb gidx
-  else is_group_avail rdb gidx
-
-(** Return unary operations that can create a new length in the raw database. *)
-let uop_candidates rdb =
-  let res = ref [] in
-  let a2res x = res := x :: !res in
-  for gidx = 0 to Array.length rdb.groups - 1 do
-    Slice.iter (fun i ->
-      if is_possible_decr rdb i gidx then
-        begin a2res (Pop i); a2res (Eject i) end;
-      if is_possible_incr rdb i gidx then
-        begin a2res (Push i); a2res (Inject i) end
-    ) (snd rdb.groups.(gidx))
-    done;
-  Array.of_list !res
-
-(** Does the length of the structures stored at index [i1] and [i2] in [rdb],
-    contained respectively in the groups [gidx1] and [gidx2], allow for an
-    operation adding the two length ? *)
-let is_possible_add rdb i1 i2 gidx1 gidx2 =
-  if gidx1 == gidx2 then is_next_group_avail rdb gidx1
-  else
-    let gidx = if gidx1 < gidx2 then gidx2 else gidx1 in
-    let len = Slice.get rdb.structures i1 + Slice.get rdb.structures i2 in
-    if Range.is_in (fst rdb.groups.(gidx)) len then is_group_avail rdb gidx
-    else is_next_group_avail rdb gidx
-
-(** Return binary operations that can create a new length in the raw
-    database. *)
-let bop_candidates rdb =
-  let res = ref [] in
-  let a2res x = res := x :: !res in
-  for gidx1 = 1 to Array.length rdb.groups - 1 do
-    for gidx2 = gidx1 to Array.length rdb.groups - 1 do
-      Slice.iter2 (fun i1 i2 ->
-        if i1 <= i2 && is_possible_add rdb i1 i2 gidx1 gidx2 then
-          a2res (Concat (i1, i2))
-      ) (snd rdb.groups.(gidx1)) (snd rdb.groups.(gidx2))
-      done;
     done;
   done;
   Array.of_list !candidates
