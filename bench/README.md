@@ -1,52 +1,113 @@
 # Benchmarks
 
-This section contains information about the benchmarking of the OCaml code.
+This directory contains the benchmarking infrastructure for measuring the performance of various deque-like data structures implemented in OCaml.
 
-## Main benchmark
+## Overview
 
-Les benchmarks principaux du code OCaml consistent à mesurer les temps d'exécutions d'un comportement type sur une structure donnée.
-Ici, ces benchmarks seront fait sur les List, les Deques, les Steques, les Cadeques et les Seks, une librairie proposant une implémentation des ..., une structure polyvalente et efficace.
+The benchmarks measure the execution time of typical operations on different data structures:
+- **List**: Standard OCaml lists
+- **Sek**: A library providing efficient persistent sequences
+- **Deque**: Double-ended queue
+- **Steque**: Stack-ended queue (efficient at one end, linear at the other)
+- **Cadeque**: Catenable deque (with efficient concatenation)
+- **KOT**: Another deque implementation
 
-Pour chaque librairie, une base de donnée est créée. Les éléments de la base de donnée sont des structures construites aléatoirement en utilisant un sous-ensemble des fonctions push, pop, inject, eject et concat. L'idée est d'obtenir différentes structures qui peuvent être construitent par les utilisateurs.
+## How the Benchmark Works
 
-Ensuite, on va mesurer les temps d'exécution (TODO: et les tailles en mémoire) de nos cinq opérations principales sur les structures de la base de donnée. On stocke les résultats dans des fichiers `.csv` dans le dossier `tmp`. On peut ensuite plotter les résultats à l'aide d'un script python dans `graphics.ipynb`.
+### 1. Database Construction
 
-Pour lancer ces benchmarks, on utilise la commande `make benchmark`. Attention, cela peut prendre plusieurs dizaines de minute. Voici les résultats possibles de ces benchmarks:
+For each data structure, a database of randomly constructed structures is created:
 
-TODO
+1. **Raw Database Creation** (`database.ml`):
+   - Structures are organized into **bins** based on their size
+   - The i-th bin contains structures whose lengths fall within the range [2^(i-1), 2^i)
+   - Each bin contains multiple structure instances (inhabitants)
+   - Structures are built using random sequences of operations: `push`, `pop`, `inject`, `eject`, and `concat`
 
-## List-like benchmark
+2. **Structure Database Construction** (`benchmark.ml`):
+   - The raw database (which only stores lengths and operation history) is instantiated for each specific data structure
+   - Actual structures are created by replaying the operation history
 
-The list-like benchmark measures the execution times
-of simple operations on different structures.
-Only three operations are tested:
+### 2. Operation Benchmarking
 
-- creating a structure containing the integers 1, 2, ..., 10 000 000 using the `push` function;
-- computing the sum of the elements of the structure using a `fold_left`;
-- computing the sum of the elements of the structure using the `pop` function.
+For each data structure, the following operations are benchmarked:
 
-These execution times are measured for `List`, `Deques.Deque`, `Deques.Steque` and `Deques.Cadeque`.
+- **Unary operations** (`push`, `pop`, `inject`, `eject`):
+  - Each operation is performed multiple times on structures from each bin
+  - The number of repetitions depends on the expected cost of the operation
+  - Results are aggregated per bin to reduce the number of data points
 
-This benchmark can be executed with the command `make list_like_benchmark`, which takes approximately one minute. Here is an example of output from this benchmark:
+- **Binary operations** (`concat`):
+  - The operation is performed multiple times on structures from bins
+  - Two variants are benchmarked:
+    - `concat`: Full matrix of all bin pairs (can be disabled due to cost)
+    - `concat-diagonal`: Only pairs from the same bin
+  - A random subset of structure pairs is used to keep execution time reasonable
 
+### 3. Measurement Details
+
+The measurement (`measure.ml`) results are stored as data points `(time, executions)`:
+  - `time`: Total execution time in seconds
+  - `executions`: Number of times the operation was performed
+
+## Running the Benchmarks
+
+### Basic Usage
+
+To run the benchmarks with default settings:
+
+```bash
+make run
 ```
-List:
-    make 10m : 0.176 s
-   sum_foldl : 0.022 s
-     sum_pop : 0.023 s
 
-Deque:
-    make 10m : 0.399 s
-   sum_foldl : 0.026 s
-     sum_pop : 0.255 s
+**Warning**: This can take several tens of minutes to complete.
 
-Steque:
-    make 10m : 0.421 s
-   sum_foldl : 0.025 s
-     sum_pop : 0.319 s
+### Command-Line Options
 
-Cadeque:
-    make 10m : 0.443 s
-   sum_foldl : 0.025 s
-     sum_pop : 0.447 s
+The benchmark executable accepts several options:
+
+```bash
+dune exec -- bench/benchmark.exe [OPTIONS] [DATA_STRUCTURES...]
 ```
+
+**Options**:
+- `--bins <int>`: Number of size bins (default: 13)
+- `--inhabitants <int>`: Number of inhabitants per bin (default: 10)
+- `--minor-heap-size <int>`: Minor heap size in megawords (default: 512, i.e., 4GB)
+- `--list`: List the known data structures and exit
+
+**Data Structures**: Specify which structures to benchmark (e.g., `List Deque Cadeque`). If none are specified, all structures are benchmarked.
+
+### Examples
+
+Benchmark only Deque and Cadeque with 15 bins:
+```bash
+dune exec -- bench/benchmark.exe --bins 15 Deque Cadeque
+```
+
+List available data structures:
+```bash
+dune exec -- bench/benchmark.exe --list
+```
+
+## Results
+
+### Output Format
+
+Results are saved as CSV files in the `bench/tmp/` directory:
+
+- **File naming**: `<operation>.csv` (e.g., `push.csv`, `pop.csv`, `concat-diagonal.csv`)
+- **Format**: Each row corresponds to a bin (or bin pair for binary operations)
+- **Columns**: For each data structure, two columns are written:
+  - `<Structure>T`: Total execution time in microseconds
+  - `<Structure>N`: Total number of operation executions
+
+## Visualizing Results
+
+Results can be visualized using the Jupyter notebook `graphics.ipynb`.
+
+Ensure you have Python with the required packages:
+```bash
+pip install pandas numpy matplotlib jupyter
+```
+
