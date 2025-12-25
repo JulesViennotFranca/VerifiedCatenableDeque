@@ -5,6 +5,9 @@ module Vector =
 
 (* ============================ useful functions ============================ *)
 
+(** [iter_n f a n] applies [n] times [f] on [a]. *)
+let iter_n f a n = List.fold_left (fun a _ -> f a) a (List.init n Fun.id)
+
 (** [pow2 n] computes 2 to the power of [n]. *)
 let pow2 n =
   if n < Sys.word_size - 2 then
@@ -50,9 +53,9 @@ let postincrement r =
   r := !r + 1;
   !r
 
-(* [with_progress_bar title maxN yield] creates a progress bar with title
-   [title] and maximum value [maxN] and applies [yield] to a function [tick]
-   which increments the value of the progress bar by one. *)
+(** [with_progress_bar title maxN yield] creates a progress bar with title
+    [title] and maximum value [maxN] and applies [yield] to a function [tick]
+    which increments the value of the progress bar by one. *)
 let with_progress_bar title maxN yield =
   let pb = progress_bar title maxN in
   let c = ref 0 in
@@ -61,30 +64,41 @@ let with_progress_bar title maxN yield =
 
 (* ================================= ranges ================================= *)
 
-(* A range represents an interval [a, b). *)
-
+(** Module representing discrete intervals ranging from a (included) to b
+    (excluded). *)
 module Range = struct
 
+  (** Type of ranges. *)
   type t = int * int
 
+  (** Return a range given its two bounds. *)
   let make a b = (a, b)
 
+  (** Return the smallest integer of the range. *)
   let inf (a, _) = a
+
+  (** Return the greatest integer of the range. *)
   let sup (_, b) = b - 1
 
+  (** Return [true] if the integer [i] is in the range [(a, b)], [false]
+      otherwise. *)
   let is_in (a, b) i = a <= i && i < b
 
+  (** Return the string representation of a range. *)
   let to_string (i, j) = "[" ^ string_of_int i ^ ", " ^ string_of_int j ^ "["
 
 end
 
 (* ================================= traces ================================= *)
 
-(* A variable is a de Bruijn level, that is, a creation time. *)
+(** A variable is a de Bruijn level, that is, a creation time. It can also be
+    seen as the indices at which a structure is stored in a database. *)
 type var =
   int
 
-(* An operation carries its operands: zero, one, or two variables. *)
+(** Type of operations. There is one constructor for each operation kind.
+    Operations are meant to be used in a database. An operation stores the
+    database indices (or variables) of the structure(s) it is applied to. *)
 type operation =
   | Empty
   | Push of var
@@ -93,9 +107,11 @@ type operation =
   | Eject of var
   | Concat of var * var
 
+(** Return the string representation of a variable. *)
 let show_var =
   string_of_int
 
+(** Return the string representation of an operation. *)
 let show_op = function
   | Empty -> "empty"
   | Push i -> "push " ^ show_var i
@@ -104,9 +120,9 @@ let show_op = function
   | Eject i -> "eject " ^ show_var i
   | Concat (i1, i2) -> "concat " ^ show_var i1 ^ " " ^ show_var i2
 
-(* [raw_interpret len op] computes the length of the result of the operation
-   [op], under the assumption that the function [len] provides access to the
-   length of the operands. *)
+(** [raw_interpret len op] computes the length of the result of the operation
+    [op], under the assumption that the function [len] provides access to the
+    length of the operands. *)
 let raw_interpret len op =
   match op with
   | Empty ->
@@ -120,53 +136,65 @@ let raw_interpret len op =
   | Concat (i1, i2) ->
       len i1 + len i2
 
-(* An assignment is a pair of a target variable and an operation. *)
+(** An assignment is a pair of a target variable and an operation. *)
 type assignment =
   var * operation
 
+(** Return the string representation of an assignment. *)
 let show_assignment j op =
   sprintf "%s := %s\n" (show_var j) (show_op op)
 
-(**A history is a sequence of operations. The target of the operation at
-   index [i] is the variable [i]. *)
+(** A history is a sequence of operations. The target of the operation at
+    index [i] is the variable [i]. *)
 type history =
   operation array
 
+(** Return the string representation of a history. *)
 let show_history h =
   h |> Array.to_list |> List.mapi show_assignment |> String.concat ""
 
 (* ============================= Raw databases ============================== *)
 
-(**A database stores a collection of elements of type ['a]. An element is
-   some kind of sequence data structure (a list, a deque, etc.), so it has
-   a length. The database keeps track of a histogram of elements (that is,
-   it stores elements in bins, based on their length). It also records the
-   history that allows creating these elements. *)
+(** A database stores elements of type ['a]. Elements are meant to be sequence
+    data structures (a list, a deque, etc.), so they have a length.
+
+    A database keeps track of a histogram of elements based on their length.
+    Structures are divided into n bins, each holding m elements of similar
+    length. The i-th bin stores elements whose lengths fall within the range
+    (2^(i-1), 2^i) (with the exception of the 0-th group, which only stores the
+    empty structure). The bins ranges form a partition of the interval of
+    permitted lengths. *)
 type 'a t = {
 
   elements : 'a Vector.t;
-  (**The elements. The index of an element in this vector is its identifier,
-     that is, its creation date. *)
+  (** The elements stored in the database. The maximum length for this vector
+      is n * m. The index of an element in this vector is its identifier, that
+      is, its creation date. *)
 
   bin : bin array;
-  (**The histogram, an array of bins, whose ranges form a partition of the
-     interval of permitted lengths. *)
+  (** The histogram, an array of bins. The array is of size n, and each bin
+      stores up to m elements.*)
 
   history : history;
-  (**The history that allows creating these elements. *)
+  (** The history leading to the creation of the database elements, storing the
+      operation calls that built the elements. *)
 
 }
 
-(**A bin is a pair of a range and a set of elements (identifiers) which
-   inhabit this bin. That is, for each element [x] in this vector, the
-   length of [x] is a member of this range. *)
+(** Type of bins. A bin is a pair of a range and a set of elements
+    (identified by their index) which inhabit this bin. That is, for each
+    element [x] in a bin's vector, the length of [x] is a member of the bin's
+    range. *)
 and bin =
   Range.t * var Vector.t
 
-(** A raw database stores just length information. That is, a sequence data
-    structure is summarized by just its length. *)
+
+(** Rather than storing structures, a raw database only stores structures
+    length, while retaining the ability to reconstruct the corresponding
+    structures from the history. *)
 type raw_t = int t
 
+(** Return the string representation of a database. *)
 let string_of_database db string_of_a =
   "Elements:\n" ^
   String.concat "\n" (List.mapi (fun i a ->
@@ -178,9 +206,6 @@ let string_of_database db string_of_a =
       Range.to_string r ^ " " ^
         String.concat ", " (List.map show_var (Vector.to_list s))
     ) (Array.to_list db.bin)
-  ) ^
-  "\n\nHistory:\n" ^
-  show_history db.history
 
 (**[find_bin rdb len] translates the length [len] to a bin index.
    That is, it finds out in which bin the length [len] falls.
@@ -262,6 +287,105 @@ let possible_bcandidates rdb =
   for i1 = 0 to Vector.length rdb.elements - 1 do
     for i2 = 0 to Vector.length rdb.elements - 1 do
       retain_if_permitted (Concat (i1, i2))
+
+(* === *)
+
+(** [raw_add_length rdb len p op] adds [len] to the raw database [rdb]. [len]
+    is the length of a structure obtained by applying [op] on a structure whose
+    size is stored at the index [p] in [rdb]. *)
+let raw_add_length rdb len p op =
+  assert (not (Slice.is_full rdb.structures));
+  let idx = rdb.structures.length in
+  let gidx = ref 0 in
+  while not (Range.is_in (fst rdb.groups.(!gidx)) len) do
+    gidx := !gidx + 1
+  done;
+  Slice.add rdb.structures len;
+  Slice.add (snd rdb.groups.(!gidx)) idx;
+  Traces.save rdb.traces p op idx
+
+(** Create a raw database with only the length of the empty structure stored. *)
+let raw_create ~buffers ~size =
+  (* The groups of the raw database have powers of two as bounds for their
+     ranges. *)
+  let rec aux accu n = match n with
+    | 0 -> Array.of_list accu
+    | _ -> aux ((Range.make (n/2) n, Slice.create size) :: accu) (n/2)
+  in
+  let groups = aux [] (pow2 (buffers - 1)) in
+  let rdb = {
+    structures = Slice.create (buffers * size) ;
+    groups = groups ;
+    traces = Traces.create (buffers * size) ;
+  } in
+  (* The length 0 corresponding to the empty structure is added to the
+     database. *)
+  raw_add_length rdb 0 (-1) (Push (-1));
+  rdb
+
+(** Does the given group of the raw database have some space available ? *)
+let is_group_avail rdb gidx = not (Slice.is_full (snd rdb.groups.(gidx)))
+
+(** Does the group of the raw database following the given one have some space
+    available ? *)
+let is_next_group_avail rdb gidx =
+  gidx < Array.length rdb.groups - 1 && is_group_avail rdb (gidx + 1)
+
+(** Does the length of a structure stored at index [i] in [rdb], contained in
+    the group [gidx], allow for a decreasing operation ? *)
+let is_possible_decr rdb i gidx =
+  (gidx <> 0) && (
+    let len = Slice.get rdb.structures i in
+    let inf = Range.inf (fst rdb.groups.(gidx)) in
+    if inf == len then is_group_avail rdb (gidx - 1)
+    else is_group_avail rdb gidx
+  )
+
+(** Does the length of a structure stored at index [i] in [rdb], contained in
+    the group [gidx], allow for an increasing operation ? *)
+let is_possible_incr rdb i gidx =
+  let len = Slice.get rdb.structures i in
+  let sup = Range.sup (fst rdb.groups.(gidx)) in
+  if len == sup then is_next_group_avail rdb gidx
+  else is_group_avail rdb gidx
+
+(** Return unary operations that can create a new length in the raw database. *)
+let uop_candidates rdb =
+  let res = ref [] in
+  let a2res x = res := x :: !res in
+  for gidx = 0 to Array.length rdb.groups - 1 do
+    Slice.iter (fun i ->
+      if is_possible_decr rdb i gidx then
+        begin a2res (Pop i); a2res (Eject i) end;
+      if is_possible_incr rdb i gidx then
+        begin a2res (Push i); a2res (Inject i) end
+    ) (snd rdb.groups.(gidx))
+    done;
+  Array.of_list !res
+
+(** Does the length of the structures stored at index [i1] and [i2] in [rdb],
+    contained respectively in the groups [gidx1] and [gidx2], allow for an
+    operation adding the two length ? *)
+let is_possible_add rdb i1 i2 gidx1 gidx2 =
+  if gidx1 == gidx2 then is_next_group_avail rdb gidx1
+  else
+    let gidx = if gidx1 < gidx2 then gidx2 else gidx1 in
+    let len = Slice.get rdb.structures i1 + Slice.get rdb.structures i2 in
+    if Range.is_in (fst rdb.groups.(gidx)) len then is_group_avail rdb gidx
+    else is_next_group_avail rdb gidx
+
+(** Return binary operations that can create a new length in the raw
+    database. *)
+let bop_candidates rdb =
+  let res = ref [] in
+  let a2res x = res := x :: !res in
+  for gidx1 = 1 to Array.length rdb.groups - 1 do
+    for gidx2 = gidx1 to Array.length rdb.groups - 1 do
+      Slice.iter2 (fun i1 i2 ->
+        if i1 <= i2 && is_possible_add rdb i1 i2 gidx1 gidx2 then
+          a2res (Concat (i1, i2))
+      ) (snd rdb.groups.(gidx1)) (snd rdb.groups.(gidx2))
+      done;
     done;
   done;
   Array.of_list !candidates

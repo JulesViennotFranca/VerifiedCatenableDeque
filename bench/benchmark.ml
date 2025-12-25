@@ -135,10 +135,18 @@ end
 
 (* ============================ data structures ============================= *)
 
+(** A module type that the data structures used for the benchmarks must
+    respect. *)
 module type Structure  = sig
+
+  (** The type of the data structure. *)
   type t
 
+  (** The name of the data structure. *)
   val name : string
+
+  (* The empty structure, operations and corresponding steps functions are
+     given. *)
 
   val empty : t
   val push : t -> t
@@ -152,11 +160,15 @@ module type Structure  = sig
   val concat : t -> t -> t
   val concat_steps : int -> int -> int
 
+  (** Return the string representation of a structure. *)
   val to_string : t -> string
+
 end
 
+(** Return the string representation of a list containing integers. *)
 let string_of_list l = "[" ^ String.concat ", " (List.map string_of_int l) ^ "]"
 
+(** A module formatting lists for the benchmarks. *)
 module BList : Structure = struct
   type t = int list
 
@@ -185,6 +197,7 @@ module BList : Structure = struct
   let to_string = string_of_list
 end
 
+(** A module formatting seks for the benchmarks. *)
 module BSek : Structure = struct
   open Sek
 
@@ -207,6 +220,7 @@ module BSek : Structure = struct
   let to_string s = string_of_list (P.to_list s)
 end
 
+(** A module formatting deques for the benchmarks. *)
 module BDeque : Structure = struct
   open Deques
 
@@ -233,6 +247,7 @@ module BDeque : Structure = struct
   let to_string s = string_of_list (Deque.to_list s)
 end
 
+(** A module formatting steques for the benchmarks. *)
 module BSteque : Structure = struct
   open Deques
 
@@ -257,6 +272,7 @@ module BSteque : Structure = struct
   let to_string s = string_of_list (Steque.to_list s)
 end
 
+(** A module formatting cadeques for the benchmarks. *)
 module BCadeque : Structure = struct
   open Deques
 
@@ -321,8 +337,11 @@ type a. (module Structure with type t = a) -> (var -> a) -> operation -> a
   | Eject i -> S.eject (get i)
   | Concat (i1, i2) -> S.concat (get i1) (get i2)
 
+(** Construct a database containing structures and their length from a raw
+    database and a structure module. *)
 let construct :
-type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
+type a.
+  Database.raw_t -> (module Structure with type t = a) -> (a * int) Database.t
 = fun rdb (module S) ->
   let n = rdb.elements.length in
   let pb = progress_bar "Database construction" n in
@@ -345,6 +364,12 @@ let with_length rdb db i =
 let (+=) (sum : Measure.t ref) (m : Measure.t) =
   sum := Measure.add !sum (Measure.format m)
 
+(** Perform the benchmarks for an unary operation on a database.
+
+    For each structure in the database, the unary operation is performed a
+    certain number of times, and the time it took to iteratevely call the unary
+    operation on the structure is saved. The results are summed for each groups
+    of the database to reduce the number of data points. *)
 let bench_unary rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
   let measurements = Vector.create bins Measure.base in
@@ -363,6 +388,13 @@ let bench_unary rdb db operation_name structure_name f steps =
   done;
   CSV.write operation_name structure_name (Vector.to_array measurements)
 
+(** Perform the benchmarks for a binary operation on a database.
+
+    For each pair of a random subset of pairs of structures in the database,
+    the binary operation is performed a certain number of times, and the time
+    it took to iteratevely call the binary operation on the pair. The results
+    are summed for each pair of groups of the database to reduce the number of
+    data points. *)
 let bench_binary rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
   let measurements = Vector.create (bins * bins) Measure.base in
@@ -388,6 +420,13 @@ let bench_binary rdb db operation_name structure_name f steps =
   done;
   CSV.write operation_name structure_name (Vector.to_array measurements)
 
+(** Perform the benchmarks for a binary operation on a database.
+
+    For each pair of a random subset of pairs of structures in the database,
+    the binary operation is performed a certain number of times, and the time
+    it took to iteratevely call the binary operation on the pair. The results
+    are summed for each pair of groups of the database to reduce the number of
+    data points. *)
 let bench_binary_diagonal rdb db operation_name structure_name f steps =
   let bins = Array.length db.bin in
   let measurements = Vector.create bins Measure.base in
@@ -408,6 +447,8 @@ let bench_binary_diagonal rdb db operation_name structure_name f steps =
     Vector.push measurements !m
   done;
   CSV.write operation_name structure_name (Vector.to_array measurements)
+
+(* ============================ launch benchmark ============================ *)
 
 let bench rdb (module S : Structure) =
   if List.mem S.name !subjects then begin
