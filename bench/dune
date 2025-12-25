@@ -2,7 +2,8 @@
   (name benchmark)
   (modules FixedCapacityVector Benchmark Measure Database)
   (libraries deques unix sek kot)
-  (flags (:standard -w -26-32-33)))
+  ; (flags (:standard -w -26-32-33)))
+)
 
 (executable
   (name listLike)

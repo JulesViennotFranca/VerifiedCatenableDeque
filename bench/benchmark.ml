@@ -346,7 +346,6 @@ type a.
   let n = rdb.elements.length in
   let pb = progress_bar "Database construction" n in
   let elements = Vector.create n S.empty in
-  let get i = Vector.get elements i in
   let () =
     rdb.history |> Array.iteri @@ fun j op ->
     let elem = interpret (module S) (Vector.get elements) op in
@@ -434,7 +433,6 @@ let bench_binary_diagonal rdb db operation_name structure_name f steps =
   let n = db.elements.length in
   with_progress_bar operation_name n @@ fun tick ->
   for i = 0 to bins - 1 do
-    let j = i in
     let m = ref Data.base in
     let f ix iy =
       let x = with_length rdb db ix in

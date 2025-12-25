@@ -1,5 +1,4 @@
 open Printf
-open Database
 
 (* ================================== data ================================== *)
 
@@ -31,35 +30,6 @@ module Data = struct
   let add (f1, n1) (f2, n2) = (f1 +. f2, n1 + n2)
 
 end
-
-(* ================================= steps ================================== *)
-
-let pos_length len = max 1 len
-
-(** The step function for unary operations of constant complexity. *)
-let uconstant_steps max_steps _ = max_steps
-
-(** The step function for unary operations of linear complexity. *)
-let ulinear_steps max_steps len1 = max_steps / (pos_length len1)
-
-(** The step function for binary operations of constant complexity. *)
-let bconstant_steps max_steps _ _ = max_steps
-
-(** The step function for binary operations of squared logarithmic complexity
-    in the sum of the lengths of the two arguments. *)
-let blogsum_steps max_steps len1 len2 = int_of_float (
-    float_of_int max_steps *. log 2. /.
-    (log (float_of_int (pos_length len1 + pos_length len2)) ** 2.)
-  )
-
-(** The step function for binary operations of linear complexity in the
-    structure of minimum length. *)
-let blinearmin_steps max_steps len1 len2 =
-  max_steps / min (pos_length len1) (pos_length len2)
-
-(** The step function for binary operations of linear complexity in the
-    first structure. *)
-let blinearfst_steps max_steps len1 _ = max_steps / (pos_length len1)
 
 (* ================================ measure ================================= *)
 
