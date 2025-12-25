@@ -452,7 +452,6 @@ let bench_binary_diagonal rdb db operation_name structure_name f steps =
 
 let bench rdb (module S : Structure) =
   if List.mem S.name !subjects then begin
-    (* TODO: set random seed at the beginning with the time of the day *)
     print_endline ("==================== " ^ S.name ^ " ====================");
     let start = Unix.gettimeofday() in
     let db = construct rdb (module S) in
@@ -485,6 +484,7 @@ let construct_rdb () =
   rdb
 
 let () =
+  Random.self_init();
   let rdb = construct_rdb() in
   let structures : (module Structure) list = [
     (module BList);

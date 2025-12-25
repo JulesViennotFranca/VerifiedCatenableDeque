@@ -161,7 +161,7 @@ let show_history h =
     A database keeps track of a histogram of elements based on their length.
     Structures are divided into n bins, each holding m elements of similar
     length. The i-th bin stores elements whose lengths fall within the range
-    [2^(i-1), 2^i)] (with the exception of the 0-th bin, which only stores the
+    \[2^(i-1), 2^i) (with the exception of the 0-th bin, which only stores the
     empty structure). The bin ranges form a partition of the interval of
     permitted lengths. *)
 type 'a t = {
