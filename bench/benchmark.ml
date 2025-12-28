@@ -50,7 +50,7 @@ let anonymous s =
   end
 
 let usage =
-  sprintf "Usage: %s <options>\n" Sys.argv.(0)
+  sprintf "Usage: %s <options> <data structures>\n" Sys.argv.(0)
 
 let () =
   Arg.parse spec anonymous usage
