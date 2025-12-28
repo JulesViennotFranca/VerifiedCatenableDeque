@@ -1,0 +1,305 @@
+From Coq Require Import Lia.
+From Equations Require Import Equations.
+Require Import Coq.Program.Equality.
+
+(* This file is a copy of Core.v where we develop an alternate approach. Instead
+   of using indexed types [packet c] and [chain c] where [c] is a color, we use
+   simple (non-indexed) types [packet] and [chain] and we define several
+   well-formedness predicates ([wf_packet], [colored_packet], [regularity],
+   [wf_chain], [wf_number]) a posteriori. *)
+
+(* +------------------------------------------------------------------------+ *)
+(* |                                Colors                                  | *)
+(* +------------------------------------------------------------------------+ *)
+
+(* Colors. *)
+Inductive color := Red | Yellow | Green.
+
+(* A color constraint accepts or rejects each color.
+   It can also be thought of as a set of colors. *)
+
+Definition color_constraint :=
+  color -> Prop.
+
+Implicit Type cc : color_constraint.
+
+Definition green_or_yellow c :=
+  c = Green \/ c = Yellow.
+
+Hint Unfold green_or_yellow : easy.
+  (* this helps [eauto with easy], which the tactic [easy] uses *)
+
+Lemma yellow_is_not_green_or_red :
+  ~ (Yellow = Green \/ Yellow = Red).
+Proof. intros [|]; congruence. Qed.
+
+Lemma red_is_not_green_or_yellow :
+  green_or_yellow Red -> False.
+Proof. intros [|]; congruence. Qed.
+
+#[local] Hint Resolve
+  yellow_is_not_green_or_red
+  red_is_not_green_or_yellow
+: easy.
+  (* this helps [eauto with easy], which the tactic [easy] uses *)
+
+(* +------------------------------------------------------------------------+ *)
+(* |                                Tactics                                 | *)
+(* +------------------------------------------------------------------------+ *)
+
+Ltac eliminate_conjunction :=
+  match goal with h: _ /\ _ |- _ => destruct h end.
+
+Ltac deduce :=
+  simpl in *; repeat eliminate_conjunction.
+
+Ltac crunch :=
+  lazymatch goal with
+  | |- _ /\ _ =>
+      split; crunch
+  | _ =>
+      try tauto;
+      try congruence;
+      try lia;
+      eauto with easy
+  end.
+
+Ltac easy :=
+  solve [
+    deduce;
+    try tauto;
+    try congruence;
+    try lia;
+    try eauto with easy
+  ].
+
+(* +------------------------------------------------------------------------+ *)
+(* |                                 Types                                  | *)
+(* +------------------------------------------------------------------------+ *)
+
+(* A packet is a list of digits, where a digit is G, Y, or R. *)
+Inductive packet : Type :=
+  | Hole   : packet
+  | GDigit : packet -> packet
+  | YDigit : packet -> packet
+  | RDigit : packet -> packet.
+
+(* Well-formedness of packets.
+   The first digit of a packet can be G, Y, R;
+   the following digits must be Y;
+   a packet cannot be empty. *)
+Fixpoint wf_packet (deep : Prop) (p : packet) : Prop :=
+  match p with
+  | Hole =>
+      deep
+  | GDigit p
+  | RDigit p =>
+      ~deep /\ wf_packet True p
+  | YDigit p =>
+      wf_packet True p
+  end.
+
+(* Coloring of packets.
+   The color of a packet is the color of its first digit. *)
+
+Definition colored_packet cc (p : packet) : Prop :=
+  match p with
+  | Hole =>
+      True (* irrelevant *)
+  | GDigit _ =>
+      cc Green
+  | RDigit _ =>
+      cc Red
+  | YDigit _ =>
+      cc Yellow
+  end.
+
+(* A chain is a list of packets. *)
+Inductive chain : Type :=
+  | Empty : chain
+  | Chain : packet -> chain -> chain.
+
+(* [regularity p] has type [color_constraint]. It is the color constraint
+   imposed by the packet [p] on the chain that follows it. *)
+Definition regularity (p : packet) (c : color) : Prop :=
+  match p with
+  | Hole =>
+      True (* irrelevant *)
+  | GDigit _ =>
+      (* A green packet must be followed with a green or red chain. *)
+      c = Green \/ c = Red
+  | YDigit _ =>
+      (* A yellow packet must be followed with a green chain. *)
+      c = Green
+  | RDigit _ =>
+      (* A red packet must be followed with a green chain. *)
+      c = Green
+  end.
+
+(* Well-formedness and coloring of chains. *)
+Fixpoint wf_chain cc (c : chain) : Prop :=
+  match c with
+  | Empty =>
+      True
+  | Chain p c =>
+      (* Every packet must be well-formed. *)
+      wf_packet False p /\
+      (* The color of a chain is the color of its first packet.
+         Thus the color constraint [cc] bears on the packet [p]. *)
+      colored_packet cc p /\
+      (* The packet [p] imposes a color constraint on the subchain [c]. *)
+      wf_chain (regularity p) c
+  end.
+
+(* A number is a green or yellow chain. *)
+Definition wf_number (c : chain) : Prop :=
+  wf_chain green_or_yellow c.
+
+(* +------------------------------------------------------------------------+ *)
+(* |                                 Models                                 | *)
+(* +------------------------------------------------------------------------+ *)
+
+(* Model functions are transparent. *)
+Set Equations Transparent.
+
+(* Returns the natural number associated to a packet, provided the natural
+   number associated to its hole. *)
+Equations packet_nat : packet -> nat -> nat :=
+packet_nat Hole n := n;
+packet_nat (GDigit pkt) n := 0 + 2 * packet_nat pkt n;
+packet_nat (YDigit pkt) n := 1 + 2 * packet_nat pkt n;
+packet_nat (RDigit pkt) n := 2 + 2 * packet_nat pkt n.
+
+(* Returns the natural number associated to a chain. *)
+Equations chain_nat : chain -> nat :=
+chain_nat Empty := 0;
+chain_nat (Chain pkt c) := packet_nat pkt (chain_nat c).
+
+(* Returns the natural number associated to a number. *)
+Notation number_nat := chain_nat.
+
+Unset Equations Transparent.
+
+(* +------------------------------------------------------------------------+ *)
+(* |                                  Core                                  | *)
+(* +------------------------------------------------------------------------+ *)
+
+(* Instead of defining [red_of_green] first and [ensure_green] in a second step,
+   as in Core.v, it seems easier here to define [ensure_green] directly, because
+   we need to cover all cases anyway. *)
+
+Definition ensure_green (c : chain) : chain :=
+  match c with
+  | Chain (RDigit Hole) Empty =>
+      Chain (GDigit (YDigit Hole)) Empty
+  | Chain (RDigit Hole) (Chain (GDigit body) c) =>
+      Chain (GDigit (YDigit body)) c
+  | Chain (RDigit (YDigit body)) c =>
+      Chain (GDigit Hole) (Chain (RDigit body) c)
+  | _ =>
+      c
+  end.
+
+(* If [c] is red or green (that is, not yellow) then [ensure_green c] is a
+   well-formed green chain. *)
+
+Lemma wf_chain_ensure_green cc cc' c :
+  wf_chain cc c ->
+  ~ cc Yellow ->
+  cc' Green ->
+  wf_chain cc' (ensure_green c).
+Proof.
+  (* The proof is a bit painful, as we must repeat the case analysis
+     that exists in the code. *)
+  intros Hc Hcc Hcc'.
+  destruct c; try easy.
+  destruct p; try easy.
+  destruct p; try easy.
+  destruct c; try easy.
+  destruct p; try easy.
+Qed.
+
+(* A special case of the previous lemma, where [cc] is "is red". *)
+
+Lemma wf_chain_ensure_green' cc' c :
+  wf_chain (fun c => c = Red) c ->
+  cc' Green ->
+  wf_chain cc' (ensure_green c).
+Proof.
+  eauto using wf_chain_ensure_green with easy.
+Qed.
+
+(* The chain [c] and the chain [ensure_green c] represent the same
+   natural number. *)
+
+Lemma ensure_green_correct c :
+  chain_nat (ensure_green c) = chain_nat c.
+Proof.
+  (* The proof is a bit painful, as we must repeat the case analysis
+     that exists in the code. *)
+  destruct c; try easy.
+  destruct p; try easy.
+  destruct p; try easy.
+  destruct c; try easy.
+  destruct p; try easy.
+Qed.
+
+(* +------------------------------------------------------------------------+ *)
+(* |                               Operation                                | *)
+(* +------------------------------------------------------------------------+ *)
+
+(* [succ] increments a natural number. *)
+
+Definition succ (c : chain) : chain :=
+  match c with
+  | Empty =>
+      Chain (YDigit Hole) Empty
+  | Chain (GDigit body) c =>
+      let c' := ensure_green c in
+      Chain (YDigit body) c'
+  | Chain (YDigit body) c =>
+      ensure_green (Chain (RDigit body) c)
+  | Chain Hole _
+  | Chain (RDigit _) _ =>
+      (* cannot happen if [c] is well-formed *)
+      c
+  end.
+
+(* [succ] preserves well-formedness. *)
+
+Lemma wf_number_succ c :
+  wf_number c ->
+  wf_number (succ c).
+Proof.
+  unfold wf_number. intro Hc.
+  destruct c; try easy.
+  destruct p; try easy.
+  { (* Case 2: green digit. *)
+    unfold succ. deduce. crunch. eapply wf_chain_ensure_green; easy. }
+  { (* Case 3: yellow digit. *)
+    unfold succ. eapply wf_chain_ensure_green'; easy. }
+Qed.
+
+(* [succ] is correct; it corresponds to incrementation. *)
+
+Lemma succ_correct c :
+  wf_number c ->
+  number_nat (succ c) = S (number_nat c).
+Proof.
+  unfold wf_number.
+  intro Hc.
+  destruct c; try easy.
+  destruct p; try solve [ easy | exfalso; easy ].
+  { (* Case 2: green digit. *)
+    unfold succ. simpl number_nat.
+    rewrite ensure_green_correct. reflexivity. }
+  { (* Case 3: yellow digit. *)
+    unfold succ. rewrite ensure_green_correct. reflexivity. }
+Qed.
+
+(* In the two proofs above, we exploit the properties of [ensure_green],
+   either via [eapply] or via [rewrite]. Perhaps, with some work, we could
+   automate these steps completely, so that we can just write [easy] and
+   avoid the need to think. Even then, we would still need to perform a case
+   analysis by hand, mimicking the structure of the code. In comparison, the
+   proofs about [succ] in Core.v are fully automated. *)
