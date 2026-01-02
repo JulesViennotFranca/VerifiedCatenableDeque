@@ -329,7 +329,7 @@ Ltac default_obligation_tactic :=
   CoreTactics.equations_simpl;
   try Tactics.program_solve_wf.
 
-Obligation Tactic :=
+#[local] Obligation Tactic :=
   try solve [ default_obligation_tactic |
     (* Our own tactic. *)
     unfold wf_number in *;
