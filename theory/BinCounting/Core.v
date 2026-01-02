@@ -153,10 +153,12 @@ green_of_red (Chain R (RDigit (YDigit body)) c) :=
 (* [ensure_green] turns a green or red chain into a green chain. *)
 Equations ensure_green {g r} (c : chain (Mix g NoYellow r)) :
   { c' : chain green | chain_nat c' = chain_nat c } :=
-ensure_green Empty := ? Empty;
-ensure_green (Chain G pkt c) := ? Chain G pkt c;
-ensure_green (Chain R pkt c) with green_of_red (Chain R pkt c) => {
-  | ? c' := ? c' }.
+ensure_green Empty :=
+  ? Empty;
+ensure_green (Chain G pkt c) :=
+  ? Chain G pkt c;
+ensure_green (Chain R pkt c) :=
+  green_of_red (Chain R pkt c).
 
 (* +------------------------------------------------------------------------+ *)
 (* |                               Operation                                | *)
