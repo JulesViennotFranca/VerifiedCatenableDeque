@@ -47,11 +47,14 @@ Proof. intros [|]; congruence. Qed.
 (* |                                Tactics                                 | *)
 (* +------------------------------------------------------------------------+ *)
 
-Ltac eliminate_conjunction :=
-  match goal with h: _ /\ _ |- _ => destruct h end.
+Ltac unpack :=
+  match goal with
+  | h: _ /\ _      |- _ => destruct h
+  | h: exists x, _ |- _ => destruct h
+  end.
 
 Ltac deduce :=
-  simpl in *; repeat eliminate_conjunction.
+  simpl in *; repeat unpack.
 
 Ltac crunch :=
   lazymatch goal with
@@ -65,13 +68,7 @@ Ltac crunch :=
   end.
 
 Ltac easy :=
-  solve [
-    deduce;
-    try tauto;
-    try congruence;
-    try lia;
-    try eauto with easy
-  ].
+  solve [ deduce; crunch ].
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
@@ -135,6 +132,9 @@ Definition regularity (p : packet) (c : color) : Prop :=
       (* A red packet must be followed with a green chain. *)
       c = Green
   end.
+
+Hint Unfold regularity : easy.
+  (* this helps [eauto with easy], which the tactic [easy] uses *)
 
 (* Well-formedness and coloring of chains. *)
 Fixpoint wf_chain cc (c : chain) : Prop :=
@@ -303,3 +303,108 @@ Qed.
    avoid the need to think. Even then, we would still need to perform a case
    analysis by hand, mimicking the structure of the code. In comparison, the
    proofs about [succ] in Core.v are fully automated. *)
+
+(* +------------------------------------------------------------------------+ *)
+(* |                           Back to ensure_green                         | *)
+(* +------------------------------------------------------------------------+ *)
+
+(* Notation for dependent types hiding the property on [x]. *)
+Notation "? x" := (@exist _ _ x _) (at level 100).
+
+(* Above, we have defined [ensure_green] as a function of simple type
+   [chain -> chain], and we have proved a posteriori that it preserves
+   well-formedness and preserves the chain's model. *)
+
+(* Here we try an alternative approach, which is to use Equations and
+   to decorate the definition of [ensure_green] with a precondition
+   and a postcondition. This removes the need to perform a case analysis
+   that mimics the code (Equations does it for us). Furthermore, if we
+   provide a well-chosen tactic, then all proof obligations are proved
+   automatically. *)
+
+Ltac default_obligation_tactic :=
+  (* Equations's default tactic. *)
+  simpl in *;
+  Tactics.program_simplify;
+  CoreTactics.equations_simpl;
+  try Tactics.program_solve_wf.
+
+Obligation Tactic :=
+  try solve [ default_obligation_tactic |
+    (* Our own tactic. *)
+    unfold wf_number in *;
+    repeat intros; simpl in *; repeat unpack; crunch
+  ].
+
+(* Here is [ensure_green] with a precondition and a postcondition. *)
+
+Equations ensure_green' (c : chain)
+  (* Precondition: the chain [c] is well-formed and not yellow. *)
+  (_ : exists cc, wf_chain cc c /\ ~ cc Yellow)
+: { c' : chain |
+  (* Postcondition: the chain [c'] is well-formed, green,
+     and represents the same number as the chain [c]. *)
+    (forall cc', cc' Green -> wf_chain cc' c') /\
+    chain_nat c' = chain_nat c
+  } :=
+ensure_green' (Chain (RDigit Hole) Empty) _ :=
+  ? Chain (GDigit (YDigit Hole)) Empty ;
+ensure_green' (Chain (RDigit Hole) (Chain (GDigit body) c)) _ :=
+  ? Chain (GDigit (YDigit body)) c ;
+ensure_green' (Chain (RDigit (YDigit body)) c) _ :=
+  ? Chain (GDigit Hole) (Chain (RDigit body) c) ;
+ensure_green' (c) _ :=
+  ? c.
+
+(* Here is [succ] with a precondition and a postcondition. *)
+
+Equations succ' (c : chain)
+  (* Precondition: [c] is well-formed. *)
+  (_ : wf_number c)
+: { c' : chain |
+  (* Postcondition: [c'] is well-formed
+     and represents the successor of [c]. *)
+    wf_number c' /\
+    number_nat c' = S (number_nat c)
+  } :=
+succ' Empty _ :=
+  ? Chain (YDigit Hole) Empty ;
+succ' (Chain (GDigit body) c) _
+  with ensure_green' c _ => { | ? c' :=
+  ? Chain (YDigit body) c' } ;
+succ' (Chain (YDigit body) c) _
+  with ensure_green' (Chain (RDigit body) c) _ => { | ? c' :=
+  ? c' } ;
+succ' _ _ :=
+  (* We shall prove that this default branch is dead. *)
+  (* Equations does not allow us to just remove it,
+     although it could. *)
+  _.
+
+Next Obligation.
+  (* Case 3, obligation: prove that [Chain (RDigit body) c]
+     is well-formed and not yellow. This is the precondition
+     of [ensure_green']. *)
+  unfold wf_number in *.
+  repeat intros.
+  exists (fun c => c = Red).
+  easy.
+Qed.
+
+Next Obligation.
+  (* Case 4, obligation: prove that this branch is dead. *)
+  unfold wf_number in *.
+  repeat intros.
+  exfalso.
+  easy.
+Qed.
+
+(* With some more work on our tactics, we could automate also
+   the above two proof obligations. *)
+
+(* We conclude that: 1- it is possible to work with simple (non-indexed)
+   types; 2- regardless of whether indexed types or simple types are used, it
+   is helpful to use Equations so as to avoid manually writing a case analysis
+   that mimics the structure of the code; 3- regardless of whether indexed
+   types or simple types are used, it appears feasible to automate all proof
+   obligations, provided sufficient effort is put into fine-tuning tactics. *)
