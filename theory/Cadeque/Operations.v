@@ -10,7 +10,8 @@ From Deques.Cadeque Require Import Types Models Core.
 #[export] Hint Rewrite app_nil_l : rlist.
 
 (* Setting the default tactics for obligations to be [hauto] using the [rlist]
-   hint database. *)
+   hint database. This tactic is able to solve all proof obligations, so (in
+   the definitions below) no proofs are visible. *)
 #[local] Obligation Tactic := try hauto db:rlist.
 
 Module D.
