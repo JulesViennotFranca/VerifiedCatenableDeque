@@ -67,30 +67,34 @@ End E.
 (* Finally, check that no axioms were used, no proofs were admitted, etc. *)
 
 (* I don't know how to apply Print Assumptions to a module,
-   so I apply it to every identifier in the module I and E. *)
+   so I apply it to a tuple which contains every identifier
+   in the module I and E. *)
 
-(* This should print 22 times [Closed under the global context]. *)
+(* This should print [Closed under the global context]. *)
 
-Print Assumptions I.cadeque.
-Print Assumptions I.model.
-Print Assumptions I.empty.
-Print Assumptions I.push.
-Print Assumptions I.pop.
-Print Assumptions I.inject.
-Print Assumptions I.eject.
-Print Assumptions I.concat.
+Definition everything := (
+  @I.cadeque,
+  @I.model,
+  @I.empty,
+  @I.push,
+  @I.pop,
+  @I.inject,
+  @I.eject,
+  @I.concat,
+  @E.cadeque,
+  @E.model,
+  @E.empty,
+  @E.empty_correct,
+  @E.push,
+  @E.push_correct,
+  @E.pop,
+  @E.pop_correct,
+  @E.inject,
+  @E.inject_correct,
+  @E.eject,
+  @E.eject_correct,
+  @E.concat,
+  @E.concat_correct
+).
 
-Print Assumptions E.cadeque.
-Print Assumptions E.model.
-Print Assumptions E.empty.
-Print Assumptions E.empty_correct.
-Print Assumptions E.push.
-Print Assumptions E.push_correct.
-Print Assumptions E.pop.
-Print Assumptions E.pop_correct.
-Print Assumptions E.inject.
-Print Assumptions E.inject_correct.
-Print Assumptions E.eject.
-Print Assumptions E.eject_correct.
-Print Assumptions E.concat.
-Print Assumptions E.concat_correct.
+Print Assumptions everything.
