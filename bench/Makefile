@@ -4,6 +4,7 @@ all:
 
 .PHONY: run
 run: all
+	@ mkdir -p tmp
 #	@ dune exec ./listLike.exe
 	@ dune exec ./benchmark.exe -- Sek Cadeque KOT --bins 41 --inhabitants 50
 	@ dune exec ./benchmark.exe -- List Deque --bins 17 --inhabitants 50

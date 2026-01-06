@@ -4,9 +4,11 @@ open Measure
 
 (* ============================== command line ============================== *)
 
+(** The number of bins. *)
 let bins =
   ref 13
 
+(** The number of bins inhabitants. *)
 let binhabitants =
   ref 10
 
@@ -14,9 +16,11 @@ let minor_heap_size =
   ref 512 (* megawords *)
    (* 512 megawords is 4Gb *)
 
+(** The list of considered structures kinds. *)
 let subjects : string list ref =
   ref []
 
+(** The list of known structures kinds. *)
 let known = [
   "List";
   "Sek";
@@ -50,7 +54,7 @@ let anonymous s =
   end
 
 let usage =
-  sprintf "Usage: %s <options> <data structures>\n" Sys.argv.(0)
+  sprintf "Usage: %s <data structures> <options>\n" Sys.argv.(0)
 
 let () =
   Arg.parse spec anonymous usage
@@ -299,6 +303,7 @@ module BCadeque : Structure = struct
   let to_string s = string_of_list (Cadeque.to_list s)
 end
 
+(** A module formatting KOTs for the benchmarks. *)
 module BKOT : Structure = struct
   type t = int Kot.Deque.t
 
@@ -326,6 +331,9 @@ end
 
 (* ================================ database ================================ *)
 
+(** Given the module of structures targeted and a function to retrieve
+    structures from elements of type [var], return the result of an
+    operation. *)
 let interpret :
 type a. (module Structure with type t = a) -> (var -> a) -> operation -> a
 = fun (module S) get op ->
@@ -340,8 +348,7 @@ type a. (module Structure with type t = a) -> (var -> a) -> operation -> a
 (** Construct a database containing structures and their lengths from a raw
     database and a structure module. *)
 let construct :
-type a.
-  Database.raw_t -> (module Structure with type t = a) -> a Database.t
+type a. Database.raw_t -> (module Structure with type t = a) -> a Database.t
 = fun rdb (module S) ->
   let n = rdb.elements.length in
   let pb = progress_bar "Database construction" n in
@@ -357,9 +364,11 @@ type a.
 
 (* =============================== benchmarks =============================== *)
 
+(** Enrich a structure from [db] with its length found in [rdb]. *)
 let with_length rdb db i =
   (Vector.get db.elements i, Vector.get rdb.elements i)
 
+(** Update the reference [sum] by adding the [Data.t] value [m] to it. *)
 let (+=) (sum : Data.t ref) (m : Data.t) =
   sum := Data.add !sum (Data.to_mus m)
 
@@ -448,6 +457,8 @@ let bench_binary_diagonal rdb db operation_name structure_name f steps =
 
 (* ============================ launch benchmark ============================ *)
 
+(** The main benchmark function. Work only for structures kinds listed in the
+    [subjects] reference. *)
 let bench rdb (module S : Structure) =
   if List.mem S.name !subjects then begin
     print_endline ("==================== " ^ S.name ^ " ====================");
@@ -472,6 +483,7 @@ let bench rdb (module S : Structure) =
     ()
   end
 
+(** The construction of the raw database. *)
 let construct_rdb () =
   print_endline ("==================== Raw database ====================");
   let start = Unix.gettimeofday() in

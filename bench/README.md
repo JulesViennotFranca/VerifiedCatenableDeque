@@ -67,8 +67,10 @@ make run
 The benchmark executable accepts several options:
 
 ```bash
-dune exec -- bench/benchmark.exe [OPTIONS] [DATA_STRUCTURES...]
+dune exec ./benchmark.exe -- [DATA_STRUCTURES] [OPTIONS]
 ```
+
+**Data Structures**: Specify which structures to benchmark (e.g., `List Deque Cadeque`).
 
 **Options**:
 - `--bins <int>`: Number of size bins (default: 13)
@@ -76,31 +78,29 @@ dune exec -- bench/benchmark.exe [OPTIONS] [DATA_STRUCTURES...]
 - `--minor-heap-size <int>`: Minor heap size in megawords (default: 512, i.e., 4GB)
 - `--list`: List the known data structures and exit
 
-**Data Structures**: Specify which structures to benchmark (e.g., `List Deque Cadeque`). If none are specified, all structures are benchmarked.
-
 ### Examples
 
 Benchmark only Deque and Cadeque with 15 bins:
 ```bash
-dune exec -- bench/benchmark.exe --bins 15 Deque Cadeque
+dune exec ./benchmark.exe -- Deque Cadeque --bins 15
 ```
 
 List available data structures:
 ```bash
-dune exec -- bench/benchmark.exe --list
+dune exec ./benchmark.exe -- --list
 ```
 
 ## Results
 
 ### Output Format
 
-Results are saved as CSV files in the `bench/tmp/` directory:
+Results are saved as CSV files in the `./tmp/` directory:
 
-- **File naming**: `<operation>.csv` (e.g., `push.csv`, `pop.csv`, `concat-diagonal.csv`)
+- **File naming**: `<structure>-<operation>.csv` (e.g., `push.csv`, `pop.csv`, `concat-diagonal.csv`)
 - **Format**: Each row corresponds to a bin (or bin pair for binary operations)
 - **Columns**: For each data structure, two columns are written:
-  - `<Structure>T`: Total execution time in microseconds
-  - `<Structure>N`: Total number of operation executions
+  - `<structure>T`: Total execution time in microseconds
+  - `<structure>N`: Total number of operation executions
 
 ## Visualizing Results
 
