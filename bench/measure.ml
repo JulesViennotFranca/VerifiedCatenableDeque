@@ -80,13 +80,8 @@ module CSV = struct
   (** The directory containing the CSV files. *)
   let csvdir = "./tmp"
 
-  (** Create the directory containing the CSV files if it does not exists. *)
-  let create_csvdir () =
-    if not (Sys.file_exists csvdir) then Sys.mkdir csvdir 0o777
-
   (** Writing measurements to disk in a [.csv] file. *)
   let write operation_name structure_name (measurements : Data.t array) =
-    create_csvdir ();
     if not (Sys.file_exists csvdir) then Sys.mkdir csvdir 0o755;
     let file = sprintf "%s/%s-%s.csv" csvdir structure_name operation_name in
     let oc = open_out file in
