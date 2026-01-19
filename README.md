@@ -21,12 +21,6 @@ in the paper
 
 Our [OCaml code](lib/) requires OCaml 4.08 or newer.
 
-Our [Rocq code](theory/) is accepted by Rocq 8.19
-but is **rejected by Rocq 8.20 and by Rocq 9**
-with a "universe inconsistency" error
-that we do not understand.
-[We have reported this issue](https://github.com/mattam82/Coq-Equations/issues/635).
-
 ## Data Structures
 
 A double-ended queue, also known as a *deque*,

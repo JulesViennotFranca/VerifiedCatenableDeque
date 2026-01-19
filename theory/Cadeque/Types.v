@@ -1,6 +1,9 @@
 From Deques.Color Require Import GYOR.
 From Deques.Deque Require Import Deque.
 
+Set Universe Polymorphism.
+Unset Universe Minimization ToSet.
+
 (* An arity is 0, 1, or 2. *)
 Notation arity  := nat.
 Notation empty  := 0.
