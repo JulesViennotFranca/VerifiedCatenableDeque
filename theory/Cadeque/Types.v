@@ -1,6 +1,11 @@
 From Deques.Color Require Import GYOR.
 From Deques.Deque Require Import Deque.
 
+(* The following incantations disable Rocq's "universe minimization" heuristic
+   algorithm, which attempts to simplify universe constraints, but sometimes
+   is too aggressive, transforming a satisfiable universe constraint into an
+   unsatisfiable one. These incantations are required for our proofs to go
+   through in Coq 8.20 and Rocq 9. *)
 Set Universe Polymorphism.
 Unset Universe Minimization ToSet.
 
