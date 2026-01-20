@@ -45,7 +45,8 @@ body_seq (Pair_orange hd cl b) accu :=
   node'_cmseq stored_seq hd (chain_seq cl ++ body_seq b accu)
 
 (* Returns the sequence associated to a packet. *)
-with packet_seq {A hl tl a k C} : packet A hl tl a k C -> list A -> list A :=
+with packet_seq {A hl tl a k C} (p : packet A hl tl a k C) : list A -> list A
+by struct p :=
 packet_seq (Packet b tl) accu :=
   body_seq b (node'_cmseq stored_seq tl accu)
 
