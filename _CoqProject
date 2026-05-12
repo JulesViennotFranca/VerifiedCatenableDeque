@@ -1,2 +1,2 @@
 -Q _build/default/theory Deques
--Q _build/default/test_coq Deques_test
+-Q _build/default/test_rocq Deques_test

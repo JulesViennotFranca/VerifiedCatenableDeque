@@ -84,7 +84,7 @@ The main directories are as follows:
 + [theory](/theory/) contains Rocq code and proofs of correctness
   for each data structure.
 
-  This Coq code is compiled by `make theory`,
+  This Rocq code is compiled by `make theory`,
   which requires 10 to 30 minutes.
 
 + [extraction](/extraction/) contains commands to extract the
@@ -107,7 +107,7 @@ The main directories are as follows:
 
   More details on the benchmarks are available in [bench/README.md](bench/README.md).
 
-+ [test_coq](/test_coq/) contains the check that is executed by `make axioms`.
++ [test_rocq](/test_rocq/) contains the check that is executed by `make axioms`.
   It also contains a few files where we check that reduction inside Rocq works.
   These checks are performed by Rocq when everything is compiled via `make`.
 

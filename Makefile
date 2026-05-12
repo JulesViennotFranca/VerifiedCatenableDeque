@@ -29,7 +29,7 @@ clean:
 .PHONY: axioms
 axioms: all
 	@ echo "This command should print 'Closed under the global context':"
-	coqc -R ./_build/default/theory Deques test_coq/check_axioms.v
+	rocqc -R ./_build/default/theory Deques test_rocq/check_axioms.v
 
 # ------------------------------------------------------------------------------
 
