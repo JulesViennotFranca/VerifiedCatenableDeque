@@ -1,6 +1,6 @@
 (include_subdirs qualified)
 
-(coq.theory
+(rocq.theory
  (name Deques)
- (package coq-deques)
+ (package rocq-deques)
  (theories Stdlib Equations Hammer AAC_tactics))

@@ -1,5 +1,5 @@
-(lang dune 3.8)
-(using coq 0.8)
+(lang dune 3.23)
+(using rocq 0.13)
 (generate_opam_files true)
 
 (name Cadeque)
@@ -12,12 +12,15 @@
 (package
   (name deques)
   (allow_empty)
-  (depends (ocaml (>= "4.08"))))
+  (depends (ocaml (>= "4.08")))
+)
 
 (package
-  (name coq-deques)
+  (name rocq-deques)
   (depends
-    (coq (= "8.19.0"))
-    (coq-aac-tactics (>= "8.19.1"))
-    (coq-hammer-tactics (>= "1.3.2+8.19"))
-    (coq-equations (>= "1.3+8.19"))))
+    (rocq (= "9.2.0"))
+    rocq-aac-tactics
+    coq-hammer-tactics
+    rocq-equations
+  )
+)

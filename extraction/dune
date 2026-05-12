@@ -1,11 +1,34 @@
-(coq.extraction
+(rocq.extraction
   (prelude Extraction)
-  (extracted_modules
-    Datatypes Classes Nat EqDec PeanoNat
-    GYR GYOR
-    Deque Deque_lvl Deque_plain
-    Steque
-    core types operations
+  (extracted_files
+    Datatypes.ml
+    Datatypes.mli
+    Classes.ml
+    Classes.mli
+    Nat.ml
+    Nat.mli
+    EqDec.ml
+    EqDec.mli
+    PeanoNat.ml
+    PeanoNat.mli
+    GYR.ml
+    GYR.mli
+    GYOR.ml
+    GYOR.mli
+    Deque.ml
+    Deque.mli
+    Deque_lvl.ml
+    Deque_lvl.mli
+    Deque_plain.ml
+    Deque_plain.mli
+    Steque.ml
+    Steque.mli
+    Core.ml
+    Core.mli
+    Types.ml
+    Types.mli
+    Operations.ml
+    Operations.mli
   )
   (flags -w -extraction-default-directory
      -w -extraction-opaque-accessed)
