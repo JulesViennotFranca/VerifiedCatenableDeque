@@ -1,3 +1,8 @@
+(* This file contains type and predicate definitions that offer an abstracted
+   view (that is, a simplified view) of catenable deques. It is not actually
+   used in our final construction and proof of catenable deques, but it can
+   be useful as a pedagogical guide. It is unfortunately unfinished. *)
+
 (* -------------------------------------------------------------------------- *)
 
 (* There are four colors. *)
@@ -55,9 +60,8 @@ Local Ltac destruct_wf_forest :=
 (* A tree / forest is decomposed into a set of packets as follows.
    The shape of each packet is dictated by the colors of the nodes. *)
 
-(* TODO possibly rename isPacket and isPartitioned *)
-(* TODO can we prove that the decomposition is unique (determined
-   by the colors of the nodes?) *)
+(* Can we prove that the decomposition is unique (determined by the
+   colors of the nodes)? TODO *)
 
 Inductive isPacket : tree -> Prop :=
 
@@ -266,7 +270,7 @@ Hint Constructors isValidPacket isValidPacketC isValidPartitioned : valid.
 
 (* -------------------------------------------------------------------------- *)
 
-(* During to the coloring constraints that it imposes, [isValidPacket] is
+(* Due to the coloring constraints that it imposes, [isValidPacket] is
    stronger than [isPacket]. Similarly, [isValidPartitioned] is stronger
    than [isPartitioned]. *)
 
@@ -466,22 +470,25 @@ Proof.
 Qed.
 
 (* TODO ideally, we should also prove that every well-formed forest
-   that satisfies isValidPartitioned can be encoded as a chain
-   (that is, there exists a chain whose decoded form is the original forest). *)
+   that satisfies isValidPartitioned can be encoded as a chain (that
+   is, there exists a chain whose decoded form is the original
+   forest). *)
 
 (* -------------------------------------------------------------------------- *)
 
-Module A. (* TODO avoid name clash *)
+Module A. (* this submodule helps avoid name clashes *)
 
-(* On traduit nos définitions des prédicats packet et partitioned avec les
-   contraintes de régularité en types.
+(* On traduit nos définitions des prédicats packet et partitioned avec
+   les contraintes de régularité en types.
 
-   Les packets contiennent un body, une suite de node jaunes et oranges, et une
-   tail, un node vert ou rouge.
+   Les packets contiennent un body, une suite de node jaunes et
+   oranges, et une tail, un node vert ou rouge.
 
    Les partitioneds sont codés par des chains.
 
-   Je présente ici une version simplifiée du code du git. Quand je parle du code complet, je fais référence au code présent ici : https://github.com/JulesViennotFranca/VerifiedCatenableDeque/blob/main/theory/cadeque/types.v *)
+   Je présente ici une version simplifiée du code du git. Quand je
+   parle du code complet, je fais référence au code présent dans
+   theory/Cadeque/Types.v. *)
 
 (* La coloration permet ici de lier la couleur d'un node avec son nombre
    d'enfants dans un arbre : comme les feuilles sont vertes, un node jaune,
@@ -553,10 +560,13 @@ Inductive body : Type :=
     body ->     (* continuation of the body *)
     body
 
-(* Un packet contient un body et une tail. Le packet hérite du nombre d'enfants
-   et de la couleur de sa tail.
+(* Un packet contient un body et une tail. Le packet hérite du nombre
+   d'enfants et de la couleur de sa tail.
 
-   Dans le code complet, un packet est aussi paramétré par le genre de son premier node. Les packets sont de plus paramétré par les types d'éléments contenus dans leur premier node et dans les nodes fils de leur tail. *)
+   Dans le code complet, un packet est aussi paramétré par le genre de
+   son premier node. Les packets sont de plus paramétré par les types
+   d'éléments contenus dans leur premier node et dans les nodes fils
+   de leur tail. *)
 
 with packet : nat -> color -> Type :=
   | Packet {nbr_child : nat} {c : color} :
@@ -565,27 +575,31 @@ with packet : nat -> color -> Type :=
     node nbr_child c -> (* tail of the packet *)
     packet nbr_child c
 
-(* Une chain représente une forêt partitionnée en packets. Les contraintes 1 et
-   3 de régularité sont exprimées dans le constructeur [SingleChain].
+(* Une chain représente une forêt partitionnée en packets. Les contraintes 1
+   et 3 de régularité sont exprimées dans le constructeur [SingleChain].
 
-   Dans le code complet, le paramètre de type [arity] représentant le genre de
-   la chain est exactement le même que notre paramètre entier ici.
+   Dans le code complet, le paramètre de type [arity] représentant le genre
+   de la chain est exactement le même que notre paramètre entier ici.
 
    Dans le code complet, un paramètre de genre de node est ajouté. Pour une
    single chain, il fait sens, c'est le genre du node racine de la single
-   chain. Pour la empty chain et les pair chains, il n'y a pas de tel node dont
-   on voudrait savoir le genre. On attribut alors à l'empty chain et aux pair
-   chains la valeur [only] pour ce paramètre.
+   chain. Pour la empty chain et les pair chains, il n'y a pas de tel node
+   dont on voudrait savoir le genre. On attribut alors à l'empty chain et
+   aux pair chains la valeur [only] pour ce paramètre.
 
-   Cette valeur [only] peut sembler arbitraire mais il y a une raison. Dans les
-   single chains, les seules qui peuvent représenter à elle seule une cadeque
-   ou être une following chain sont celles dont la racine est un only node. Ces
-   single chains sont labélisées par [only] pour le paramètre en question.
+   Cette valeur [only] peut sembler arbitraire mais il y a une raison. Dans
+   les single chains, les seules qui peuvent représenter à elle seule une
+   cadeque ou être une following chain sont celles dont la racine est un
+   only node. Ces single chains sont labélisées par [only] pour le paramètre
+   en question.
 
    Comme l'empty chain et les pair chains peuvent être à elles seules une
-   cadeque ou être une following chain, elles sont aussi labélisées par [only].
+   cadeque ou être une following chain, elles sont aussi labélisées par
+   [only].
 
-   Les chains labélisées par [left] ou [right] sont forcément des singles chains, et ne peuvent être que des hanging chains ou des singles chains formant une pair chain. *)
+   Les chains labélisées par [left] ou [right] sont forcément des singles
+   chains, et ne peuvent être que des hanging chains ou des singles chains
+   formant une pair chain. *)
 
 with chain : nat -> color -> color -> Type :=
 
@@ -602,11 +616,12 @@ with chain : nat -> color -> color -> Type :=
     chain 1 cr cr ->
     chain 2 cl cr.
 
-(* Les cadeques sont des forêts de 0, 1 ou 2 arbres. On les code donc avec une
-   chain quelconque. La contrainte 4 de régularité impose que cette chain ait
-   ses deux couleurs vertes.
+(* Les cadeques sont des forêts de 0, 1 ou 2 arbres. On les code donc avec
+   une chain quelconque. La contrainte 4 de régularité impose que cette
+   chain ait ses deux couleurs vertes.
 
-   Dans le code complet, comme évoqué plus haut, on précise en plus que cette chain doit être [only] pour pouvoir représenter une cadeque. *)
+   Dans le code complet, comme évoqué plus haut, on précise en plus que
+   cette chain doit être [only] pour pouvoir représenter une cadeque. *)
 
 Inductive cadeque : Type :=
   | Cadeque {n : nat} : chain n Green Green -> cadeque.
