@@ -23,9 +23,6 @@ Inductive color := Red | Yellow | Green.
 Definition color_constraint := color -> Prop.
 Implicit Type cc : color_constraint.
 
-Definition valid_c (P : color_constraint -> Prop) (c : color) : Prop :=
-  forall cc, cc c -> P cc.
-
 Definition red c := c = Red.
 Definition yellow c := c = Yellow.
 Definition green c := c = Green.
@@ -40,31 +37,45 @@ Hint Unfold green_or_red : easy.
 Hint Unfold green_or_yellow : easy.
   (* this helps [eauto with easy], which the tactic [easy] uses *)
 
-Lemma red_is_not_green : ~ (Red = Green).
-Proof. intro; congruence. Qed.
+(* +------------------------------------------------------------------------+ *)
+(* |                                Tactics                                 | *)
+(* +------------------------------------------------------------------------+ *)
 
-Lemma yellow_is_not_red : ~ (Yellow = Red).
-Proof. intro; congruence. Qed.
+Ltac unpack :=
+  match goal with
+  |                |- ~ _ => intro
+  | h: _ /\ _      |- _   => destruct h
+  | h: _ \/ _      |- _   => destruct h
+  | h: exists x, _ |- _   => destruct h
+  end.
 
-Lemma red_or_yellow_is_not_green : ~ (Red = Green \/ Yellow = Green).
-Proof. intros [|]; congruence. Qed.
+Ltac deduce :=
+  simpl in *; repeat unpack.
 
-Lemma yellow_is_not_green_or_red :
-  ~ (Yellow = Green \/ Yellow = Red).
-Proof. intros [|]; congruence. Qed.
+Ltac crunch :=
+  lazymatch goal with
+  | |- _ /\ _ =>
+      split; crunch
+  | |- _ \/ _ => try solve [left; crunch]; right; crunch
+  | _ =>
+      deduce;
+      try tauto;
+      try congruence;
+      try lia;
+      eauto with easy
+  end.
 
-Lemma red_is_not_green_or_yellow :
-  green_or_yellow Red -> False.
-Proof. intros [|]; congruence. Qed.
+Ltac easy :=
+  solve [ crunch ].
 
-#[local] Hint Resolve
-  red_is_not_green
-  yellow_is_not_red
-  red_or_yellow_is_not_green
-  yellow_is_not_green_or_red
-  red_is_not_green_or_yellow
-: easy.
-  (* this helps [eauto with easy], which the tactic [easy] uses *)
+Ltac pose_destruct p d Heq Hpos :=
+  remember d as tmp eqn: Htmp;
+  pose (p) as Hp; rewrite <-Htmp in Hp; simpl in Hp;
+  destruct tmp; simpl in *;
+  rename Htmp into Heq; rename Hp into Hpos.
+
+Ltac app_left := repeat rewrite app_assoc.
+Ltac app_right := repeat rewrite <-app_assoc.
 
 (* +------------------------------------------------------------------------+ *)
 (* |                                 Types                                  | *)
@@ -97,7 +108,29 @@ Definition colored_buffer {A} (b : buffer A) (c : color) : Prop :=
 Lemma colored_buffer_red {A} (b : buffer A) : colored_buffer b Red.
 Proof. destruct b; simpl; auto. Qed.
 
+(* A green buffer can be colored yellow. *)
+Lemma colored_buffer_green_to_yellow {A} (b : buffer A) :
+  colored_buffer b Green -> colored_buffer b Yellow.
+Proof. destruct b; simpl; auto; intro cc; congruence. Qed.
+
 #[local] Hint Resolve colored_buffer_red : easy.
+#[local] Hint Resolve colored_buffer_green_to_yellow : easy.
+
+(* Distinguish if the two buffers are green or not. *)
+Lemma are_green_buffers {A} (p1 s1 : buffer A) :
+  (colored_buffer p1 Green /\ colored_buffer s1 Green) +
+  ~ (colored_buffer p1 Green /\ colored_buffer s1 Green).
+Proof.
+  destruct p1; destruct s1; try (left; easy); right; easy.
+Qed.
+
+(* Distinguish if the two buffers are yellow or not. *)
+Lemma are_yellow_buffers {A} (p1 s1 : buffer A) :
+  (colored_buffer p1 Yellow /\ colored_buffer s1 Yellow) +
+  ~ (colored_buffer p1 Yellow /\ colored_buffer s1 Yellow).
+Proof.
+  destruct p1; destruct s1; try (left; easy); right; easy.
+Qed.
 
 (* A type for packets. *)
 Inductive packet (A : Type) : Type -> Type :=
@@ -107,17 +140,17 @@ Arguments Hole {A}.
 Arguments Packet {A B}.
 
 (* A packet has the same color as its two buffers. *)
-Definition colored_packet {A B} (p : packet A B) (c : color) : Prop :=
-  match p with
+Definition colored_packet {A B} (pkt : packet A B) (c : color) : Prop :=
+  match pkt with
   | Hole => True
-  | Packet bp _ bs => colored_buffer bp c /\ colored_buffer bs c
+  | Packet p _ s => colored_buffer p c /\ colored_buffer s c
   end.
 
 (* Well-formedness of packets.
    The first packet can have any color;
    the following packets must be yellow or empty. *)
-Fixpoint wf_packet {A B} (deep : Prop) (p : packet A B) : Prop :=
-  match p with
+Fixpoint wf_packet {A B} (deep : Prop) (pkt : packet A B) : Prop :=
+  match pkt with
   | Hole => deep
   | Packet p pkt s =>
     ((deep /\ colored_packet (Packet p pkt s) Yellow) \/ ~deep) /\
@@ -132,34 +165,63 @@ Arguments Ending {A}.
 Arguments Chain {A B}.
 
 (* A chain has the same color as its first packet. *)
-Definition colored_chain {A} (c : chain A) cc : Prop :=
-  match c with
+Definition colored_chain {A} (ch : chain A) cc : Prop :=
+  match ch with
   | Ending _ => True
-  | Chain p _ => exists c, cc c /\ colored_packet p c
+  | Chain pkt _ => exists c, cc c /\ colored_packet pkt c
   end.
+
+(* A green chain can be colored green or yellow. *)
+Lemma colored_chain_green_to_green_or_yellow {A} (ch : chain A) :
+  colored_chain ch green -> colored_chain ch green_or_yellow.
+Proof. intro chg; destruct ch; easy. Qed.
+
+#[local] Hint Resolve colored_chain_green_to_green_or_yellow : easy.
 
 (* [regularity p] has type [color_constraint]. It is the color constraint
    imposed by the packet [p] on the chain that follows it. *)
-Definition regularity {A B} (p : packet A B) (c : color) : Prop :=
-  match p with
+Definition regularity {A B} (pkt : packet A B) (c : color) : Prop :=
+  match pkt with
   | Hole => True
   | Packet _ _ _ =>
     (* A green packet must be followed with a green or red chain. *)
-    (colored_packet p Green /\ green_or_red c) \/
+    (colored_packet pkt Green /\ green_or_red c) \/
     (* A yellow or red packet must be followed with a green chain. *)
-    (~ colored_packet p Green /\ green c)
+    (~ colored_packet pkt Green /\ green c)
   end.
 
-Fixpoint wf_chain {A} (c : chain A) : Prop :=
-  match c with
+(* Green validates all regularity color constraints. *)
+Lemma regularity_green {A B} (pkt : packet A B) : (regularity pkt) Green.
+Proof.
+  destruct pkt as [|B p pkt s]; simpl; auto.
+  destruct p; destruct s; easy.
+Qed.
+
+(* A green chain validates all regularity color constraints. *)
+Lemma colored_chain_green_to_regularity {A B}
+  (ch : chain B) (pkt : packet A B) :
+    colored_chain ch green -> colored_chain ch (regularity pkt).
+Proof.
+  intro chg; destruct ch; simpl in *; auto.
+  destruct chg as [c [cg pktc]].
+  exists c; split; auto.
+  unfold green in cg; subst.
+  apply regularity_green.
+Qed.
+
+#[local] Hint Resolve colored_chain_green_to_regularity : easy.
+
+(* Well-formedness of chains. *)
+Fixpoint wf_chain {A} (ch : chain A) : Prop :=
+  match ch with
   | Ending _ => True
-  | Chain p c =>
+  | Chain pkt ch =>
     (* The top packet must be well-formed. *)
-    wf_packet False p /\
-    (* The packet [p] imposes a color constraint on the subchain [c]. *)
-    colored_chain c (regularity p) /\
-    (* The subchain must be well-formed. *)
-    wf_chain c
+    wf_packet False pkt /\
+    (* The packet [pkt] imposes a color constraint on the subchain [ch]. *)
+    colored_chain ch (regularity pkt) /\
+    (* The subchain [ch] must be well-formed. *)
+    wf_chain ch
   end.
 
 (* A type decomposing buffers according to their number of elements.
@@ -264,7 +326,7 @@ decompose_main_seq (Overflow b _ _) := buffer_seq b.
 Equations decompose_rest_seq {A : Type} : decompose A -> list A :=
 decompose_rest_seq (Underflow _) := [];
 decompose_rest_seq (Ok _ _) := [];
-decompose_rest_seq (Overflow _ _ (x, y)) := [x] ++ [y].
+decompose_rest_seq (Overflow _ _ p) := pair_seq p.
 
 (* Returns the sequence associated to a sandwiched buffer. *)
 Equations sandwich_seq {A : Type} : sandwich A -> list A :=
@@ -277,43 +339,6 @@ Equations deque_seq {A} : deque A -> list A :=
 deque_seq (T c) := chain_seq c.
 
 (* +------------------------------------------------------------------------+ *)
-(* |                                Tactics                                 | *)
-(* +------------------------------------------------------------------------+ *)
-
-Ltac unpack :=
-  match goal with
-  |                |- ~ _ => intro
-  | h: _ /\ _      |- _   => destruct h
-  | h: _ \/ _      |- _   => destruct h
-  | h: exists x, _ |- _   => destruct h
-  end.
-
-Ltac deduce :=
-  simpl in *; repeat unpack.
-
-Ltac crunch :=
-  lazymatch goal with
-  | |- _ /\ _ =>
-      split; crunch
-  | |- _ \/ _ => try solve [left; crunch]; right; crunch
-  | _ =>
-      deduce;
-      try tauto;
-      try congruence;
-      try lia;
-      eauto with easy
-  end.
-
-Ltac easy :=
-  solve [ crunch ].
-
-Ltac pose_destruct p d Heq Hpos :=
-  remember d as tmp eqn: Htmp;
-  pose (p) as Hp; rewrite <-Htmp in Hp; simpl in Hp;
-  destruct tmp; simpl in *;
-  rename Htmp into Heq; rename Hp into Hpos.
-
-(* +------------------------------------------------------------------------+ *)
 (* |                                  Core                                  | *)
 (* +------------------------------------------------------------------------+ *)
 
@@ -322,173 +347,141 @@ Proof. intro Hf. exfalso. apply Hf. exact tp. Qed.
 
 (* Pushes on a green buffer. *)
 Equations green_push {A}
-  (x : A) (b : buffer A) (cc : colored_buffer b Green) : buffer A :=
+  (x : A) (b : buffer A) (bg : colored_buffer b Green) : buffer A :=
 green_push x (B2 a b)   _  := B3 x a b;
 green_push x (B3 a b c) _  := B4 x a b c;
-green_push _ _          cc := falsity cc _.
+green_push _ _          bg := falsity bg _.
 Next Obligation. easy. Qed.
 Next Obligation. easy. Qed.
 
 Lemma green_push_yellow {A}
-  (x : A) (b : buffer A) (cc : colored_buffer b Green) :
-    colored_buffer (green_push x b cc) Yellow.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy).
-  - reflexivity.
-  - simpl. right. reflexivity.
-Qed.
+  (x : A) (b : buffer A) (bg : colored_buffer b Green) :
+    colored_buffer (green_push x b bg) Yellow.
+Proof. destruct b; easy. Qed.
 
 Lemma green_push_seq {A}
-  (x : A) (b : buffer A) (cc : colored_buffer b Green) :
-    buffer_seq (green_push x b cc) = [x] ++ buffer_seq b.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy); reflexivity.
-Qed.
+  (x : A) (b : buffer A) (bg : colored_buffer b Green) :
+    buffer_seq (green_push x b bg) = [x] ++ buffer_seq b.
+Proof. destruct b; easy. Qed.
 
 (* Injects on a green buffer. *)
 Equations green_inject {A}
-  (b : buffer A) (x : A) (cc : colored_buffer b Green) : buffer A :=
+  (b : buffer A) (x : A) (bg : colored_buffer b Green) : buffer A :=
 green_inject (B2 a b)   x _  := B3 a b x;
 green_inject (B3 a b c) x _  := B4 a b c x;
-green_inject _          _ cc := falsity cc _.
+green_inject _          _ bg := falsity bg _.
 Next Obligation. easy. Qed.
 Next Obligation. easy. Qed.
 
 Lemma green_inject_yellow {A}
-  (b : buffer A) (x : A) (cc : colored_buffer b Green) :
-    colored_buffer (green_inject b x cc) Yellow.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy).
-  - reflexivity.
-  - simpl. right. reflexivity.
-Qed.
+  (b : buffer A) (x : A) (bg : colored_buffer b Green) :
+    colored_buffer (green_inject b x bg) Yellow.
+Proof. destruct b; easy. Qed.
 
 Lemma green_inject_seq {A}
-  (b : buffer A) (x : A) (cc : colored_buffer b Green) :
-    buffer_seq (green_inject b x cc) = buffer_seq b ++ [x].
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy); reflexivity.
-Qed.
+  (b : buffer A) (x : A) (bg : colored_buffer b Green) :
+    buffer_seq (green_inject b x bg) = buffer_seq b ++ [x].
+Proof. destruct b; easy. Qed.
 
 (* Pops off a green buffer. *)
 Equations green_pop {A}
-  (b : buffer A) (cc : colored_buffer b Green) : A * buffer A :=
+  (b : buffer A) (bg : colored_buffer b Green) : A * buffer A :=
 green_pop (B2 a b)   _  := (a, B1 b);
 green_pop (B3 a b c) _  := (a, B2 b c);
-green_pop _          cc := falsity cc _.
+green_pop _          bg := falsity bg _.
 Next Obligation. easy. Qed.
 Next Obligation. easy. Qed.
 
 Lemma green_pop_yellow {A}
-  (b : buffer A) (cc : colored_buffer b Green) :
-    let '(x, b') := green_pop b cc in
+  (b : buffer A) (bg : colored_buffer b Green) :
+    let '(x, b') := green_pop b bg in
     colored_buffer b' Yellow.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy).
-  - simpl. right. reflexivity.
-  - reflexivity.
-Qed.
+Proof. destruct b; easy. Qed.
 
-Lemma green_pop_seq {A} (b : buffer A) (cc : colored_buffer b Green) :
-  let '(x, b') := green_pop b cc in
+Lemma green_pop_seq {A} (b : buffer A) (bg : colored_buffer b Green) :
+  let '(x, b') := green_pop b bg in
   [x] ++ buffer_seq b' = buffer_seq b.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy); reflexivity.
-Qed.
+Proof. destruct b; easy. Qed.
 
 (* Ejects off a green buffer. *)
 Equations green_eject {A}
-  (b : buffer A) (cc : colored_buffer b Green) : buffer A * A :=
+  (b : buffer A) (bg : colored_buffer b Green) : buffer A * A :=
 green_eject (B2 a b)   _  := (B1 a, b);
 green_eject (B3 a b c) _  := (B2 a b, c);
-green_eject _          cc := falsity cc _.
+green_eject _          bg := falsity bg _.
 Next Obligation. easy. Qed.
 Next Obligation. easy. Qed.
 
 Lemma green_eject_yellow {A}
-  (b : buffer A) (cc : colored_buffer b Green) :
-    let '(b', x) := green_eject b cc in
+  (b : buffer A) (bg : colored_buffer b Green) :
+    let '(b', x) := green_eject b bg in
     colored_buffer b' Yellow.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy).
-  - simpl. right. reflexivity.
-  - reflexivity.
-Qed.
+Proof. destruct b; easy. Qed.
 
-Lemma green_eject_seq {A} (b : buffer A) (cc : colored_buffer b Green) :
-  let '(b', x) := green_eject b cc in
+Lemma green_eject_seq {A} (b : buffer A) (bg : colored_buffer b Green) :
+  let '(b', x) := green_eject b bg in
   buffer_seq b' ++ [x] = buffer_seq b.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy); reflexivity.
-Qed.
+Proof. destruct b; easy. Qed.
 
 (* Pushes on a yellow buffer. *)
 Equations yellow_push {A}
-  (x : A) (b : buffer A) (cc : colored_buffer b Yellow) : buffer A :=
-yellow_push x (B1 a)       _  := B2 x a;
-yellow_push x (B2 a b)     _  := B3 x a b;
-yellow_push x (B3 a b c)   _  := B4 x a b c;
-yellow_push x (B4 a b c d) _  := B5 x a b c d;
-yellow_push x _            cc := falsity cc _.
+  (x : A) (b : buffer A) (by_ : colored_buffer b Yellow) : buffer A :=
+yellow_push x (B1 a)       _   := B2 x a;
+yellow_push x (B2 a b)     _   := B3 x a b;
+yellow_push x (B3 a b c)   _   := B4 x a b c;
+yellow_push x (B4 a b c d) _   := B5 x a b c d;
+yellow_push x _            by_ := falsity by_ _.
 
 Lemma yellow_push_seq {A}
-  (x : A) (b : buffer A) (cc : colored_buffer b Yellow) :
-    buffer_seq (yellow_push x b cc) = [x] ++ buffer_seq b.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy); reflexivity.
-Qed.
+  (x : A) (b : buffer A) (by_ : colored_buffer b Yellow) :
+    buffer_seq (yellow_push x b by_) = [x] ++ buffer_seq b.
+Proof. destruct b; easy. Qed.
 
 (* Injects on a yellow buffer. *)
 Equations yellow_inject {A}
-  (b : buffer A) (x : A) (cc : colored_buffer b Yellow) : buffer A :=
-yellow_inject (B1 a)       x _  := B2 a x;
-yellow_inject (B2 a b)     x _  := B3 a b x;
-yellow_inject (B3 a b c)   x _  := B4 a b c x;
-yellow_inject (B4 a b c d) x _  := B5 a b c d x;
-yellow_inject _            x cc := falsity cc _.
+  (b : buffer A) (x : A) (by_ : colored_buffer b Yellow) : buffer A :=
+yellow_inject (B1 a)       x _   := B2 a x;
+yellow_inject (B2 a b)     x _   := B3 a b x;
+yellow_inject (B3 a b c)   x _   := B4 a b c x;
+yellow_inject (B4 a b c d) x _   := B5 a b c d x;
+yellow_inject _            x by_ := falsity by_ _.
 
 Lemma yellow_inject_seq {A}
-  (b : buffer A) (x : A) (cc : colored_buffer b Yellow) :
-    buffer_seq (yellow_inject b x cc) = buffer_seq b ++ [x].
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy); reflexivity.
-Qed.
+  (b : buffer A) (x : A) (by_ : colored_buffer b Yellow) :
+    buffer_seq (yellow_inject b x by_) = buffer_seq b ++ [x].
+Proof. destruct b; easy. Qed.
 
 (* Pops off a yellow buffer. *)
 Equations yellow_pop {A}
-  (b : buffer A) (cc : colored_buffer b Yellow) : A * buffer A :=
-yellow_pop (B1 a)       _  := (a, B0);
-yellow_pop (B2 a b)     _  := (a, B1 b);
-yellow_pop (B3 a b c)   _  := (a, B2 b c);
-yellow_pop (B4 a b c d) _  := (a, B3 b c d);
-yellow_pop _            cc := falsity cc _.
+  (b : buffer A) (by_ : colored_buffer b Yellow) : A * buffer A :=
+yellow_pop (B1 a)       _   := (a, B0);
+yellow_pop (B2 a b)     _   := (a, B1 b);
+yellow_pop (B3 a b c)   _   := (a, B2 b c);
+yellow_pop (B4 a b c d) _   := (a, B3 b c d);
+yellow_pop _            by_ := falsity by_ _.
 
-Lemma yellow_pop_seq {A} (b : buffer A) (cc : colored_buffer b Yellow) :
-  let '(x, b') := yellow_pop b cc in
+Lemma yellow_pop_seq {A} (b : buffer A) (by_ : colored_buffer b Yellow) :
+  let '(x, b') := yellow_pop b by_ in
   [x] ++ buffer_seq b' = buffer_seq b.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy); reflexivity.
-Qed.
+Proof. destruct b; easy. Qed.
 
 (* Ejects off a yellow buffer. *)
 Equations yellow_eject {A}
-  (b : buffer A) (cc : colored_buffer b Yellow) : buffer A * A :=
-yellow_eject (B1 a)       _  := (B0, a);
-yellow_eject (B2 a b)     _  := (B1 a, b);
-yellow_eject (B3 a b c)   _  := (B2 a b, c);
-yellow_eject (B4 a b c d) _  := (B3 a b c, d);
-yellow_eject _            cc := falsity cc _.
+  (b : buffer A) (by_ : colored_buffer b Yellow) : buffer A * A :=
+yellow_eject (B1 a)       _   := (B0, a);
+yellow_eject (B2 a b)     _   := (B1 a, b);
+yellow_eject (B3 a b c)   _   := (B2 a b, c);
+yellow_eject (B4 a b c d) _   := (B3 a b c, d);
+yellow_eject _            by_ := falsity by_ _.
 
-Lemma yellow_eject_seq {A} (b : buffer A) (cc : colored_buffer b Yellow) :
-  let '(b', x) := yellow_eject b cc in
+Lemma yellow_eject_seq {A} (b : buffer A) (by_ : colored_buffer b Yellow) :
+  let '(b', x) := yellow_eject b by_ in
   buffer_seq b' ++ [x] = buffer_seq b.
-Proof.
-  destruct b; try (apply (falsity cc); simpl; easy); reflexivity.
-Qed.
+Proof. destruct b; easy. Qed.
 
 (* Pushes on a buffer, and returns a green chain. *)
 Equations buffer_push {A} (x : A) (b : buffer A) : chain A :=
-buffer_push x B0             := Ending (B1 x);
+buffer_push x  B0            := Ending (B1 x);
 buffer_push x (B1 a)         := Ending (B2 x a);
 buffer_push x (B2 a b)       := Ending (B3 x a b);
 buffer_push x (B3 a b c)     := Ending (B4 x a b c);
@@ -497,18 +490,11 @@ buffer_push x (B5 a b c d e) :=
     Chain (Packet (B3 x a b) Hole (B3 c d e)) (Ending B0).
 
 Lemma buffer_push_wf {A} (x : A) (b : buffer A) : wf_chain (buffer_push x b).
-Proof.
-  destruct b; simpl; try reflexivity.
-  split; split; try reflexivity.
-  right. intro. congruence.
-Qed.
+Proof. destruct b; easy. Qed.
 
 Lemma buffer_push_green {A} (x : A) (b : buffer A) :
   forall cc, cc Green -> colored_chain (buffer_push x b) cc.
-Proof.
-  destruct b; simpl; try reflexivity.
-  exists Green; easy.
-Qed.
+Proof. destruct b; easy. Qed.
 
 Lemma buffer_push_seq {A} (x : A) (b : buffer A) :
     chain_seq (buffer_push x b) = [x] ++ buffer_seq b.
@@ -516,7 +502,7 @@ Proof. destruct b; reflexivity. Qed.
 
 (* Injects on a buffer, and returns a green chain. *)
 Equations buffer_inject {A} (b : buffer A) (x : A) : chain A :=
-buffer_inject B0 x             := Ending (B1 x);
+buffer_inject  B0 x            := Ending (B1 x);
 buffer_inject (B1 a) x         := Ending (B2 a x);
 buffer_inject (B2 a b) x       := Ending (B3 a b x);
 buffer_inject (B3 a b c) x     := Ending (B4 a b c x);
@@ -526,18 +512,11 @@ buffer_inject (B5 a b c d e) x :=
 
 Lemma buffer_inject_wf {A} (b : buffer A) (x : A) :
   wf_chain (buffer_inject b x).
-Proof.
-  destruct b; simpl; try reflexivity.
-  split; split; try reflexivity.
-  right. intro. congruence.
-Qed.
+Proof. destruct b; easy. Qed.
 
 Lemma buffer_inject_green {A} (b : buffer A) (x : A) :
   forall cc, cc Green -> colored_chain (buffer_inject b x) cc.
-Proof.
-  destruct b; simpl; try reflexivity.
-  exists Green; easy.
-Qed.
+Proof. destruct b; easy. Qed.
 
 Lemma buffer_inject_seq {A} (b : buffer A) (x : A) :
     chain_seq (buffer_inject b x) = buffer_seq b ++ [x].
@@ -545,7 +524,7 @@ Proof. destruct b; reflexivity. Qed.
 
 (* Pops off a buffer, and returns an option. *)
 Equations buffer_pop {A} (b : buffer A) : option (A * buffer A) :=
-buffer_pop B0             := None;
+buffer_pop  B0            := None;
 buffer_pop (B1 a)         := Some (a, B0);
 buffer_pop (B2 a b)       := Some (a, B1 b);
 buffer_pop (B3 a b c)     := Some (a, B2 b c);
@@ -553,16 +532,15 @@ buffer_pop (B4 a b c d)   := Some (a, B3 b c d);
 buffer_pop (B5 a b c d e) := Some (a, B4 b c d e).
 
 Lemma buffer_pop_seq {A} (b : buffer A) :
-    buffer_seq b =
-      match buffer_pop b with
-        | None => []
-        | Some (x, b') => [x] ++ buffer_seq b'
-      end.
+    buffer_seq b = match buffer_pop b with
+                   | None => []
+                   | Some (x, b') => [x] ++ buffer_seq b'
+                   end.
 Proof. destruct b; reflexivity. Qed.
 
 (* Ejects off a buffer, and returns an option. *)
 Equations buffer_eject {A} (b : buffer A) : option (buffer A * A) :=
-buffer_eject B0             := None;
+buffer_eject  B0            := None;
 buffer_eject (B1 a)         := Some (B0, a);
 buffer_eject (B2 a b)       := Some (B1 a, b);
 buffer_eject (B3 a b c)     := Some (B2 a b, c);
@@ -570,16 +548,15 @@ buffer_eject (B4 a b c d)   := Some (B3 a b c, d);
 buffer_eject (B5 a b c d e) := Some (B4 a b c d, e).
 
 Lemma buffer_eject_seq {A} (b : buffer A) :
-    buffer_seq b =
-      match buffer_eject b with
-        | None => []
-        | Some (b', x) => buffer_seq b' ++ [x]
-      end.
+    buffer_seq b = match buffer_eject b with
+                   | None => []
+                   | Some (b', x) => buffer_seq b' ++ [x]
+                   end.
 Proof. destruct b; reflexivity. Qed.
 
 (* Pushes then ejects. *)
 Equations prefix_rot {A} (x : A) (b : buffer A) : buffer A * A :=
-prefix_rot x B0             := (B0, x);
+prefix_rot x  B0            := (B0, x);
 prefix_rot x (B1 a)         := (B1 x, a);
 prefix_rot x (B2 a b)       := (B2 x a, b);
 prefix_rot x (B3 a b c)     := (B3 x a b, c);
@@ -593,7 +570,7 @@ Proof. destruct b; reflexivity. Qed.
 
 (* Injects then pops. *)
 Equations suffix_rot {A} (b : buffer A) (x : A) : A * buffer A :=
-suffix_rot B0 x             := (x, B0);
+suffix_rot  B0 x            := (x, B0);
 suffix_rot (B1 a) x         := (a, B1 x);
 suffix_rot (B2 a b) x       := (a, B2 b x);
 suffix_rot (B3 a b c) x     := (a, B3 b c x);
@@ -638,11 +615,7 @@ suffix12 x (Some y) := B2 x y.
 
 Lemma suffix12_yellow {A} (x : A) (o : option A) :
   colored_buffer (suffix12 x o) Yellow.
-Proof.
-  destruct o; simpl.
-  - reflexivity.
-  - right. reflexivity.
-Qed.
+Proof. destruct o; easy. Qed.
 
 Lemma suffix12_seq {A} (x : A) (o : option A) :
   buffer_seq (suffix12 x o) = [x] ++ option_seq o.
@@ -652,11 +625,11 @@ Proof. destruct o; reflexivity. Qed.
    decomposition: when the buffer has 4 or 5 elements, those at the end are
    set appart. *)
 Equations prefix_decompose {A} (b : buffer A) : decompose A :=
-prefix_decompose B0 := Underflow None;
-prefix_decompose (B1 a) := Underflow (Some a);
-prefix_decompose (B2 a b) := Ok (B2 a b) I;
-prefix_decompose (B3 a b c) := Ok (B3 a b c) I;
-prefix_decompose (B4 a b c d) := Overflow (B2 a b) I (c, d);
+prefix_decompose  B0            := Underflow None;
+prefix_decompose (B1 a)         := Underflow (Some a);
+prefix_decompose (B2 a b)       := Ok (B2 a b) I;
+prefix_decompose (B3 a b c)     := Ok (B3 a b c) I;
+prefix_decompose (B4 a b c d)   := Overflow (B2 a b) I (c, d);
 prefix_decompose (B5 a b c d e) := Overflow (B3 a b c) I (d, e).
 
 Lemma prefix_decompose_seq {A} (b : buffer A) :
@@ -668,11 +641,11 @@ Proof. destruct b; reflexivity. Qed.
    decomposition: when the buffer has 4 or 5 elements, those at the start are
    set appart. *)
 Equations suffix_decompose {A} (b : buffer A) : decompose A :=
-suffix_decompose B0 := Underflow None;
-suffix_decompose (B1 a) := Underflow (Some a);
-suffix_decompose (B2 a b) := Ok (B2 a b) I;
-suffix_decompose (B3 a b c) := Ok (B3 a b c) I;
-suffix_decompose (B4 a b c d) := Overflow (B2 c d) I (a, b);
+suffix_decompose  B0            := Underflow None;
+suffix_decompose (B1 a)         := Underflow (Some a);
+suffix_decompose (B2 a b)       := Ok (B2 a b) I;
+suffix_decompose (B3 a b c)     := Ok (B3 a b c) I;
+suffix_decompose (B4 a b c d)   := Overflow (B2 c d) I (a, b);
 suffix_decompose (B5 a b c d e) := Overflow (B3 c d e) I (a, b).
 
 Lemma suffix_decompose_seq {A} (b : buffer A) :
@@ -682,11 +655,11 @@ Proof. destruct b; reflexivity. Qed.
 
 (* Returns the sandwiched version of a buffer. *)
 Equations buffer_unsandwich {A} (b : buffer A) : sandwich A :=
-buffer_unsandwich B0 := Alone None;
-buffer_unsandwich (B1 a) := Alone (Some a);
-buffer_unsandwich (B2 a b) := Sandwich a B0 b;
-buffer_unsandwich (B3 a b c) := Sandwich a (B1 b) c;
-buffer_unsandwich (B4 a b c d) := Sandwich a (B2 b c) d;
+buffer_unsandwich  B0            := Alone None;
+buffer_unsandwich (B1 a)         := Alone (Some a);
+buffer_unsandwich (B2 a b)       := Sandwich a B0 b;
+buffer_unsandwich (B3 a b c)     := Sandwich a (B1 b) c;
+buffer_unsandwich (B4 a b c d)   := Sandwich a (B2 b c) d;
 buffer_unsandwich (B5 a b c d e) := Sandwich a (B3 b c d) e.
 
 Lemma buffer_unsandwich_seq {A} (b : buffer A) :
@@ -697,11 +670,11 @@ Proof. destruct b; reflexivity. Qed.
 (* Converts a buffer to a buffer of pairs. If the buffer has an odd number of
    elements, the first is returned via an option. *)
 Equations buffer_halve {A} (b : buffer A) : option A * buffer (A * A) :=
-buffer_halve B0 := (None, B0);
-buffer_halve (B1 a) := (Some a, B0);
-buffer_halve (B2 a b) := (None, B1 (a, b));
-buffer_halve (B3 a b c) := (Some a, B1 (b, c));
-buffer_halve (B4 a b c d) := (None, B2 (a, b) (c, d));
+buffer_halve  B0            := (None, B0);
+buffer_halve (B1 a)         := (Some a, B0);
+buffer_halve (B2 a b)       := (None, B1 (a, b));
+buffer_halve (B3 a b c)     := (Some a, B1 (b, c));
+buffer_halve (B4 a b c d)   := (None, B2 (a, b) (c, d));
 buffer_halve (B5 a b c d e) := (Some a, B2 (b, c) (d, e)).
 
 Lemma buffer_halve_seq {A} (b : buffer A) :
@@ -715,54 +688,43 @@ Proof. destruct b; reflexivity. Qed.
 #[export] Hint Rewrite app_nil_r : rlist.
 #[export] Hint Rewrite app_nil_l : rlist.
 #[export] Hint Rewrite flattenp_app : rlist.
-
-Lemma green_buffer_to_yellow_buffer {A} (b : buffer A) :
-  colored_buffer b Green -> colored_buffer b Yellow.
-Proof.
-  intro cc.
-  destruct b; try (apply (falsity cc); simpl; easy); reflexivity.
-Qed.
+#[export] Hint Rewrite <-flattenp_app : rlist.
 
 (* Takes a buffer of any color and a green buffer of pairs, rearranges elements
    contained in them, and returns a green buffer and a yellow buffer of pairs.
    The order of elements is preserved. *)
 Equations green_prefix_concat {A}
-  (b1 : buffer A) (b2 : buffer (A * A)) (cc : colored_buffer b2 Green) :
+  (b1 : buffer A) (b2 : buffer (A * A)) (b2g : colored_buffer b2 Green) :
   buffer A * buffer (A * A) :=
-green_prefix_concat b1 b2 cc with prefix_decompose b1 => {
-  | Underflow opt with green_pop b2 cc => {
+green_prefix_concat b1 b2 b2g with prefix_decompose b1 => {
+  | Underflow opt with green_pop b2 b2g => {
     | (ab, b) := (prefix23 opt ab, b) };
   | Ok b _ := (b, b2);
-  | Overflow b _ ab := (b, green_push ab b2 cc) }.
+  | Overflow b _ ab := (b, green_push ab b2 b2g) }.
 
 Lemma green_prefix_concat_green_yellow {A}
-  (b1 : buffer A) (b2 : buffer (A * A)) (cc : colored_buffer b2 Green) :
-    let '(b1', b2') := green_prefix_concat b1 b2 cc in
+  (b1 : buffer A) (b2 : buffer (A * A)) (b2g : colored_buffer b2 Green) :
+    let '(b1', b2') := green_prefix_concat b1 b2 b2g in
     colored_buffer b1' Green /\ colored_buffer b2' Yellow.
 Proof.
   unfold green_prefix_concat.
-  destruct (prefix_decompose b1); simpl.
-  - pose_destruct (green_pop_yellow b2 cc) (green_pop b2 cc) Heq Hcol.
-    split.
-    + apply prefix23_green.
-    + assumption.
-  - split.
-    + assumption.
-    + apply green_buffer_to_yellow_buffer; assumption.
-  - split.
-    + assumption.
-    + apply green_push_yellow.
+  destruct (prefix_decompose b1); simpl; try easy.
+  - pose_destruct (green_pop_yellow b2 b2g) (green_pop b2 b2g) Heq Hcol.
+    split; auto.
+    apply prefix23_green.
+  - split; auto.
+    apply green_push_yellow.
 Qed.
 
 Lemma green_prefix_concat_seq {A}
-  (b1 : buffer A) (b2 : buffer (A * A)) (cc : colored_buffer b2 Green) :
-    let '(b1', b2') := green_prefix_concat b1 b2 cc in
+  (b1 : buffer A) (b2 : buffer (A * A)) (b2g : colored_buffer b2 Green) :
+    let '(b1', b2') := green_prefix_concat b1 b2 b2g in
     buffer_seq b1  ++ flattenp (buffer_seq b2) =
     buffer_seq b1' ++ flattenp (buffer_seq b2').
 Proof.
   unfold green_prefix_concat.
   pose_destruct (prefix_decompose_seq b1) (prefix_decompose b1) Heq Hseq.
-  - pose_destruct (green_pop_seq b2 cc) (green_pop b2 cc) Heq' Hseq'.
+  - pose_destruct (green_pop_seq b2 b2g) (green_pop b2 b2g) Heq' Hseq'.
     rewrite prefix23_seq.
     hauto db:rlist.
   - hauto db:rlist.
@@ -789,17 +751,12 @@ Lemma green_suffix_concat_yellow_green {A}
     colored_buffer b1' Yellow /\ colored_buffer b2' Green.
 Proof.
   unfold green_suffix_concat.
-  destruct (suffix_decompose b2); simpl.
+  destruct (suffix_decompose b2); simpl; try easy.
   - pose_destruct (green_eject_yellow b1 cc) (green_eject b1 cc) Heq Hcol.
-    split.
-    + assumption.
-    + apply suffix23_green.
-  - split.
-    + apply green_buffer_to_yellow_buffer; assumption.
-    + assumption.
-  - split.
-    + apply green_inject_yellow.
-    + assumption.
+    split; auto.
+    apply suffix23_green.
+  - split; auto.
+    apply green_inject_yellow.
 Qed.
 
 Lemma green_suffix_concat_seq {A}
@@ -838,11 +795,9 @@ Lemma yellow_prefix_concat_green_red {A}
     colored_buffer b1' Green.
 Proof.
   unfold yellow_prefix_concat.
-  destruct (prefix_decompose b1); simpl.
-  - destruct (yellow_pop b2 cc); simpl.
-    apply prefix23_green.
-  - assumption.
-  - assumption.
+  destruct (prefix_decompose b1); simpl; auto.
+  destruct (yellow_pop b2 cc); simpl.
+  apply prefix23_green.
 Qed.
 
 Lemma yellow_prefix_concat_seq {A}
@@ -881,11 +836,9 @@ Lemma yellow_suffix_concat_red_green {A}
     colored_buffer b2' Green.
 Proof.
   unfold yellow_suffix_concat.
-  destruct (suffix_decompose b2); simpl.
-  - destruct (yellow_eject b1 cc); simpl.
-    apply suffix23_green.
-  - assumption.
-  - assumption.
+  destruct (suffix_decompose b2); simpl; auto.
+  destruct (yellow_eject b1 cc); simpl.
+  apply suffix23_green.
 Qed.
 
 Lemma yellow_suffix_concat_seq {A}
@@ -908,13 +861,13 @@ Qed.
 (* Creates a green chain from 3 options. *)
 Equations chain_of_opt3 {A}
   (o1 : option A) (o2 : option (A * A)) (o3 : option A) : chain A :=
-chain_of_opt3 None None None := Ending B0;
-chain_of_opt3 (Some a) None None := Ending (B1 a);
-chain_of_opt3 None None (Some a) := Ending (B1 a);
-chain_of_opt3 (Some a) None (Some b) := Ending (B2 a b);
-chain_of_opt3 None (Some (a, b)) None := Ending (B2 a b);
-chain_of_opt3 (Some a) (Some (b, c)) None := Ending (B3 a b c);
-chain_of_opt3 None (Some (a, b)) (Some c) := Ending (B3 a b c);
+chain_of_opt3  None     None          None    := Ending B0;
+chain_of_opt3 (Some a)  None          None    := Ending (B1 a);
+chain_of_opt3  None     None         (Some a) := Ending (B1 a);
+chain_of_opt3 (Some a)  None         (Some b) := Ending (B2 a b);
+chain_of_opt3  None    (Some (a, b))  None    := Ending (B2 a b);
+chain_of_opt3 (Some a) (Some (b, c))  None    := Ending (B3 a b c);
+chain_of_opt3  None    (Some (a, b)) (Some c) := Ending (B3 a b c);
 chain_of_opt3 (Some a) (Some (b, c)) (Some d) := Ending (B4 a b c d).
 
 Lemma chain_of_opt3_wf {A}
@@ -981,23 +934,19 @@ Lemma make_small_wf {A}
   (b1 : buffer A) (b2 : buffer (A * A)) (b3 : buffer A) :
   wf_chain (make_small b1 b2 b3).
 Proof.
-  unfold make_small. unfold make_small_clause_1.
-  remember (prefix_decompose b1) as pd. remember (suffix_decompose b3) as sd.
-  destruct pd; destruct sd; simpl.
-  - destruct (buffer_unsandwich b2); simpl.
-    + apply chain_of_opt3_wf.
-    + auto.
+  unfold make_small, make_small_clause_1.
+  destruct (prefix_decompose b1); destruct (suffix_decompose b3); simpl.
+  - destruct (buffer_unsandwich b2); simpl; auto.
+    apply chain_of_opt3_wf.
   - destruct (buffer_pop b2); simpl.
     + destruct p as [cd rest]; simpl; auto.
-    + destruct o; simpl.
-      -- apply buffer_push_wf.
-      -- exact I.
+    + destruct o; simpl; auto.
+      apply buffer_push_wf.
   - destruct (suffix_rot b2 p) as [cd center]; simpl; auto.
   - destruct (buffer_eject b2); simpl.
     + destruct p as [rest ab]; simpl; auto.
-    + destruct o; simpl.
-      -- apply buffer_inject_wf.
-      -- exact I.
+    + destruct o; simpl; auto.
+      apply buffer_inject_wf.
   - auto.
   - split; auto; split.
     + destruct b2; try exists Green; simpl; repeat split; left; easy.
@@ -1016,43 +965,36 @@ Lemma make_small_green {A}
   (b1 : buffer A) (b2 : buffer (A * A)) (b3 : buffer A) :
   colored_chain (make_small b1 b2 b3) green.
 Proof.
-  unfold make_small. unfold make_small_clause_1.
-  remember (prefix_decompose b1) as pd. remember (suffix_decompose b3) as sd.
-  destruct pd; destruct sd; simpl.
+  unfold make_small, make_small_clause_1.
+  destruct (prefix_decompose b1); destruct (suffix_decompose b3); simpl.
   - destruct (buffer_unsandwich b2); simpl.
     + apply chain_of_opt3_green.
-    + exists Green; split; try easy; split.
+    + exists Green; repeat split; auto.
       -- apply prefix23_green.
       -- apply suffix23_green.
   - destruct (buffer_pop b2); simpl.
     + destruct p as [cd rest]; simpl.
-      exists Green; split; try easy; split.
-      -- apply prefix23_green.
-      -- assumption.
-    + destruct o; simpl.
-      -- apply buffer_push_green. easy.
-      -- exact I.
+      exists Green; repeat split; auto.
+      apply prefix23_green.
+    + destruct o; simpl; auto.
+      apply buffer_push_green; easy.
   - destruct (suffix_rot b2 p) as [cd center]; simpl.
-    exists Green; split; try easy; split.
-    + apply prefix23_green.
-    + assumption.
+    exists Green; repeat split; auto.
+    apply prefix23_green.
   - destruct (buffer_eject b2); simpl.
     + destruct p as [rest ab]; simpl.
-      exists Green; split; try easy; split.
-      -- assumption.
-      -- apply suffix23_green.
-    + destruct o; simpl.
-      -- apply buffer_inject_green. easy.
-      -- exact I.
-  - exists Green; split; try easy; split; assumption.
-  - exists Green; split; try easy; split; assumption.
+      exists Green; repeat split; auto.
+      apply suffix23_green.
+    + destruct o; simpl; auto.
+      apply buffer_inject_green; easy.
+  - exists Green; repeat split; assumption.
+  - exists Green; repeat split; assumption.
   - destruct (prefix_rot p b2) as [center ab]; simpl.
-    exists Green; split; try easy; split.
-    + assumption.
-    + apply suffix23_green.
-  - exists Green; split; try easy; split; assumption.
+    exists Green; repeat split; auto.
+    apply suffix23_green.
+  - exists Green; repeat split; assumption.
   - destruct (buffer_halve b2) as [x rest]; simpl.
-    exists Green; split; try easy; split; assumption.
+    exists Green; repeat split; assumption.
 Qed.
 
 Lemma make_small_seq {A}
@@ -1060,93 +1002,67 @@ Lemma make_small_seq {A}
   chain_seq (make_small b1 b2 b3) =
   buffer_seq b1 ++ flattenp (buffer_seq b2) ++ buffer_seq b3.
 Proof.
-  unfold make_small. unfold make_small_clause_1.
-  remember (prefix_decompose b1) as pd. remember (suffix_decompose b3) as sd.
-  pose (prefix_decompose_seq b1) as Hpds; rewrite <-Heqpd in Hpds; simpl in Hpds.
-  pose (suffix_decompose_seq b3) as Hsds; rewrite <-Heqsd in Hsds; simpl in Hsds.
-  destruct pd; destruct sd; simpl in *.
-  - remember (buffer_unsandwich b2) as bus.
-    pose (buffer_unsandwich_seq b2) as Hbuss; rewrite <-Heqbus in Hbuss; simpl in Hbuss.
-    destruct bus; simpl in *.
+  unfold make_small, make_small_clause_1.
+  pose_destruct (prefix_decompose_seq b1) (prefix_decompose b1) Hpd Hpds;
+  pose_destruct (suffix_decompose_seq b3) (suffix_decompose b3) Hsd Hsds.
+  - pose_destruct (buffer_unsandwich_seq b2) (buffer_unsandwich b2) Hbus Hbuss.
     + rewrite chain_of_opt3_seq; simpl. hauto db:rlist.
     + rewrite prefix23_seq. rewrite suffix23_seq. hauto db:rlist.
-  - remember (buffer_pop b2) as bp.
-    pose (buffer_pop_seq b2) as Hbps; rewrite <-Heqbp in Hbps; simpl in Hbps.
-    destruct bp; simpl in *.
+  - pose_destruct (buffer_pop_seq b2) (buffer_pop b2) Hbp Hbps.
     + destruct p as [cd rest]; simpl. rewrite prefix23_seq. hauto db:rlist.
     + destruct o; simpl in *.
       -- rewrite buffer_push_seq. hauto db:rlist.
       -- hauto db:rlist.
-  - remember (suffix_rot b2 p) as sr.
-    pose (suffix_rot_seq b2 p) as Hsrs; rewrite <-Heqsr in Hsrs; simpl in Hsrs.
-    destruct sr as [cd center]; simpl in *.
+  - pose_destruct (suffix_rot_seq b2 p) (suffix_rot b2 p) Hsr Hsrs.
     rewrite prefix23_seq.
-    replace (pair_seq cd) with (flattenp [cd]) by hauto.
-    rewrite Hpds; do 2 rewrite <-app_assoc; f_equal; rewrite app_nil_l.
-    rewrite Hsds; do 2 rewrite app_assoc; f_equal.
-    rewrite <-flattenp_app; rewrite <-Hsrs; rewrite flattenp_app.
-    hauto.
-  - remember (buffer_eject b2) as be.
-    pose (buffer_eject_seq b2)  as Hbes; rewrite <-Heqbe in Hbes; simpl in Hbes.
-    destruct be; simpl in *.
+    replace (pair_seq p0) with (flattenp [p0]) by hauto.
+    replace (pair_seq p) with (flattenp [p]) in Hsds by hauto.
+    rewrite Hpds; app_right; f_equal.
+    rewrite Hsds; app_left; f_equal.
+    rewrite <-flattenp_app; rewrite <-Hsrs.
+    hauto db:rlist.
+  - pose_destruct (buffer_eject_seq b2) (buffer_eject b2) Hbe Hbes.
     + destruct p as [rest ab]; simpl. hauto db:rlist.
     + destruct o; simpl in *.
       -- rewrite buffer_inject_seq. hauto db:rlist.
       -- hauto db:rlist.
   - hauto db:rlist.
   - rewrite buffer_inject_seq. hauto db:rlist.
-  - remember (prefix_rot p b2) as pr.
-    pose (prefix_rot_seq p b2) as Hprs; rewrite <-Heqpr in Hprs; simpl in Hprs.
-    destruct pr as [center ab]; simpl in *.
+  - pose_destruct (prefix_rot_seq p b2) (prefix_rot p b2) Hpr Hprs.
     rewrite suffix23_seq.
-    replace (pair_seq ab) with (flattenp [ab]) by hauto.
-    rewrite Hpds; rewrite <-app_assoc; f_equal.
-    rewrite Hsds; rewrite app_nil_l; do 2 rewrite app_assoc; f_equal.
-    rewrite <-flattenp_app; rewrite <-Hprs; rewrite flattenp_app.
-    hauto.
+    replace (pair_seq p0) with (flattenp [p0]) by hauto.
+    replace (pair_seq p) with (flattenp [p]) in Hpds by hauto.
+    rewrite Hsds; app_left; f_equal.
+    rewrite Hpds; app_right; f_equal.
+    rewrite <-flattenp_app; rewrite <-Hprs.
+    hauto db:rlist.
   - rewrite buffer_push_seq. hauto db:rlist.
-  - remember (buffer_halve b2) as bh.
-    pose (buffer_halve_seq b2) as Hbhs; rewrite <-Heqbh in Hbhs; simpl in Hbhs.
-    destruct bh as [x rest]; simpl.
+  - pose_destruct (buffer_halve_seq b2) (buffer_halve b2) Hbh Hbhs.
     rewrite suffix12_seq.
     hauto db:rlist.
 Qed.
 
-Lemma are_green {A} (p1 s1 : buffer A) :
-  (colored_buffer p1 Green /\ colored_buffer s1 Green) +
-  ~ (colored_buffer p1 Green /\ colored_buffer s1 Green).
-Proof.
-  destruct p1; destruct s1; try (left; easy); right; easy.
-Qed.
-
-Lemma are_yellow {A} (p1 s1 : buffer A) :
-  (colored_buffer p1 Yellow /\ colored_buffer s1 Yellow) +
-  ~ (colored_buffer p1 Yellow /\ colored_buffer s1 Yellow).
-Proof.
-  destruct p1; destruct s1; try (left; easy); right; easy.
-Qed.
-
-(* Makes a red chain green. *)
-Equations ensure_green {A} (c : chain A) : chain A :=
+(* Transform a chain to a green chain. *)
+Equations ensure_green {A} (ch : chain A) : chain A :=
 ensure_green (Chain (Packet p1 Hole s1) (Ending b)) := make_small p1 b s1;
-ensure_green (Chain (Packet p1 Hole s1) (Chain (Packet p2 p s2) c))
-  with are_green p1 s1 => {
-  | inl _ := Chain (Packet p1 Hole s1) (Chain (Packet p2 p s2) c);
-  | inr _ with are_green p2 s2 => {
+ensure_green (Chain (Packet p1 Hole s1) (Chain (Packet p2 pkt s2) ch))
+  with are_green_buffers p1 s1 => {
+  | inl _ := Chain (Packet p1 Hole s1) (Chain (Packet p2 pkt s2) ch);
+  | inr _ with are_green_buffers p2 s2 => {
     | inl (conj p2g s2g)
       with green_prefix_concat p1 p2 p2g, green_suffix_concat s2 s2g s1 => {
       | (p1', p2'), (s2', s1') :=
-        Chain (Packet p1' (Packet p2' p s2') s1') c };
-    | inr _ := Chain (Packet p1 Hole s1) (Chain (Packet p2 p s2) c) } };
-ensure_green (Chain (Packet p1 (Packet p2 p s2) s1) c)
-  with are_green p1 s1 => {
-  | inl _ => Chain (Packet p1 (Packet p2 p s2) s1) c
-  | inr _ with are_yellow p2 s2 => {
+        Chain (Packet p1' (Packet p2' pkt s2') s1') ch };
+    | inr _ := Chain (Packet p1 Hole s1) (Chain (Packet p2 pkt s2) ch) } };
+ensure_green (Chain (Packet p1 (Packet p2 pkt s2) s1) ch)
+  with are_green_buffers p1 s1 => {
+  | inl _ => Chain (Packet p1 (Packet p2 pkt s2) s1) ch
+  | inr _ with are_yellow_buffers p2 s2 => {
     | inl (conj p2y s2y)
       with yellow_prefix_concat p1 p2 p2y, yellow_suffix_concat s2 s2y s1 => {
       | (p1', p2'), (s2', s1') :=
-        Chain (Packet p1' Hole s1') (Chain (Packet p2' p s2') c) }
-    | inr _ := Chain (Packet p1 (Packet p2 p s2) s1) c } };
+        Chain (Packet p1' Hole s1') (Chain (Packet p2' pkt s2') ch) }
+    | inr _ := Chain (Packet p1 (Packet p2 pkt s2) s1) ch } };
 ensure_green c := c.
 
 Lemma colored_buffer_split {A : Type} (b1 b2 : buffer A) cc1 cc2 :
@@ -1155,98 +1071,107 @@ Lemma colored_buffer_split {A : Type} (b1 b2 : buffer A) cc1 cc2 :
     ~ (colored_buffer b1 c /\ colored_buffer b2 c) /\ cc2 c.
 Proof.
   intros c cc1c cc2c.
-  destruct b1; destruct b2; destruct c; simpl; easy.
+  destruct b1; destruct b2; destruct c; easy.
 Qed.
 
-Lemma ensure_green_wf {A} (c : chain A) (c_wf : wf_chain c) :
-  wf_chain (ensure_green c).
+Lemma ensure_green_wf {A} (ch : chain A) (ch_wf : wf_chain ch) :
+  wf_chain (ensure_green ch).
 Proof.
-  destruct c; simpl; auto.
-  destruct p as [|B p1 pkt s1]; simpl.
-  - apply (falsity c_wf). unfold wf_chain, wf_packet.
+  destruct ch as [b | B pkt ch]; simpl; auto.
+  destruct pkt as [|B p1 pkt s1]; simpl.
+  - apply (falsity ch_wf). unfold wf_chain, wf_packet.
     apply proj1.
   - destruct pkt as [|B p2 pkt s2]; simpl.
-    + destruct c as [|B pkt c]; try apply make_small_wf.
+    + destruct ch as [|B pkt ch]; try apply make_small_wf.
       destruct pkt as [|B p2 pkt s2]; try easy.
-      destruct (are_green p1 s1) as [[p1g s1g] | np1s1g]; try exact c_wf; simpl.
-      destruct (are_green p2 s2) as [[p2g s2g] | np2s2g]; try exact c_wf; simpl.
+      destruct (are_green_buffers p1 s1) as [[p1g s1g] | np1s1g];
+        try exact ch_wf; simpl.
+      destruct (are_green_buffers p2 s2) as [[p2g s2g] | np2s2g];
+        try exact ch_wf; simpl.
       pose_destruct (green_prefix_concat_green_yellow p1 p2 p2g) (green_prefix_concat p1 p2 p2g) Heqp cbp.
       pose_destruct (green_suffix_concat_yellow_green s2 s2g s1) (green_suffix_concat s2 s2g s1) Heqs cbs.
       destruct cbp as [p1'g p2'y]; destruct cbs as [s2'y s1'g].
-      destruct c_wf as [p1_wf [cc2 [[p2c p2_wf] [ccc c_wf]]]].
+      destruct ch_wf as [p1_wf [c12 [[p2c p2_wf] [chr ch_wf]]]].
       repeat split; auto.
-      destruct c as [|C pkt' c]; auto.
-      destruct ccc as [col [[[Ht Hgr] | [Hf Hg]] colpkt]]; simpl in *.
-      -- exists col; easy.
+      destruct ch as [|C pkt' ch]; auto.
+      destruct chr as [c [[[Ht cgr] | [Hf cg]] pktc]]; simpl in *.
+      -- exists c; easy.
       -- easy.
-    + destruct (are_green p1 s1) as [[p1g s1g] | np1s1g]; try exact c_wf; simpl.
-      destruct (are_yellow p2 s2) as [[p2y s2y] | ny]; try exact c_wf; simpl.
+    + destruct (are_green_buffers p1 s1) as [[p1g s1g] | np1s1g];
+        try exact ch_wf; simpl.
+      destruct (are_yellow_buffers p2 s2) as [[p2y s2y] | ny];
+        try exact ch_wf; simpl.
       pose_destruct (yellow_prefix_concat_green_red p1 p2 p2y) (yellow_prefix_concat p1 p2 p2y) Heqp p1g.
       pose_destruct (yellow_suffix_concat_red_green s2 s2y s1) (yellow_suffix_concat s2 s2y s1) Heqs s1g.
-      destruct c_wf as [[p1_wf [p2_wf pkt_wf]] [ccc c_wf]]; simpl.
+      destruct ch_wf as [[p1_wf [p2_wf pkt_wf]] [chr ch_wf]]; simpl.
       repeat split; auto.
-      -- exists Red; split; try left; easy.
+      -- exists Red; easy.
       -- repeat split; try easy.
-        destruct c as [|p3 pkt' s3]; auto; simpl in *.
-        exists Green; split.
-        ++ apply colored_buffer_split; easy.
-        ++ destruct ccc as [col [[[Hf Hgr] | [Hn Hg]] colpkt]]; easy.
+         destruct ch as [|p3 pkt' s3]; auto; simpl in *.
+         exists Green; split.
+         ++ apply colored_buffer_split; easy.
+         ++ destruct chr as [c [[[Hf cgr] | [Ht cg]] pktc]]; easy.
 Qed.
 
-Lemma ensure_green_green {A} (c : chain A) (c_wf : wf_chain c) :
-  colored_chain (ensure_green c) green.
+Lemma ensure_green_green {A} (ch : chain A) (ch_wf : wf_chain ch) :
+  colored_chain (ensure_green ch) green.
 Proof.
-  destruct c; simpl; auto.
-  destruct p as [|B p1 pkt s1]; simpl.
-  - apply (falsity c_wf). unfold wf_chain, wf_packet.
+  destruct ch as [b | B pkt ch]; simpl; auto.
+  destruct pkt as [|B p1 pkt s1]; simpl.
+  - apply (falsity ch_wf). unfold wf_chain, wf_packet.
     apply proj1.
   - destruct pkt as [|B p2 pkt s2]; simpl.
-    + destruct c as [|B pkt c]; try apply make_small_green.
+    + destruct ch as [|B pkt ch]; try apply make_small_green.
       destruct pkt as [|B p2 pkt s2]; try easy.
-      destruct (are_green p1 s1) as [[p1g s1g] | np1s1g]; try easy; simpl.
-      destruct (are_green p2 s2) as [[p2g s2g] | np2s2g]; simpl.
+      destruct (are_green_buffers p1 s1) as [[p1g s1g] | np1s1g];
+        try easy; simpl.
+      destruct (are_green_buffers p2 s2) as [[p2g s2g] | np2s2g]; simpl.
       -- pose_destruct (green_prefix_concat_green_yellow p1 p2 p2g) (green_prefix_concat p1 p2 p2g) Heqp cbp.
          pose_destruct (green_suffix_concat_yellow_green s2 s2g s1) (green_suffix_concat s2 s2g s1) Heqs cbs.
          exists Green; easy.
-      -- destruct c_wf as [p1_wf [[col [[[Hf Hgr] | [Ht Hg]] colpkt]] c_wf]].
+      -- destruct ch_wf as [p1_wf [[c [[[Hf cgr] | [Ht cg]] pktc]] ch_wf]].
          ++ easy.
-         ++ unfold green in Hg; subst; easy.
-    + destruct (are_green p1 s1) as [[p1g s1g] | np1s1g]; try easy; simpl.
-      destruct (are_yellow p2 s2) as [[p2y s2y] | np2s2y]; try easy; simpl.
+         ++ unfold green in cg; subst; easy.
+    + destruct (are_green_buffers p1 s1) as [[p1g s1g] | np1s1g];
+        try easy; simpl.
+      destruct (are_yellow_buffers p2 s2) as [[p2y s2y] | np2s2y];
+        try easy; simpl.
       pose_destruct (yellow_prefix_concat_green_red p1 p2 p2y) (yellow_prefix_concat p1 p2 p2y) Heqp p1g.
       pose_destruct (yellow_suffix_concat_red_green s2 s2y s1) (yellow_suffix_concat s2 s2y s1) Heqs s1g.
       easy.
 Qed.
 
-Lemma ensure_green_seq {A} (c : chain A) (c_wf : wf_chain c) :
-  chain_seq (ensure_green c) = chain_seq c.
+Lemma ensure_green_seq {A} (ch : chain A) (ch_wf : wf_chain ch) :
+  chain_seq (ensure_green ch) = chain_seq ch.
 Proof.
-  destruct c; simpl; auto.
-  destruct p as [|B p1 pkt s1]; simpl.
-  - apply (falsity c_wf). unfold wf_chain, wf_packet.
+  destruct ch as [b | B pkt ch]; simpl; auto.
+  destruct pkt as [|B p1 pkt s1]; simpl.
+  - apply (falsity ch_wf). unfold wf_chain, wf_packet.
     apply proj1.
   - destruct pkt as [|B p2 pkt s2]; simpl.
-    + destruct c as [|B pkt c]; try apply make_small_seq.
+    + destruct ch as [|B pkt ch]; try apply make_small_seq.
       destruct pkt as [|B p2 pkt s2]; try easy.
-      destruct (are_green p1 s1) as [[p1g s1g] | np1s1g]; try easy; simpl.
-      destruct (are_green p2 s2) as [[p2g s2g] | np2s2g]; try easy; simpl.
+      destruct (are_green_buffers p1 s1) as [[p1g s1g] | np1s1g];
+        try easy; simpl.
+      destruct (are_green_buffers p2 s2) as [[p2g s2g] | np2s2g];
+        try easy; simpl.
       pose_destruct (green_prefix_concat_seq p1 p2 p2g) (green_prefix_concat p1 p2 p2g) Heqp Hseqp.
       pose_destruct (green_suffix_concat_seq s2 s2g s1) (green_suffix_concat s2 s2g s1) Heqs Hseqs.
       repeat rewrite flattenp_app.
-      repeat rewrite app_assoc.
+      app_left.
       rewrite Hseqp.
-      repeat rewrite <-app_assoc.
-      do 3 f_equal.
+      app_right.
       easy.
-    + destruct (are_green p1 s1) as [[p1g s1g] | np1s1g]; try easy; simpl.
-      destruct (are_yellow p2 s2) as [[p2y s2y] | np2s2y]; try easy; simpl.
+    + destruct (are_green_buffers p1 s1) as [[p1g s1g] | np1s1g];
+        try easy; simpl.
+      destruct (are_yellow_buffers p2 s2) as [[p2y s2y] | np2s2y];
+        try easy; simpl.
       pose_destruct (yellow_prefix_concat_seq p1 p2 p2y) (yellow_prefix_concat p1 p2 p2y) Heqp Hseqp.
       pose_destruct (yellow_suffix_concat_seq s2 s2y s1) (yellow_suffix_concat s2 s2y s1) Heqs Hseqs.
       repeat rewrite flattenp_app.
-      repeat rewrite app_assoc.
+      app_left.
       rewrite Hseqp.
-      repeat rewrite <-app_assoc.
-      do 3 f_equal.
+      app_right.
       easy.
 Qed.
 
@@ -1267,106 +1192,83 @@ Proof. reflexivity. Qed.
 (* Pushes on a deque. *)
 Equations push {A : Type} (x : A) (d : deque A) : deque A :=
 push x (T (Ending b)) := T (buffer_push x b);
-push x (T (Chain (Packet p pkt s) c)) with are_green p s => {
+push x (T (Chain (Packet p pkt s) c)) with are_green_buffers p s => {
   | inl (conj pg _) :=
     T (Chain (Packet (green_push x p pg) pkt s) (ensure_green c));
-  | inr _ with are_yellow p s => {
+  | inr _ with are_yellow_buffers p s => {
     | inl (conj py _) :=
       T (ensure_green (Chain (Packet (yellow_push x p py) pkt s) c));
     | inr _ := T (Chain (Packet p pkt s) c) } };
 push _ d := d.
 
-Lemma chain_green_to_green_or_yellow {A} (c : chain A) :
-  colored_chain c green -> colored_chain c green_or_yellow.
-Proof. intro ccg. destruct c; easy. Qed.
-
-Lemma regularity_green {A B} (pkt : packet A B) : (regularity pkt) Green.
-Proof.
-  destruct pkt; try easy; simpl.
-  destruct (are_green b b0) as [[bg b0g] | nbb0g]; easy.
-Qed.
-
-Lemma chain_green_to_regularity {A B} (c : chain B) (pkt : packet A B) :
-  colored_chain c green -> colored_chain c (regularity pkt).
-Proof.
-  intro ccg.
-  destruct c; auto; simpl in *.
-  destruct ccg as [col [colg colpkt]].
-  exists col; split; auto.
-  unfold green in colg; subst.
-  apply regularity_green.
-Qed.
-
 Lemma push_wf {A} (x : A) (d : deque A) (d_wf : wf_deque d) :
   wf_deque (push x d).
 Proof.
-  destruct d. destruct c as [|_ [|B p pkt s] c]; simpl.
+  destruct d as [ch]. destruct ch as [b | _ [|B p pkt s] ch]; simpl.
   - split.
     + apply buffer_push_green. easy.
     + apply buffer_push_wf.
-  - destruct d_wf as [cc [pkt_wf rest]].
+  - destruct d_wf as [chgy [pkt_wf rest]].
     simpl in pkt_wf. destruct pkt_wf.
-  - destruct (are_green p s) as [[pg sg] | npsg]; simpl in *.
-    + destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+  - destruct (are_green_buffers p s) as [[pg sg] | npsg]; simpl in *.
+    + destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
       repeat split; auto.
       -- exists Yellow; repeat split; try easy.
-         ++ apply green_push_yellow.
-         ++ apply green_buffer_to_yellow_buffer. easy.
-      -- apply chain_green_to_regularity.
+         apply green_push_yellow.
+      -- apply colored_chain_green_to_regularity.
          apply ensure_green_green.
-         exact c_wf.
+         exact ch_wf.
       -- apply ensure_green_wf.
-         exact c_wf.
-    + destruct (are_yellow p s) as [[py sy] | npsy]; try exact d_wf.
-      destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
-      assert (wf_chain (Chain (Packet (yellow_push x p py) pkt s) c)) as pc_wf.
+         exact ch_wf.
+    + destruct (are_yellow_buffers p s) as [[py sy] | npsy]; try exact d_wf.
+      destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
+      assert (wf_chain (Chain (Packet (yellow_push x p py) pkt s) ch))
+        as pch_wf.
       -- repeat split; auto.
-         destruct c; auto.
-         destruct ccc as [col' [[[psg grcol'] | [_ gcol']] pktcol']].
-         ++ exfalso. apply npsg. exact psg.
-         ++ exists Green; split; try easy.
-            apply regularity_green.
+         destruct ch; auto.
+         destruct chr as [c2 [[[psg c2gr] | [_ c2g]] pktc2]]; try easy.
+         exists Green; split; try easy.
+         apply regularity_green.
       -- repeat split; auto.
-         ++ apply chain_green_to_green_or_yellow.
+         ++ apply colored_chain_green_to_green_or_yellow.
             apply ensure_green_green.
-            exact pc_wf.
+            exact pch_wf.
          ++ apply ensure_green_wf.
-            exact pc_wf.
+            exact pch_wf.
 Qed.
 
 Lemma push_seq {A} (x : A) (d : deque A) (d_wf : wf_deque d) :
   deque_seq (push x d) = [x] ++ deque_seq d.
 Proof.
-  destruct d. destruct c as [|_ [|B p pkt s] c]; simpl.
+  destruct d as [ch]. destruct ch as [b | _ [|B p pkt s] ch]; simpl.
   - apply buffer_push_seq.
-  - destruct d_wf as [cc [pkt_wf rest]].
+  - destruct d_wf as [chgy [pkt_wf rest]].
     simpl in pkt_wf. destruct pkt_wf.
-  - destruct (are_green p s) as [[pg sg] | npsg]; simpl in *.
+  - destruct (are_green_buffers p s) as [[pg sg] | npsg]; simpl in *.
     + rewrite green_push_seq.
       rewrite ensure_green_seq; easy.
-    + destruct (are_yellow p s) as [[py sy] | npsy].
+    + destruct (are_yellow_buffers p s) as [[py sy] | npsy].
       -- unfold push_clause_2_clause_2.
          rewrite deque_seq_equation_1.
          rewrite ensure_green_seq; simpl.
          ++ rewrite yellow_push_seq. easy.
-         ++ destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+         ++ destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
             repeat split; auto.
-            destruct c; auto.
-            destruct ccc as [col' [[[psg grcol'] | [_ gcol']] pktcol']].
-            --- exfalso. apply npsg. exact psg.
-            --- exists Green; split; try easy.
-                apply regularity_green.
-      -- destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
-         destruct colgy; subst; easy.
+            destruct ch; auto.
+            destruct chr as [c2 [[[psg c2gr] | [_ c2g]] pktc2]]; try easy.
+            exists Green; split; try easy.
+            apply regularity_green.
+      -- destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
+         destruct cgy; subst; easy.
 Qed.
 
 (* Injects on a deque. *)
 Equations inject {A : Type} (d : deque A) (x : A) : deque A :=
 inject (T (Ending b)) x := T (buffer_inject b x);
-inject (T (Chain (Packet p pkt s) c)) x with are_green p s => {
+inject (T (Chain (Packet p pkt s) c)) x with are_green_buffers p s => {
   | inl (conj _ sg) :=
     T (Chain (Packet p pkt (green_inject s x sg)) (ensure_green c));
-  | inr _ with are_yellow p s => {
+  | inr _ with are_yellow_buffers p s => {
     | inl (conj _ sy) :=
       T (ensure_green (Chain (Packet p pkt (yellow_inject s x sy)) c));
     | inr _ := T (Chain (Packet p pkt s) c) } };
@@ -1375,64 +1277,62 @@ inject d _ := d.
 Lemma inject_wf {A} (d : deque A) (x : A) (d_wf : wf_deque d) :
   wf_deque (inject d x).
 Proof.
-  destruct d. destruct c as [|_ [|B p pkt s] c]; simpl.
+  destruct d as [ch]. destruct ch as [b | _ [|B p pkt s] ch]; simpl.
   - split.
     + apply buffer_inject_green. easy.
     + apply buffer_inject_wf.
-  - destruct d_wf as [cc [pkt_wf rest]].
+  - destruct d_wf as [chgy [pkt_wf rest]].
     simpl in pkt_wf. destruct pkt_wf.
-  - destruct (are_green p s) as [[pg sg] | npsg]; simpl in *.
-    + destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+  - destruct (are_green_buffers p s) as [[pg sg] | npsg]; simpl in *.
+    + destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
       repeat split; auto.
       -- exists Yellow; repeat split; try easy.
-         ++ apply green_buffer_to_yellow_buffer. easy.
-         ++ apply green_inject_yellow.
-      -- apply chain_green_to_regularity.
+         apply green_inject_yellow.
+      -- apply colored_chain_green_to_regularity.
          apply ensure_green_green.
-         exact c_wf.
+         exact ch_wf.
       -- apply ensure_green_wf.
-         exact c_wf.
-    + destruct (are_yellow p s) as [[py sy] | npsy]; try exact d_wf.
-      destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
-      assert (wf_chain (Chain (Packet p pkt (yellow_inject s x sy)) c)) as pc_wf.
+         exact ch_wf.
+    + destruct (are_yellow_buffers p s) as [[py sy] | npsy]; try exact d_wf.
+      destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
+      assert (wf_chain (Chain (Packet p pkt (yellow_inject s x sy)) ch))
+        as pch_wf.
       -- repeat split; auto.
-         destruct c; auto.
-         destruct ccc as [col' [[[psg grcol'] | [_ gcol']] pktcol']].
-         ++ exfalso. apply npsg. exact psg.
-         ++ exists Green; split; try easy.
-            apply regularity_green.
+         destruct ch; auto.
+         destruct chr as [c2 [[[psg c2gr] | [_ c2g]] pktc2]]; try easy.
+         exists Green; split; try easy.
+         apply regularity_green.
       -- repeat split; auto.
-         ++ apply chain_green_to_green_or_yellow.
+         ++ apply colored_chain_green_to_green_or_yellow.
             apply ensure_green_green.
-            exact pc_wf.
+            exact pch_wf.
          ++ apply ensure_green_wf.
-            exact pc_wf.
+            exact pch_wf.
 Qed.
 
 Lemma inject_seq {A} (d : deque A) (x : A) (d_wf : wf_deque d) :
   deque_seq (inject d x) = deque_seq d ++ [x].
 Proof.
-  destruct d. destruct c as [|_ [|B p pkt s] c]; simpl.
+  destruct d as [ch]. destruct ch as [b | _ [|B p pkt s] ch]; simpl.
   - apply buffer_inject_seq.
-  - destruct d_wf as [cc [pkt_wf rest]].
+  - destruct d_wf as [chgy [pkt_wf rest]].
     simpl in pkt_wf. destruct pkt_wf.
-  - destruct (are_green p s) as [[pg sg] | npsg]; simpl in *.
+  - destruct (are_green_buffers p s) as [[pg sg] | npsg]; simpl in *.
     + rewrite green_inject_seq.
       rewrite ensure_green_seq; hauto db:rlist.
-    + destruct (are_yellow p s) as [[py sy] | npsy].
+    + destruct (are_yellow_buffers p s) as [[py sy] | npsy].
       -- unfold inject_clause_2_clause_2.
          rewrite deque_seq_equation_1.
          rewrite ensure_green_seq; simpl.
          ++ rewrite yellow_inject_seq; hauto db:rlist.
-         ++ destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+         ++ destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
             repeat split; auto.
-            destruct c; auto.
-            destruct ccc as [col' [[[psg grcol'] | [_ gcol']] pktcol']].
-            --- exfalso. apply npsg. exact psg.
-            --- exists Green; split; try easy.
-                apply regularity_green.
-      -- destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
-         destruct colgy; subst; easy.
+            destruct ch; auto.
+            destruct chr as [c2 [[[psg c2gr] | [_ c2g]] pktc2]]; try easy.
+            exists Green; split; try easy.
+            apply regularity_green.
+      -- destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
+         destruct cgy; subst; easy.
 Qed.
 
 (* Pops off a deque. *)
@@ -1440,10 +1340,10 @@ Equations pop {A : Type} (d : deque A) : option (A * deque A) :=
 pop (T (Ending b)) with buffer_pop b => {
   | None := None;
   | Some (x, b') := Some (x, T (Ending b')) };
-pop (T (Chain (Packet p pkt s) c)) with are_green p s => {
+pop (T (Chain (Packet p pkt s) c)) with are_green_buffers p s => {
   | inl (conj pg _) with green_pop p pg => { | (x, p') :=
     Some (x, T (Chain (Packet p' pkt s) (ensure_green c))) };
-  | inr _ with are_yellow p s => {
+  | inr _ with are_yellow_buffers p s => {
     | inl (conj py _) with yellow_pop p py => { | (x, p') :=
       Some (x, T (ensure_green (Chain (Packet p' pkt s) c))) };
     | inr _ := None } };
@@ -1455,34 +1355,33 @@ Lemma pop_wf {A} (d : deque A) (d_wf : wf_deque d) :
   | Some (_, d') => wf_deque d'
   end.
 Proof.
-  destruct d. destruct c as [|_ [|B p pkt s] c]; simpl.
+  destruct d as [ch]. destruct ch as [b | _ [|B p pkt s] ch]; simpl.
   - destruct (buffer_pop b) as [[x b']|]; easy.
   - easy.
-  - destruct (are_green p s) as [[pg sg] | npsg]; simpl in *.
-    + destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+  - destruct (are_green_buffers p s) as [[pg sg] | npsg]; simpl in *.
+    + destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
       pose_destruct (green_pop_yellow p pg) (green_pop p pg) Heq Hcol; simpl.
       repeat split; auto.
-      -- exists Yellow; repeat split; try easy.
-         apply green_buffer_to_yellow_buffer. easy.
-      -- apply chain_green_to_regularity.
+      -- exists Yellow; easy.
+      -- apply colored_chain_green_to_regularity.
          apply ensure_green_green.
-         exact c_wf.
+         exact ch_wf.
       -- apply ensure_green_wf.
-         exact c_wf.
-    + destruct (are_yellow p s) as [[py sy] | npsy]; simpl; auto.
-      destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+         exact ch_wf.
+    + destruct (are_yellow_buffers p s) as [[py sy] | npsy]; simpl; auto.
+      destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
       destruct (yellow_pop p py) as [x p'] eqn: Hyp.
-      assert (wf_chain (Chain (Packet p' pkt s) c)) as pc_wf.
+      assert (wf_chain (Chain (Packet p' pkt s) ch)) as pch_wf.
       -- repeat split; auto.
-         destruct c; auto.
-         apply chain_green_to_regularity.
-         destruct ccc as [col' [[[psg grcol'] | [_ gcol']] pktcol']]; easy.
+         destruct ch; auto.
+         apply colored_chain_green_to_regularity.
+         destruct chr as [c2 [[[psg c2gr] | [_ c2g]] pktc2]]; easy.
       -- split.
-         ++ apply chain_green_to_green_or_yellow.
+         ++ apply colored_chain_green_to_green_or_yellow.
             apply ensure_green_green.
-            apply pc_wf.
+            apply pch_wf.
          ++ apply ensure_green_wf.
-            apply pc_wf.
+            apply pch_wf.
 Qed.
 
 Lemma pop_seq {A} (d : deque A) (d_wf : wf_deque d) :
@@ -1491,16 +1390,16 @@ Lemma pop_seq {A} (d : deque A) (d_wf : wf_deque d) :
                 | Some (x, d') => [x] ++ deque_seq d'
                 end.
 Proof.
-  destruct d. destruct c as [|_ [|B p pkt s] c]; simpl.
+  destruct d as [ch]. destruct ch as [b | _ [|B p pkt s] ch]; simpl.
   - pose_destruct (buffer_pop_seq b) (buffer_pop b) Heq Hseq; auto.
     destruct p. easy.
   - easy.
-  - destruct (are_green p s) as [[pg sg] | npsg]; simpl in *.
-    + destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+  - destruct (are_green_buffers p s) as [[pg sg] | npsg]; simpl in *.
+    + destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
       pose_destruct (green_pop_seq p pg) (green_pop p pg) Heq Hseq; simpl.
       rewrite ensure_green_seq; auto.
       hauto db:rlist.
-    + destruct (are_yellow p s) as [[py sy] | npsy]; simpl.
+    + destruct (are_yellow_buffers p s) as [[py sy] | npsy]; simpl.
       -- unfold pop_clause_2_clause_2_clause_1.
          remember (yellow_pop p py) as tmp.
          pose (yellow_pop_seq p py) as Hseq; rewrite <-Heqtmp in Hseq.
@@ -1508,13 +1407,13 @@ Proof.
          rewrite deque_seq_equation_1.
          rewrite ensure_green_seq.
          ++ hauto db:rlist.
-         ++ destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+         ++ destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
             repeat split; auto.
-            destruct c; auto.
-            apply chain_green_to_regularity.
-            destruct ccc as [col' [[[psg grcol'] | [_ gcol']] pktcol']]; easy.
-      -- destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
-         destruct col; unfold green_or_yellow in colgy; easy.
+            destruct ch; auto.
+            apply colored_chain_green_to_regularity.
+            destruct chr as [c2 [[[psg c2gr] | [_ c2g]] pktc2]]; easy.
+      -- destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
+         destruct c; unfold green_or_yellow in cgy; easy.
 Qed.
 
 (* Ejects off a deque. *)
@@ -1522,10 +1421,10 @@ Equations eject {A : Type} (d : deque A) : option (deque A * A) :=
 eject (T (Ending b)) with buffer_eject b => {
   | None := None;
   | Some (b', x) := Some (T (Ending b'), x) };
-eject (T (Chain (Packet p pkt s) c)) with are_green p s => {
+eject (T (Chain (Packet p pkt s) c)) with are_green_buffers p s => {
   | inl (conj _ sg) with green_eject s sg => { | (s', x) :=
     Some (T (Chain (Packet p pkt s') (ensure_green c)), x) };
-  | inr _ with are_yellow p s => {
+  | inr _ with are_yellow_buffers p s => {
     | inl (conj _ sy) with yellow_eject s sy => { | (s', x) :=
       Some (T (ensure_green (Chain (Packet p pkt s') c)), x) };
     | inr _ := None } };
@@ -1537,34 +1436,33 @@ Lemma eject_wf {A} (d : deque A) (d_wf : wf_deque d) :
   | Some (d', _) => wf_deque d'
   end.
 Proof.
-  destruct d. destruct c as [|_ [|B p pkt s] c]; simpl.
+  destruct d as [ch]. destruct ch as [b | _ [|B p pkt s] ch]; simpl.
   - destruct (buffer_eject b) as [[x b']|]; easy.
   - easy.
-  - destruct (are_green p s) as [[pg sg] | npsg]; simpl in *.
-    + destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+  - destruct (are_green_buffers p s) as [[pg sg] | npsg]; simpl in *.
+    + destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
       pose_destruct (green_eject_yellow s sg) (green_eject s sg) Heq Hcol; simpl.
       repeat split; auto.
-      -- exists Yellow; repeat split; try easy.
-         apply green_buffer_to_yellow_buffer. easy.
-      -- apply chain_green_to_regularity.
+      -- exists Yellow; easy.
+      -- apply colored_chain_green_to_regularity.
          apply ensure_green_green.
-         exact c_wf.
+         exact ch_wf.
       -- apply ensure_green_wf.
-         exact c_wf.
-    + destruct (are_yellow p s) as [[py sy] | npsy]; simpl; auto.
-      destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+         exact ch_wf.
+    + destruct (are_yellow_buffers p s) as [[py sy] | npsy]; simpl; auto.
+      destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
       destruct (yellow_eject s sy) as [s' x] eqn: Hyp.
-      assert (wf_chain (Chain (Packet p pkt s') c)) as pc_wf.
+      assert (wf_chain (Chain (Packet p pkt s') ch)) as pch_wf.
       -- repeat split; auto.
-         destruct c; auto.
-         apply chain_green_to_regularity.
-         destruct ccc as [col' [[[psg grcol'] | [_ gcol']] pktcol']]; easy.
+         destruct ch; auto.
+         apply colored_chain_green_to_regularity.
+         destruct chr as [c2 [[[psg c2gr] | [_ c2g]] pktc2]]; easy.
       -- split.
-         ++ apply chain_green_to_green_or_yellow.
+         ++ apply colored_chain_green_to_green_or_yellow.
             apply ensure_green_green.
-            apply pc_wf.
+            apply pch_wf.
          ++ apply ensure_green_wf.
-            apply pc_wf.
+            apply pch_wf.
 Qed.
 
 Lemma eject_seq {A} (d : deque A) (d_wf : wf_deque d) :
@@ -1573,16 +1471,16 @@ Lemma eject_seq {A} (d : deque A) (d_wf : wf_deque d) :
                 | Some (d', x) => deque_seq d' ++ [x]
                 end.
 Proof.
-  destruct d. destruct c as [|_ [|B p pkt s] c]; simpl.
+  destruct d as [ch]. destruct ch as [b | _ [|B p pkt s] ch]; simpl.
   - pose_destruct (buffer_eject_seq b) (buffer_eject b) Heq Hseq; auto.
     destruct p. easy.
   - easy.
-  - destruct (are_green p s) as [[pg sg] | npsg]; simpl in *.
-    + destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+  - destruct (are_green_buffers p s) as [[pg sg] | npsg]; simpl in *.
+    + destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
       pose_destruct (green_eject_seq s sg) (green_eject s sg) Heq Hseq; simpl.
       rewrite ensure_green_seq; auto.
       hauto db:rlist.
-    + destruct (are_yellow p s) as [[py sy] | npsy]; simpl.
+    + destruct (are_yellow_buffers p s) as [[py sy] | npsy]; simpl.
       -- unfold eject_clause_2_clause_2_clause_1.
          remember (yellow_eject s sy) as tmp.
          pose (yellow_eject_seq s sy) as Hseq; rewrite <-Heqtmp in Hseq.
@@ -1590,11 +1488,11 @@ Proof.
          rewrite deque_seq_equation_1.
          rewrite ensure_green_seq.
          ++ hauto db:rlist.
-         ++ destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
+         ++ destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
             repeat split; auto.
-            destruct c; auto.
-            apply chain_green_to_regularity.
-            destruct ccc as [col' [[[psg grcol'] | [_ gcol']] pktcol']]; easy.
-      -- destruct d_wf as [[col [colgy [pgy sgy]]] [[psy pkt_wf] [ccc c_wf]]].
-         destruct col; unfold green_or_yellow in colgy; easy.
+            destruct ch; auto.
+            apply colored_chain_green_to_regularity.
+            destruct chr as [c2 [[[psg c2gr] | [_ c2g]] pktc2]]; easy.
+      -- destruct d_wf as [[c [cgy [pgy sgy]]] [[psy pkt_wf] [chr ch_wf]]].
+         destruct c; unfold green_or_yellow in cgy; easy.
 Qed.
