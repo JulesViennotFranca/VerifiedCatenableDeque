@@ -21,6 +21,9 @@ in the paper
 
 Our [OCaml code](lib/) requires OCaml 4.08 or newer.
 
+Our [Rocq code](theory/) is known to work with Coq 8.20.1,
+Equations 1.3.1, Hammer 1.3.2, and AAC Tactics 8.20.0.
+
 ## Data Structures
 
 A double-ended queue, also known as a *deque*,
