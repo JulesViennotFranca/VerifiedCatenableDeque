@@ -28,6 +28,10 @@ run_steque: build
 run_cadeque: build
 	@ make random_nodep EXE=test_cadeque.exe
 
+.PHONY: run_cadeque_extracted
+run_cadeque_extracted: build
+	@ make random_nodep EXE=test_cadeque_extracted.exe
+
 # This line is somewhat problematic, as it assumes that ocamlfind and
 # monolith are installed in the current switch, whatever it is.
 -include $(shell ocamlfind query monolith)/Makefile.monolith
