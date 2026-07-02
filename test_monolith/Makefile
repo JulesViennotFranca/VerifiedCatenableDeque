@@ -1,5 +1,5 @@
 # The switch that is used for testing is the current switch.
-SWITCH := $(shell opam switch show)
+SWITCH := default
 
 # By default, [make] compiles the test.
 .PHONY: build
