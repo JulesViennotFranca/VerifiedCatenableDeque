@@ -1,6 +1,6 @@
 .PHONY: all
 all:
-	@ dune build
+	@ dune build .
 
 .PHONY: lib
 lib:
