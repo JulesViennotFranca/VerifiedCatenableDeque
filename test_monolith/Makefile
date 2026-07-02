@@ -15,6 +15,7 @@ parallel: build
 	deque \
 	steque \
 	cadeque \
+	cadeque_extracted \
 
 .PHONY: run_deque
 run_deque: build
