@@ -25,8 +25,8 @@ Proof.
 Defined.
 
 (* Defining colors. *)
-Notation green := (Mix SomeGreen NoYellow NoRed).
-Notation yellow := (Mix NoGreen SomeYellow NoRed).
-Notation orange := (Mix NoGreen SomeYellow SomeRed).
-Notation red := (Mix NoGreen NoYellow SomeRed).
-Notation uncolored := (Mix NoGreen NoYellow NoRed).
+Abbreviation green := (Mix SomeGreen NoYellow NoRed).
+Abbreviation yellow := (Mix NoGreen SomeYellow NoRed).
+Abbreviation orange := (Mix NoGreen SomeYellow SomeRed).
+Abbreviation red := (Mix NoGreen NoYellow SomeRed).
+Abbreviation uncolored := (Mix NoGreen NoYellow NoRed).
