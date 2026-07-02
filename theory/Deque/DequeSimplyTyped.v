@@ -10,6 +10,24 @@ From Coq Require Import Lia.
 
 From Deques.Color Require Import GYR.
 
+(* This file is a copy of Deque.v where we develop an alternate approach.
+   Instead of indexing the types [packet] and [chain] with levels, sizes, and
+   colors, we use simple (non-indexed) types and define well-formedness
+   predicates ([wf_packet], [colored_packet], [regularity], [colored_chain],
+   [wf_chain], [wf_deque]) a posteriori. *)
+
+(* This simply-typed approach seems to allow somewhat shorter definitions
+   and statements but doubles the length of the proofs, as measured by coqwc:
+
+   $ coqwc Deque.v
+        spec    proof comments
+         899      281      242 Deque.v
+   $ coqwc DequeSimplyTyped.v
+        spec    proof comments
+         600      633      136 DequeSimplyTyped.v
+
+ *)
+
 (* +------------------------------------------------------------------------+ *)
 (* |                                Colors                                  | *)
 (* +------------------------------------------------------------------------+ *)
