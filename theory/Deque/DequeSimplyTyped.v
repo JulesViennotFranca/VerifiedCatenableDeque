@@ -1,12 +1,12 @@
-From Coq Require Import Program List.
+From Stdlib Require Import Program List.
 Import ListNotations.
 From Equations Require Import Equations.
-Require Import Coq.Program.Equality.
+From Stdlib Require Import Program.Equality.
 From Hammer Require Import Tactics.
 From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
-From Coq Require Import Lia.
+From Stdlib Require Import Lia.
 
 From Deques.Color Require Import GYR.
 
