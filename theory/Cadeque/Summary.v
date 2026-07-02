@@ -1,6 +1,6 @@
 From Coq Require Import List.
 Import ListNotations.
-From Deques.Cadeque Require Import Types Models Core Operations.
+From Deques.Cadeque Require Import Types Models Core Cadeque.
 From Deques Require Import Signatures.
 
 (* We check that the types and operations defined in this directory
@@ -12,12 +12,12 @@ From Deques Require Import Signatures.
 Module I : CADEQUE_INTRINSIC.
   Definition cadeque := Types.cadeque.
   Definition model   := @Models.cadeque_seq.
-  Definition empty   := @Operations.D.empty.
-  Definition push    := @Operations.D.push.
-  Definition inject  := @Operations.D.inject.
-  Definition pop     := @Operations.D.pop.
-  Definition eject   := @Operations.D.eject.
-  Definition concat  := @Operations.D.concat.
+  Definition empty   := @Cadeque.empty.
+  Definition push    := @Cadeque.push.
+  Definition inject  := @Cadeque.inject.
+  Definition pop     := @Cadeque.pop.
+  Definition eject   := @Cadeque.eject.
+  Definition concat  := @Cadeque.concat.
 End I.
 
 (* The extrinsic signature is satisfied by splitting up each operation
@@ -33,34 +33,34 @@ Module E : CADEQUE_EXTRINSIC.
     (@Models.cadeque_seq A).
 
   Definition empty {A} :=
-    proj1_sig (@Operations.D.empty A).
+    proj1_sig (@Cadeque.empty A).
   Definition empty_correct {A} :=
-    proj2_sig (@Operations.D.empty A).
+    proj2_sig (@Cadeque.empty A).
 
   Definition push {A} (x : A) (d : cadeque A) :=
-    proj1_sig (Operations.D.push x d).
+    proj1_sig (Cadeque.push x d).
   Definition push_correct {A : Type} (x : A) (d : cadeque A) :=
-    proj2_sig (Operations.D.push x d).
+    proj2_sig (Cadeque.push x d).
 
   Definition inject {A} (d : cadeque A) (x : A) :=
-    proj1_sig (Operations.D.inject d x).
+    proj1_sig (Cadeque.inject d x).
   Definition inject_correct {A} (d : cadeque A) (x : A) :=
-    proj2_sig (Operations.D.inject d x).
+    proj2_sig (Cadeque.inject d x).
 
   Definition pop {A} (d : cadeque A) :=
-    proj1_sig (Operations.D.pop d).
+    proj1_sig (Cadeque.pop d).
   Definition pop_correct {A} (d : cadeque A) :=
-    proj2_sig (Operations.D.pop d).
+    proj2_sig (Cadeque.pop d).
 
   Definition eject {A} (d : cadeque A) :=
-    proj1_sig (Operations.D.eject d).
+    proj1_sig (Cadeque.eject d).
   Definition eject_correct {A} (d : cadeque A) :=
-    proj2_sig (Operations.D.eject d).
+    proj2_sig (Cadeque.eject d).
 
   Definition concat {A} (d1 d2 : cadeque A) :=
-    proj1_sig (Operations.D.concat d1 d2).
+    proj1_sig (Cadeque.concat d1 d2).
   Definition concat_correct {A : Type} (d1 d2 : cadeque A) :=
-    proj2_sig (Operations.D.concat d1 d2).
+    proj2_sig (Cadeque.concat d1 d2).
 
 End E.
 

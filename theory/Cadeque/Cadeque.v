@@ -14,8 +14,6 @@ From Deques.Cadeque Require Import Types Models Core.
    the definitions below) no proofs are visible. *)
 #[local] Obligation Tactic := try hauto db:rlist.
 
-Module D.
-
 (* The empty cadeque. *)
 Equations empty {A : Type} : { d : cadeque A | cadeque_seq d = [] } :=
 empty := ? T Empty.
@@ -61,9 +59,3 @@ Equations concat {A : Type} (d1 d2 : cadeque A) :
   { d3 : cadeque A | cadeque_seq d3 = cadeque_seq d1 ++ cadeque_seq d2 } :=
 concat (T c1) (T c2) with semi_concat (Semi c1) (Semi c2) => {
   | ? sd with regularize sd => { | ? d := ? d } }.
-
-End D.
-
-(* Extract the code to OCaml: *)
-
-(* Separate Extraction D models. *)

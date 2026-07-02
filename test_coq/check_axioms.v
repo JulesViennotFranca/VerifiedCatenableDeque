@@ -1,7 +1,7 @@
 From Coq Require Extraction.
 From Deques Require Deque Deque_lvl Deque_plain.
 From Deques Require Steque.
-From Deques Require Cadeque.Operations.
+From Deques Require Cadeque.
 
 Definition library := (
   @Deque.empty,
@@ -29,12 +29,12 @@ Definition library := (
   @Steque.pop,
   @Steque.concat,
 
-  @Cadeque.Operations.D.empty,
-  @Cadeque.Operations.D.push,
-  @Cadeque.Operations.D.inject,
-  @Cadeque.Operations.D.pop,
-  @Cadeque.Operations.D.eject,
-  @Cadeque.Operations.D.concat
+  @Cadeque.empty,
+  @Cadeque.push,
+  @Cadeque.inject,
+  @Cadeque.pop,
+  @Cadeque.eject,
+  @Cadeque.concat
 ).
 
 Print Assumptions library.

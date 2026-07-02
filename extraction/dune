@@ -5,7 +5,7 @@
     GYR GYOR
     Deque Deque_lvl Deque_plain
     Steque
-    core types operations
+    Core Types Cadeque
   )
   (flags -w -extraction-default-directory
      -w -extraction-opaque-accessed)

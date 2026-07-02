@@ -1,7 +1,9 @@
 From Coq Require Extraction.
 From Deques Require Deque Deque_lvl Deque_plain.
 From Deques Require Steque.
-From Deques Require Cadeque.Operations.
+From Deques Require Cadeque.
+
+From Coq Require ExtrOcamlBasic.
 
 Separate Extraction
   Deque.empty
@@ -28,4 +30,10 @@ Separate Extraction
   Steque.pop
   Steque.concat
 
-  Cadeque.Operations.D.
+  Cadeque.empty
+  Cadeque.push
+  Cadeque.inject
+  Cadeque.pop
+  Cadeque.eject
+  Cadeque.concat
+.
