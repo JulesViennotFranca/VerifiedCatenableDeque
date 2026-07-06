@@ -47,12 +47,12 @@ each of which supports a subset of the above operations.
 The following table shows which operations are supported
 and indicates their worst-case time complexity:
 
-|         | push | inject |  pop | eject | concat |  rev |         nth         |
-| :-----: | :--: | :----: | :--: | :---: | :----: | :--: | :-----------------: |
-|  List   | O(1) |   n/a  | O(1) |  n/a  |   n/a  |  n/a |         n/a         |
-|  Deque  | O(1) |   O(1) | O(1) |  O(1) |   n/a  | O(1) | O(log(min(i, n-i))) |
-| Steque  | O(1) |   O(1) | O(1) |  n/a  |  O(1)  |  n/a |         n/a         |
-| Cadeque | O(1) |   O(1) | O(1) |  O(1) |  O(1)  |  n/a |         n/a         |
+|         | push  | inject |  pop  | eject | concat |  rev  |         nth         |
+| :-----: | :---: | :----: | :---: | :---: | :----: | :---: | :-----------------: |
+|  List   | O(1)  |  n/a   | O(1)  |  n/a  |  n/a   |  n/a  |         n/a         |
+|  Deque  | O(1)  |  O(1)  | O(1)  | O(1)  |  n/a   | O(1)  | O(log(min(i, n-i))) |
+| Steque  | O(1)  |  O(1)  | O(1)  |  n/a  |  O(1)  |  n/a  |         n/a         |
+| Cadeque | O(1)  |  O(1)  | O(1)  | O(1)  |  O(1)  |  n/a  |         n/a         |
 
 Each data structure is implemented both in OCaml and in Rocq.
 The Rocq implementations are verified.
@@ -87,7 +87,7 @@ The main directories are as follows:
 + [theory](/theory/) contains Rocq code and proofs of correctness
   for each data structure.
 
-  This Coq code is compiled by `make theory`,
+  This Rocq code is compiled by `make theory`,
   which requires 10 to 30 minutes.
 
 + [extraction](/extraction/) contains commands to extract the
@@ -124,3 +124,16 @@ The main directories are as follows:
   If a discrepancy between the reference implementation
   and the candidate implementation is found
   then the scenario that gives rise to the problem is printed.
+
+### Simply typed experiment
+
+We also explored an alternative implementation of the Rocq code,
+found in the files [CoreSimplyTyped.v](theory/BinCounting/CoreSimplyTyped.v) and [DequeSimplyTyped.v](theory/Deque/DequeSimplyTyped.v).
+In this implementation,
+the regularity and well-formedness constraints are not embedded in the types
+but are instead established *a posteriory* on simpler types.
+Additionally, functions do not return a proof of correctness for the sequences corresponding to returned structures.
+These correctness proofs, along with the regularity and well-formedness proofs,
+are deferred and established separatly through auxiliary lemmas.
+
+Although the extracted code corresponding to this implementation executes in constant time, we chose not to investigate it further, as the code is less compact and more redundant, leading us to favor the other paradigm found in [theory](/theory/).
